@@ -1,0 +1,50 @@
+type: challenge
+title: "Your Challenge Title"
+description: "Brief description for users"
+difficulty: easy|medium|hard
+cialdini_categories: [authority, scarcity]
+estimated_time: 10  # minutes
+metadata:
+  author: "Your Name"
+  license: "MIT"
+  tags: [phishing, email, corporate]
+
+nodes:
+  - id: start
+    type: message
+    channel: email_inbox
+    content_en:
+      subject: "Email subject"
+      from: "sender@example.com"
+      body: "Email body"
+    content_id:  # Optional Indonesian
+      subject: "Subjek email"
+      from: "pengirim@example.com"
+      body: "Isi email"
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "What do you do?"
+    options:
+      - text: "Click the link"
+        next: bad_outcome
+        score_impact: -15
+      - text: "Verify first"
+        next: good_outcome
+        score_impact: +10
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised!"
+      explanation: "Clicking unverified links can lead to credential theft."
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_en:
+      title: "Well done!"
+      explanation: "Always verify requests through known channels."

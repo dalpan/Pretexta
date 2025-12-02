@@ -1,0 +1,22 @@
+type: quiz
+title: "Quiz Title"
+description: "Brief description"
+difficulty: easy|medium|hard
+cialdini_categories: 
+  - authority
+
+metadata:
+  author: "Soceng Lab"
+  tags: [phishing, email, basics]
+
+questions:
+  - id: q1
+    content_en:
+      text: "Question text?"
+      explanation: "Why this answer matters"
+    options:
+      - text: "Option A"
+        correct: true
+      - text: "Option B"
+        correct: false
+    points: 10

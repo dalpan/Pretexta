@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: soceng_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: soceng_admin
+      MONGO_INITDB_ROOT_PASSWORD: soceng_secure_password_2025
+      MONGO_INITDB_DATABASE: soceng_lab
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - "27017:27017"
+    networks:
+      - soceng_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: soceng_backend
+    restart: unless-stopped
+    environment:
+      MONGO_URL: mongodb://soceng_admin:soceng_secure_password_2025@mongodb:27017/soceng_lab?authSource=admin
+      DB_NAME: soceng_lab
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+      CORS_ORIGINS: http://localhost:3000,http://localhost:80
+    volumes:
+      - ./backend:/app
+      - ./data:/app/data
+      - ./bin:/app/bin
+    ports:
+      - "8001:8001"
+    depends_on:
+      - mongodb
+    networks:
+      - soceng_network
+    command: uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: soceng_frontend
+    restart: unless-stopped
+    environment:
+      REACT_APP_BACKEND_URL: http://localhost:8001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - soceng_network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  soceng_network:
