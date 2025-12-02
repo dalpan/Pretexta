@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { FileCode, Clock, Target, Play, Search, Filter } from 'lucide-react';
+import { FileCode, Clock, Target, Play, Search, Filter, Info } from 'lucide-react'; // Ditambahkan Info
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -33,6 +33,12 @@ export default function ScenariosPage() {
     challenges.forEach(c => c.cialdini_categories?.forEach(cat => cats.add(cat)));
     return Array.from(cats).sort();
   }, [challenges]);
+  
+  // Statistik Tambahan
+  const totalNodes = useMemo(() => {
+    return challenges.reduce((sum, challenge) => sum + (challenge.nodes?.length || 0), 0);
+  }, [challenges]);
+
 
   useEffect(() => {
     loadChallenges();
@@ -128,11 +134,19 @@ export default function ScenariosPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-4xl font-bold mb-2">{t('scenarios.title')}</h1>
-          <p className="text-muted-foreground font-mono">Adaptive social engineering scenarios</p>
+          <p className="text-muted-foreground mb-4">
+            {t('scenarios.page_description')}
+          </p>
+          {/* Tambahkan Badge Statistik */}
+          <div className="flex space-x-3">
+             <Badge variant="secondary" className="text-sm font-mono tracking-wider px-3 py-1">
+              Total Skenario: {challenges.length}
+            </Badge>
+            <Badge variant="secondary" className="text-sm font-mono tracking-wider px-3 py-1">
+              Total Node: {totalNodes}
+            </Badge>
+          </div>
         </div>
-        <Badge variant="secondary" className="text-sm font-mono tracking-wider px-3 py-1">
-          Total: {challenges.length}
-        </Badge>
       </div>
 
       {/* --- PENCARIAN & FILTER --- */}
@@ -159,7 +173,7 @@ export default function ScenariosPage() {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80 p-4 space-y-4">
-            <h4 className="font-bold text-sm uppercase text-primary">Filter Tantangan</h4>
+            <h4 className="font-bold text-sm uppercase text-primary">Filter Scenario</h4>
             
             {/* Filter Kesulitan */}
             <div className="space-y-2">
@@ -178,7 +192,7 @@ export default function ScenariosPage() {
 
             {/* Filter Kategori Cialdini */}
             <div className="space-y-2 pt-2 border-t border-border">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Kategori Cialdini</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Category Cialdini</p>
               <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                 {allCategories.map((cat) => (
                   <div key={cat} className="flex items-center space-x-2">
@@ -199,7 +213,7 @@ export default function ScenariosPage() {
                 onClick={() => { setFilterDifficulty([]); setFilterCategory([]); }}
                 className="w-full text-xs text-destructive hover:text-destructive"
               >
-                Hapus Semua Filter
+                Delete Filter
               </Button>
             )}
           </PopoverContent>
@@ -280,6 +294,20 @@ export default function ScenariosPage() {
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
           />
+          
+          {/* FOOTER DESKRIPSI DAN NOTE PENTING */}
+          <div className="flex items-start p-4 space-x-3 bg-primary/10 border-l-4 border-primary rounded-r-lg">
+            <Info className="w-5 h-5 mt-1 text-primary flex-shrink-0" />
+            <div className="text-sm">
+              <p className="font-bold mb-1">{t('scenarios.note_title')}</p>
+              <p className="text-muted-foreground">
+                {t('scenarios.note_content_1')}
+              </p>
+              <p className="text-muted-foreground mt-1">
+                {t('scenarios.note_content_2')}
+              </p>
+            </div>
+          </div>
         </>
       )}
     </div>

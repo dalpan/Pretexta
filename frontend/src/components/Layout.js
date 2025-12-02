@@ -13,7 +13,7 @@ export default function Layout({ children, onLogout }) {
     { name: t('nav.scenarios'), path: '/scenarios', icon: FileCode },
     { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
     { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Activity },
-    { name: t('nav.simulations'), path: '/simulations', icon: Activity },
+    { name: t('nav.history'), path: '/simulations', icon: Activity },
     { name: t('nav.settings'), path: '/settings', icon: Settings }
   ];
 
