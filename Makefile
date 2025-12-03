@@ -1,10 +1,10 @@
-# Soceng Lab Makefile
+# SocengLab Makefile
 
 .PHONY: help install build up down restart logs clean test seed
 
 # Default target
 help:
-	@echo "Soceng Lab - Makefile Commands"
+	@echo "SocengLab - Makefile Commands"
 	@echo ""
 	@echo "Setup & Installation:"
 	@echo "  make install       - Install dependencies (run first time)"
