@@ -7,7 +7,11 @@ import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { toast } from 'sonner';
-import { Zap, Loader2, AlertTriangle, CheckCircle2, XCircle, Award } from 'lucide-react';
+import { 
+  Zap, Loader2, AlertTriangle, CheckCircle2, XCircle, Award, 
+  Eye, EyeOff, Flag, MessageSquare, AlertCircle, BookOpen,
+  ChevronLeft, ChevronRight, RotateCcw, Download
+} from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -15,20 +19,86 @@ export default function AIChallengePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  // State Management
   const [llmConfigured, setLlmConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [generatedQuiz, setGeneratedQuiz] = useState(null);
+  const [saving, setSaving] = useState(false);
+  
+  // Challenge Configuration
   const [selectedCategory, setSelectedCategory] = useState('phishing');
+  const [selectedChallengeType, setSelectedChallengeType] = useState('comprehensive');
   const [numQuestions, setNumQuestions] = useState(10);
   const [difficulty, setDifficulty] = useState('medium');
-  const [challengeMode, setChallengeMode] = useState('quiz'); // quiz, conversation, scenario
+  
+  // Challenge Data & Progress
+  const [generatedChallenge, setGeneratedChallenge] = useState(null);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [quizAnswers, setQuizAnswers] = useState({});
+  const [userAnswers, setUserAnswers] = useState({});
+  const [questionFeedback, setQuestionFeedback] = useState({});
   const [showResults, setShowResults] = useState(false);
-  const [score, setScore] = useState(0);
-  const [conversation, setConversation] = useState([]);
-  const [userResponse, setUserResponse] = useState('');
+  const [finalScore, setFinalScore] = useState(0);
+  const [showDetailedExplanation, setShowDetailedExplanation] = useState({});
+
+// Challenge Type Configuration
+const challengeTypes = {
+  comprehensive: {
+    label: 'Comprehensive Challenge',
+    icon: '📋',
+    description: 'Multi-format challenge with various question types',
+    formats: ['multiple_choice', 'scenario_analysis', 'red_flag_identification', 'email_analysis'],
+    instructions: [
+      'Read each question carefully',
+      'Apply logic and knowledge of social engineering tactics',
+      'Each question may have a different format',
+      'There is no time limit for each question',
+      'You can return to previous questions',
+      'Detailed explanations are available after submitting your answers'
+    ]
+  },
+  email_analysis: {
+    label: 'Email Analysis Challenge',
+    icon: '📧',
+    description: 'Analyze phishing emails and identify red flags',
+    formats: ['email_full_analysis', 'header_analysis'],
+    instructions: [
+      'Analyze every provided email thoroughly',
+      'Identify the social engineering tactics used',
+      'Pay attention to the sender, subject line, and body content',
+      'Look for authentication signs (SPF, DKIM, DMARC)',
+      'Document every red flag you find',
+      'Provide recommendations for improvement for each email'
+    ]
+  },
+  interactive: {
+    label: 'Interactive Conversation',
+    icon: '💬',
+    description: 'Real-time conversation simulation with an attacker',
+    formats: ['conversation', 'reactive_scenario'],
+    instructions: [
+      'Interact with an AI acting as a social engineer',
+      'Respond naturally using the available options',
+      'Your choices will affect the flow of the conversation',
+      'The AI will adapt based on your choices',
+      'Goal: Avoid manipulation and maintain security awareness',
+      'Each interaction is scored for susceptibility level'
+    ]
+  },
+  scenario: {
+    label: 'Real-World Scenarios',
+    icon: '🎭',
+    description: 'Real-world scenarios with multiple decision points',
+    formats: ['scenario_branching', 'consequence_analysis'],
+    instructions: [
+      'Read the scenario completely',
+      'Consider all aspects: context, techniques, warning signs',
+      'Choose the most appropriate action for the situation',
+      'Understand the consequences of each choice',
+      'Some decisions may have different outcomes',
+      'Learn from suboptimal results'
+    ]
+  }
+};
 
   useEffect(() => {
     checkLLMConfig();
@@ -40,10 +110,8 @@ export default function AIChallengePage() {
       const response = await axios.get(`${API}/llm/config`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       const hasEnabled = response.data.some(config => config.enabled);
       setLlmConfigured(hasEnabled);
-
       if (!hasEnabled) {
         toast.error('Please configure LLM API key in Settings first');
       }
@@ -54,7 +122,7 @@ export default function AIChallengePage() {
     }
   };
 
-  const generateQuiz = async () => {
+  const generateChallenge = async () => {
     if (!llmConfigured) {
       toast.error('LLM not configured. Go to Settings → LLM Configuration');
       navigate('/settings');
@@ -62,430 +130,826 @@ export default function AIChallengePage() {
     }
 
     setGenerating(true);
-    setGeneratedQuiz(null);
-    setQuizAnswers({});
+    setGeneratedChallenge(null);
+    setUserAnswers({});
+    setQuestionFeedback({});
     setCurrentQuestionIdx(0);
     setShowResults(false);
 
     try {
       const token = localStorage.getItem('soceng_token');
+      const challengeTypeConfig = challengeTypes[selectedChallengeType];
+      
+      // Build comprehensive prompt based on challenge type
+      let prompt = buildPrompt(selectedChallengeType, challengeTypeConfig);
 
-      const prompt = `You are a social engineering quiz generator for security awareness training.
-
-Generate ${numQuestions} realistic multiple-choice questions about ${selectedCategory} attacks in Indonesian language.
-
-Each question should test ability to recognize social engineering tactics.
-
-Format your response as JSON:
-{
-  "quiz_title": "Brief title for this quiz",
-  "category": "${selectedCategory}",
-  "difficulty": "${difficulty}",
-  "questions": [
-    {
-      "id": "q1",
-      "question": "Question text in Indonesian",
-      "options": [
-        {"text": "Option A", "correct": false},
-        {"text": "Option B", "correct": true},
-        {"text": "Option C", "correct": false},
-        {"text": "Option D", "correct": false}
-      ],
-      "explanation": "Why the correct answer is right",
-      "cialdini_principle": "authority|urgency|reciprocity|etc"
-    }
-  ]
-}
-
-Generate exactly ${numQuestions} questions. Mix difficulty and Cialdini principles. Mark clearly as [TRAINING] material.`;
-
-      const response = await axios.post(`${API}/llm/generate`, {
-        prompt: prompt,
-        context: {
-          category: selectedCategory,
-          num_questions: numQuestions,
-          difficulty: difficulty,
-          language: 'id'
-        }
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      let quizData;
-      try {
-        let jsonText = response.data.generated_text;
-
-        console.log('Raw AI response:', jsonText);
-
-        // Step 1: Remove [TRAINING] marker and similar prefixes
-        jsonText = jsonText.replace(/\[TRAINING\]\s*/gi, '');
-        jsonText = jsonText.replace(/\[TRAINING MATERIAL\]\s*/gi, '');
-
-        // Step 2: Extract JSON from markdown code blocks
-        // Match pattern: ```json ... ``` or ``` ... ```
-        const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (codeBlockMatch) {
-          jsonText = codeBlockMatch[1].trim();
-          console.log('Extracted from code block:', jsonText);
-        } else {
-          // No code block found, try to clean up manually
-          jsonText = jsonText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
-        }
-
-        // Step 3: Remove any remaining text before first { or [
-        const startMatch = jsonText.search(/[\{\[]/);
-        if (startMatch !== -1) {
-          jsonText = jsonText.substring(startMatch);
-        }
-
-        // Step 4: Remove text after last } or ]
-        const endMatch = jsonText.search(/[\}\]][^\}\]]*$/);
-        if (endMatch !== -1) {
-          jsonText = jsonText.substring(0, endMatch + 1);
-        }
-
-        // Step 5: Clean up any remaining whitespace
-        jsonText = jsonText.trim();
-
-        console.log('Cleaned JSON text:', jsonText);
-
-        // Step 6: Try to parse
-        quizData = JSON.parse(jsonText);
-
-        // Step 7: Validate structure
-        if (!quizData.questions || !Array.isArray(quizData.questions)) {
-          throw new Error('Invalid quiz structure: missing questions array');
-        }
-
-        if (quizData.questions.length === 0) {
-          throw new Error('Quiz has no questions');
-        }
-
-        // Validate each question has required fields
-        quizData.questions.forEach((q, idx) => {
-          if (!q.question || !q.options || !Array.isArray(q.options)) {
-            throw new Error(`Question ${idx + 1} is missing required fields`);
+      const response = await axios.post(
+        `${API}/llm/generate`,
+        {
+          prompt: prompt,
+          context: {
+            category: selectedCategory,
+            challenge_type: selectedChallengeType,
+            num_questions: numQuestions,
+            difficulty: difficulty,
+            language: 'id',
+            formats: challengeTypeConfig.formats
           }
-          if (!q.id) {
-            q.id = `q${idx + 1}`;
-          }
-        });
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
-        console.log('✅ Successfully parsed quiz data:', quizData);
-
-      } catch (parseError) {
-        console.error('❌ Parse error:', parseError);
-        console.log('Failed to parse response:', response.data.generated_text);
-
-        // Fallback: create basic quiz from text
-        toast.error(`AI returned invalid JSON: ${parseError.message}`);
-
-        // Try to salvage what we can
-        quizData = {
-          quiz_title: `${selectedCategory.toUpperCase()} Quiz`,
-          category: selectedCategory,
-          difficulty: difficulty,
-          questions: []
-        };
-
-        // Show error message as first "question"
-        quizData.questions.push({
-          id: 'error',
-          question: '⚠️ AI generation failed. The response could not be parsed.',
-          options: [
-            { text: 'Try regenerating with different settings', correct: true },
-            { text: 'Go back to settings', correct: false }
-          ],
-          explanation: `Error: ${parseError.message}\n\nRaw response preview: ${response.data.generated_text.substring(0, 300)}...`,
-          cialdini_principle: 'error'
-        });
-
-        setGenerating(false);
-        return;
-      }
-
-      setGeneratedQuiz(quizData);
-      toast.success(`🤖 Generated ${quizData.questions?.length || 0} questions!`);
+      const challengeData = parseAndValidateChallenge(response.data.generated_text, selectedChallengeType);
+      setGeneratedChallenge(challengeData);
+      toast.success(`🤖 Generated ${challengeData.questions?.length || 0} challenge questions!`);
     } catch (error) {
-      console.error('Failed to generate quiz', error);
-      toast.error(`Failed to generate quiz: ${error.response?.data?.detail || error.message}`);
+      console.error('Failed to generate challenge', error);
+      toast.error(`Failed to generate challenge: ${error.response?.data?.detail || error.message}`);
     } finally {
       setGenerating(false);
     }
   };
 
-  const handleAnswerSelect = (questionId, optionIdx) => {
-    setQuizAnswers({
-      ...quizAnswers,
-      [questionId]: optionIdx
-    });
+  const buildPrompt = (type, config) => {
+    const basePrompt = `You are an expert social engineering security trainer creating an interactive challenge for awareness training.
+
+Challenge Type: ${config.label}
+Category: ${selectedCategory}
+Difficulty: ${difficulty}
+Number of Questions: ${numQuestions}
+Target Formats: ${config.formats.join(', ')}
+
+Create a comprehensive, detailed challenge in Indonesian with the following characteristics:`;
+
+    const typeSpecificPrompts = {
+      comprehensive: `
+1. MIX QUESTION TYPES:
+   - Multiple choice (dengan 4-5 pilihan)
+   - Scenario analysis (skenario + pertanyaan terbuka)
+   - Red flag identification (identifikasi tanda peringatan)
+   - Email analysis (analisis email phishing)
+
+2. SETIAP PERTANYAAN HARUS MEMILIKI:
+   - "question": Pertanyaan yang jelas dan detail
+   - "type": Tipe pertanyaan (multiple_choice|scenario|red_flag|email)
+   - "content": Konten lengkap (email body, skenario, dll)
+   - "correct_answer": Jawaban yang benar
+   - "explanation": Penjelasan detail mengapa jawaban tersebut benar
+   - "instructions": Instruksi step-by-step untuk menjawab
+   - "notes": Tips dan hal-hal penting yang harus diperhatikan
+   - "cialdini_principle": Prinsip Cialdini yang digunakan (authority|urgency|reciprocity|social_proof|liking|scarcity)
+   - "learning_objective": Apa yang seharusnya dipelajari
+   - "real_world_context": Konteks kehidupan nyata
+
+3. FORMAT RESPONSE JSON:
+{
+  "challenge_title": "Judul challenge",
+  "category": "${selectedCategory}",
+  "difficulty": "${difficulty}",
+  "type": "${type}",
+  "total_questions": ${numQuestions},
+  "estimated_time": "X menit",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "multiple_choice|scenario|red_flag|email",
+      "question": "...",
+      "content": "...",
+      "options": [...], // untuk multiple choice
+      "correct_answer": "...",
+      "explanation": "Penjelasan detail dan edukatif",
+      "instructions": ["Step 1: ...", "Step 2: ...", ...],
+      "notes": ["Note 1: ...", "Note 2: ...", ...],
+      "cialdini_principle": "...",
+      "learning_objective": "...",
+      "real_world_context": "...",
+      "difficulty_level": "beginner|intermediate|advanced",
+      "hint": "Petunjuk untuk membantu (optional)"
+    },
+    ...
+  ]
+}`,
+
+      email_analysis: `
+1. SETIAP EMAIL HARUS LENGKAP:
+   - From address (bisa spoofed)
+   - Subject line
+   - Body content
+   - Header information
+   - Attachments (jika ada)
+
+2. ANALISIS HARUS COVER:
+   - Identifikasi sender
+   - Analisis SPF/DKIM/DMARC
+   - Red flags dalam content
+   - Psychological tactics digunakan
+   - Rekomendasi action
+
+3. FORMAT RESPONSE:
+{
+  "challenge_title": "Email Security Analysis Challenge",
+  "category": "${selectedCategory}",
+  "type": "email_analysis",
+  "questions": [
+    {
+      "id": "email1",
+      "type": "email_full_analysis",
+      "question": "Analisis email berikut dan identifikasi semua red flags...",
+      "email_data": {
+        "from": "...",
+        "to": "...",
+        "subject": "...",
+        "body": "...",
+        "received_headers": "...",
+        "attachments": [...]
+      },
+      "correct_answer": "Jawaban analisis yang benar",
+      "explanation": "Penjelasan detail tentang setiap red flag",
+      "instructions": ["Langkah analisis..."],
+      "notes": ["Perhatian penting...", "Best practice..."],
+      "cialdini_principle": "...",
+      "learning_objective": "..."
+    }
+  ]
+}`,
+
+      interactive: `
+1. CONVERSATION FLOW:
+   - Attacker membuka dengan teknik social engineering
+   - User diberikan 3-4 pilihan response
+   - AI menilai response dan melanjutkan percakapan
+   - Score berdasarkan awareness level
+
+2. SETIAP NODE HARUS:
+   - Natural dan realistis
+   - Ada tanda-tanda manipulation
+   - Multiple paths based on user choice
+   - Feedback immediate
+
+3. FORMAT RESPONSE:
+{
+  "challenge_title": "Interactive Social Engineering Simulation",
+  "type": "interactive",
+  "questions": [
+    {
+      "id": "conv1",
+      "type": "conversation",
+      "question": "Anda menerima pesan dari 'IT Support'...",
+      "attacker_message": "Pesan dari attacker...",
+      "user_options": [
+        {"text": "Option 1", "susceptibility_impact": -10, "next_id": "conv2"},
+        {"text": "Option 2", "susceptibility_impact": 5, "next_id": "conv3"},
+        {"text": "Option 3", "susceptibility_impact": -15, "next_id": "conv4"}
+      ],
+      "correct_action": "Option yang paling secure",
+      "explanation": "Penjelasan...",
+      "notes": ["Tanda peringatan...", "Best practice..."],
+      "cialdini_principle": "..."
+    }
+  ]
+}`,
+
+      scenario: `
+1. REAL-WORLD SCENARIOS:
+   - Setup konteks yang detail
+   - Multiple decision points
+   - Consequences untuk setiap keputusan
+   - Learning outcomes yang jelas
+
+2. SCENARIO HARUS INCLUDE:
+   - Background/context
+   - Trigger event
+   - Available actions
+   - Consequences (positif dan negatif)
+   - Lessons learned
+
+3. FORMAT RESPONSE:
+{
+  "challenge_title": "Real-World Scenario Challenges",
+  "type": "scenario",
+  "questions": [
+    {
+      "id": "scenario1",
+      "type": "scenario_branching",
+      "question": "Baca skenario berikut...",
+      "scenario": {
+        "background": "...",
+        "trigger": "...",
+        "context": "..."
+      },
+      "available_actions": [
+        {"text": "Action A", "outcome_score": 90, "explanation": "..."},
+        {"text": "Action B", "outcome_score": 40, "explanation": "..."},
+        {"text": "Action C", "outcome_score": 10, "explanation": "..."}
+      ],
+      "correct_action": "...",
+      "explanation": "Penjelasan why this is best...",
+      "notes": ["Konsiderasi...", "Best practice..."],
+      "learning_objective": "..."
+    }
+  ]
+}`,
+    };
+
+    return basePrompt + (typeSpecificPrompts[type] || '') + `
+
+CRITICAL REQUIREMENTS:
+- Generate EXACTLY ${numQuestions} questions
+- Setiap pertanyaan HARUS lengkap dengan instruction dan notes
+- Semua text dalam Indonesian
+- Pastikan JSON valid dan dapat di-parse
+- Fokus pada pembelajaran, bukan hanya testing
+- Include real-world context dan practical tips
+- Variasi difficulty level`;
   };
 
-  const handleSubmit = () => {
-    if (!generatedQuiz) return;
-
-    let correctCount = 0;
-    generatedQuiz.questions.forEach(q => {
-      const selectedIdx = quizAnswers[q.id];
-      if (selectedIdx !== undefined && q.options[selectedIdx]?.correct) {
-        correctCount++;
+  const parseAndValidateChallenge = (responseText, type) => {
+    try {
+      let jsonText = responseText;
+      
+      // Clean markdown and extract JSON
+      jsonText = jsonText.replace(/\[TRAINING\]\s*/gi, '').replace(/\[TRAINING MATERIAL\]\s*/gi, '');
+      const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        jsonText = codeBlockMatch[1].trim();
       }
-    });
+      
+      const startMatch = jsonText.search(/[\{\[]/);
+      if (startMatch !== -1) {
+        jsonText = jsonText.substring(startMatch);
+      }
+      
+      const endMatch = jsonText.search(/[\}\]][^\}\]]*$/);
+      if (endMatch !== -1) {
+        jsonText = jsonText.substring(0, endMatch + 1);
+      }
 
-    const finalScore = Math.round((correctCount / generatedQuiz.questions.length) * 100);
-    setScore(finalScore);
-    setShowResults(true);
+      const challengeData = JSON.parse(jsonText.trim());
 
-    if (finalScore >= 70) {
-      toast.success('✅ Excellent work!');
-    } else if (finalScore >= 40) {
-      toast('⚠️ Good effort, but review the explanations');
-    } else {
-      toast.error('❌ Need more practice. Review the lessons!');
+      // Validate structure
+      if (!challengeData.questions || !Array.isArray(challengeData.questions)) {
+        throw new Error('Invalid challenge structure');
+      }
+
+      if (challengeData.questions.length === 0) {
+        throw new Error('No questions generated');
+      }
+
+      // Ensure each question has required fields
+      challengeData.questions.forEach((q, idx) => {
+        if (!q.id) q.id = `q${idx + 1}`;
+        if (!q.type) q.type = 'multiple_choice';
+        if (!q.question) throw new Error(`Question ${idx + 1} missing question text`);
+        if (!q.explanation) q.explanation = 'Penjelasan akan ditampilkan setelah Anda menjawab.';
+        if (!q.instructions) q.instructions = [];
+        if (!q.notes) q.notes = [];
+        if (!q.learning_objective) q.learning_objective = 'Belajar tentang social engineering tactics';
+      });
+
+      console.log('✅ Challenge validated:', challengeData);
+      return challengeData;
+    } catch (error) {
+      console.error('❌ Parse error:', error);
+      throw error;
     }
   };
 
-  const handleNext = () => {
-    if (currentQuestionIdx < generatedQuiz.questions.length - 1) {
+  const handleAnswerSelect = (questionId, answer) => {
+    setUserAnswers({
+      ...userAnswers,
+      [questionId]: answer
+    });
+    // Immediately provide feedback
+    evaluateAnswer(questionId, answer);
+  };
+
+  const evaluateAnswer = (questionId, userAnswer) => {
+    const question = generatedChallenge.questions.find(q => q.id === questionId);
+    if (!question) return;
+
+    const isCorrect = userAnswer === question.correct_answer || 
+                     (Array.isArray(question.correct_answer) && 
+                      question.correct_answer.includes(userAnswer));
+
+    setQuestionFeedback({
+      ...questionFeedback,
+      [questionId]: {
+        isCorrect,
+        userAnswer,
+        feedback: isCorrect 
+          ? '✅ Jawaban yang tepat!' 
+          : '❌ Jawaban tidak sesuai, perhatikan penjelasan di bawah.'
+      }
+    });
+  };
+
+  const handleShowExplanation = (questionId) => {
+    setShowDetailedExplanation({
+      ...showDetailedExplanation,
+      [questionId]: !showDetailedExplanation[questionId]
+    });
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIdx < generatedChallenge.questions.length - 1) {
       setCurrentQuestionIdx(currentQuestionIdx + 1);
     }
   };
 
-  const handlePrevious = () => {
+  const handlePreviousQuestion = () => {
     if (currentQuestionIdx > 0) {
       setCurrentQuestionIdx(currentQuestionIdx - 1);
     }
   };
 
+  const calculateAndSubmitResults = async () => {
+    if (!generatedChallenge) return;
+
+    let correctCount = 0;
+    generatedChallenge.questions.forEach(q => {
+      const userAnswer = userAnswers[q.id];
+      if (userAnswer && (userAnswer === q.correct_answer || 
+          (Array.isArray(q.correct_answer) && q.correct_answer.includes(userAnswer)))) {
+        correctCount++;
+      }
+    });
+
+    const score = Math.round((correctCount / generatedChallenge.questions.length) * 100);
+    setFinalScore(score);
+    setShowResults(true);
+
+    // Show toast feedback
+    if (score >= 80) {
+      toast.success('🏆 Excellent! Anda menunjukkan pemahaman yang kuat tentang social engineering tactics!');
+    } else if (score >= 60) {
+      toast('🎯 Good job! Review penjelasan untuk memperkuat pemahaman Anda.');
+    } else {
+      toast.error('💡 Keep learning! Pelajari setiap penjelasan dan coba lagi untuk hasil lebih baik.');
+    }
+
+    // Save to history
+    await saveToHistory(score, correctCount);
+  };
+
+  const saveToHistory = async (score, correctCount) => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('soceng_token');
+      
+      // Create a simulation record for history
+      const simulationData = {
+        type: 'ai_challenge',
+        challenge_type: selectedChallengeType,
+        category: selectedCategory,
+        difficulty: difficulty,
+        total_questions: generatedChallenge.questions.length,
+        score: score,
+        correct_answers: correctCount,
+        answers: userAnswers,
+        challenge_data: generatedChallenge,
+        completed_at: new Date().toISOString(),
+        status: 'completed'
+      };
+
+      await axios.post(`${API}/simulations`, simulationData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      toast.success('✅ Challenge hasil disimpan ke history!');
+    } catch (error) {
+      console.error('Failed to save challenge', error);
+      toast.error('Failed to save challenge history');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const downloadReport = () => {
+    const report = {
+      title: generatedChallenge.challenge_title,
+      category: selectedCategory,
+      type: selectedChallengeType,
+      difficulty: difficulty,
+      date: new Date().toISOString(),
+      score: finalScore,
+      results: generatedChallenge.questions.map(q => ({
+        question: q.question,
+        userAnswer: userAnswers[q.id],
+        correctAnswer: q.correct_answer,
+        isCorrect: userAnswers[q.id] === q.correct_answer,
+        explanation: q.explanation
+      }))
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `challenge_report_${Date.now()}.json`;
+    a.click();
+  };
+
+  const resetChallenge = () => {
+    setGeneratedChallenge(null);
+    setUserAnswers({});
+    setQuestionFeedback({});
+    setCurrentQuestionIdx(0);
+    setShowResults(false);
+    setShowDetailedExplanation({});
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin" />
       </div>
     );
   }
 
-  // Results View
-  if (showResults && generatedQuiz) {
-    const correctCount = generatedQuiz.questions.filter(q => {
-      const selectedIdx = quizAnswers[q.id];
-      return selectedIdx !== undefined && q.options[selectedIdx]?.correct;
-    }).length;
-
+  if (!llmConfigured) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Card className="glass-panel p-8 text-center">
-          <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${score >= 70 ? 'bg-tertiary/20' : score >= 40 ? 'bg-warning/20' : 'bg-destructive/20'
-            }`}>
-            <Award className={`w-12 h-12 ${score >= 70 ? 'text-tertiary' : score >= 40 ? 'text-warning' : 'text-destructive'
-              }`} />
-          </div>
-
-          <h2 className="text-3xl font-bold mb-2">Quiz Completed!</h2>
-          <p className="text-muted-foreground mb-6">{generatedQuiz.quiz_title}</p>
-
-          <div className="grid grid-cols-2 gap-6 mb-8">
-            <div className="glass-panel p-4">
-              <div className="text-sm text-muted-foreground uppercase">Score</div>
-              <div className={`text-4xl font-bold font-mono ${score >= 70 ? 'text-tertiary' : score >= 40 ? 'text-warning' : 'text-destructive'
-                }`}>
-                {score}%
-              </div>
-            </div>
-            <div className="glass-panel p-4">
-              <div className="text-sm text-muted-foreground uppercase">Correct</div>
-              <div className="text-4xl font-bold font-mono text-tertiary">
-                {correctCount}/{generatedQuiz.questions.length}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center space-x-4">
-            <Button onClick={() => {
-              setGeneratedQuiz(null);
-              setQuizAnswers({});
-              setShowResults(false);
-              setCurrentQuestionIdx(0);
-            }}>
-              Generate New Quiz
-            </Button>
-            <Button variant="outline" onClick={() => {
-              setShowResults(false);
-              setCurrentQuestionIdx(0);
-              setQuizAnswers({});
-            }}>
-              Retake Quiz
-            </Button>
-          </div>
+      <div className="max-w-2xl mx-auto p-6">
+        <Card className="p-8 text-center">
+          <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-yellow-500" />
+          <h2 className="text-2xl font-bold mb-2">LLM Not Configured</h2>
+          <p className="text-gray-600 mb-4">
+            Anda perlu mengkonfigurasi LLM API key terlebih dahulu untuk menggunakan AI Challenge.
+          </p>
+          <Button onClick={() => navigate('/settings')} className="w-full">
+            Go to Settings → LLM Configuration
+          </Button>
         </Card>
+      </div>
+    );
+  }
 
-        {/* Review */}
-        <div className="space-y-4">
-          <h3 className="text-2xl font-bold">Answer Review</h3>
-          {generatedQuiz.questions.map((question, qIdx) => {
-            const selectedIdx = quizAnswers[question.id];
-            const isCorrect = selectedIdx !== undefined && question.options[selectedIdx]?.correct;
+  // Configuration Screen
+  if (!generatedChallenge && !showResults) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">🎓 AI Challenge Generator</h1>
+          <p className="text-gray-600">Create powerful, detailed social engineering challenges for comprehensive training</p>
+        </div>
 
-            return (
-              <Card key={question.id} className={`glass-panel p-6 ${isCorrect ? 'border-tertiary/30' : 'border-destructive/30'
-                }`}>
-                <div className="flex items-start space-x-4">
-                  {isCorrect ? (
-                    <CheckCircle2 className="w-6 h-6 text-tertiary mt-1" />
-                  ) : (
-                    <XCircle className="w-6 h-6 text-destructive mt-1" />
-                  )}
-
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-3">
-                      <span className="font-bold">Question {qIdx + 1}:</span>
-                      <Badge variant="outline" className="text-xs">
-                        {question.cialdini_principle}
-                      </Badge>
-                    </div>
-                    <p className="mb-4">{question.question}</p>
-
-                    <div className="space-y-2 mb-4">
-                      {question.options.map((option, optIdx) => {
-                        const isSelected = selectedIdx === optIdx;
-                        const isCorrectOption = option.correct;
-
-                        return (
-                          <div
-                            key={optIdx}
-                            className={`p-3 rounded border ${isCorrectOption
-                                ? 'border-tertiary/50 bg-tertiary/10'
-                                : isSelected
-                                  ? 'border-destructive/50 bg-destructive/10'
-                                  : 'border-muted/30'
-                              }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span>{option.text}</span>
-                              {isCorrectOption && <Badge className="bg-tertiary/20 text-tertiary">Correct</Badge>}
-                              {isSelected && !isCorrectOption && <Badge className="bg-destructive/20 text-destructive">Your Answer</Badge>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {question.explanation && (
-                      <div className="p-4 bg-muted/20 rounded border border-muted/30">
-                        <div className="text-sm font-bold mb-1">💡 Explanation:</div>
-                        <p className="text-sm text-muted-foreground">{question.explanation}</p>
-                      </div>
-                    )}
-                  </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Configuration Panel */}
+          <div className="lg:col-span-1">
+            <Card className="p-6 sticky top-6">
+              <h3 className="text-lg font-semibold mb-4">Configure Challenge</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Challenge Type</label>
+                  <Select value={selectedChallengeType} onValueChange={setSelectedChallengeType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(challengeTypes).map(([key, config]) => (
+                        <SelectItem key={key} value={key}>
+                          {config.icon} {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </Card>
-            );
-          })}
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Category</label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="phishing">📧 Phishing</SelectItem>
+                      <SelectItem value="pretexting">🎭 Pretexting</SelectItem>
+                      <SelectItem value="baiting">🪤 Baiting</SelectItem>
+                      <SelectItem value="tailgating">🚪 Tailgating</SelectItem>
+                      <SelectItem value="vishing">☎️ Vishing</SelectItem>
+                      <SelectItem value="spear_phishing">🎯 Spear Phishing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Difficulty</label>
+                  <Select value={difficulty} onValueChange={setDifficulty}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">🟢 Beginner</SelectItem>
+                      <SelectItem value="intermediate">🟡 Intermediate</SelectItem>
+                      <SelectItem value="advanced">🔴 Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Number of Questions: {numQuestions}
+                  </label>
+                  <input
+                    type="range"
+                    min="3"
+                    max="20"
+                    value={numQuestions}
+                    onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+
+                <Button 
+                  onClick={generateChallenge} 
+                  disabled={generating}
+                  className="w-full"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 mr-2" />
+                      Generate Challenge
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+          </div>
+
+          {/* Challenge Type Info */}
+          <div className="lg:col-span-2">
+            <Card className="p-6">
+              <div className="flex items-start mb-4">
+                <span className="text-4xl mr-3">
+                  {challengeTypes[selectedChallengeType].icon}
+                </span>
+                <div>
+                  <h3 className="text-2xl font-bold">
+                    {challengeTypes[selectedChallengeType].label}
+                  </h3>
+                  <p className="text-gray-600 mt-1">
+                    {challengeTypes[selectedChallengeType].description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-blue p-4 rounded-lg mb-6">
+                <h4 className="font-semibold mb-3 flex items-center">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Instructions for This Challenge Type:
+                </h4>
+                <ol className="space-y-2 text-sm">
+                  {challengeTypes[selectedChallengeType].instructions.map((instr, idx) => (
+                    <li key={idx} className="flex">
+                      <span className="font-semibold mr-3 text-blue-600">{idx + 1}.</span>
+                      <span>{instr}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {challengeTypes[selectedChallengeType].formats.map((format) => (
+                  <div key={format} className="bg-gray p-3 rounded flex items-center">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                    <span className="text-sm capitalize">{format.replace(/_/g, ' ')}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Quiz Playing View
-  if (generatedQuiz && !showResults) {
-    const currentQuestion = generatedQuiz.questions[currentQuestionIdx];
-    const selectedAnswer = quizAnswers[currentQuestion.id];
-    const progress = ((currentQuestionIdx + 1) / generatedQuiz.questions.length) * 100;
+  // Challenge Display Screen
+  if (generatedChallenge && !showResults) {
+    const question = generatedChallenge.questions[currentQuestionIdx];
+    const feedback = questionFeedback[question.id];
+    const isAnswered = !!userAnswers[question.id];
 
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
-        <div className="glass-panel p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">{generatedQuiz.quiz_title}</h1>
-              <div className="flex items-center space-x-2 mt-1">
-                <Badge variant="outline">{generatedQuiz.category}</Badge>
-                <Badge variant="outline">{generatedQuiz.difficulty}</Badge>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">Question</div>
-              <div className="text-3xl font-bold font-mono text-primary">
-                {currentQuestionIdx + 1}/{generatedQuiz.questions.length}
-              </div>
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold mb-2">{generatedChallenge.challenge_title}</h2>
+          <div className="flex items-center gap-4">
+            <Badge variant="outline">
+              {currentQuestionIdx + 1} / {generatedChallenge.questions.length}
+            </Badge>
+            <Badge variant="outline">{difficulty}</Badge>
+            <div className="ml-auto text-sm text-gray-600">
+              Answered: {Object.keys(userAnswers).length} / {generatedChallenge.questions.length}
             </div>
           </div>
-
-          {/* Progress Bar */}
-          <div className="w-full bg-muted/20 rounded-full h-2">
-            <div
-              className="bg-primary h-2 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
+          <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all"
+              style={{ width: `${((currentQuestionIdx + 1) / generatedChallenge.questions.length) * 100}%` }}
             />
           </div>
         </div>
 
-        {/* Question */}
-        <Card className="glass-panel p-8">
-          <div className="flex items-center space-x-2 mb-4">
-            <Badge variant="outline" className="text-xs">
-              {currentQuestion.cialdini_principle}
-            </Badge>
+        {/* Question Content */}
+        <Card className="mb-6 p-6">
+          {/* Question Type Badge */}
+          <div className="mb-4">
+            <Badge className="mb-4">{question.type.replace(/_/g, ' ').toUpperCase()}</Badge>
           </div>
 
-          <h2 className="text-xl font-bold mb-6">
-            {currentQuestion.question}
-          </h2>
+          {/* Question Text */}
+          <h3 className="text-2xl font-semibold mb-4">{question.question}</h3>
 
-          <div className="space-y-3">
-            {currentQuestion.options.map((option, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleAnswerSelect(currentQuestion.id, idx)}
-                className={`w-full p-4 text-left rounded-lg border transition-colors ${selectedAnswer === idx
-                    ? 'bg-primary/10 border-primary/50'
-                    : 'bg-muted/10 border-muted/30 hover:border-primary/30'
-                  }`}
-                data-testid={`ai-quiz-option-${idx}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedAnswer === idx
-                      ? 'border-primary bg-primary'
-                      : 'border-muted-foreground'
-                    }`}>
-                    {selectedAnswer === idx && (
-                      <div className="w-2 h-2 bg-background rounded-full" />
-                    )}
-                  </div>
-                  <span>{option.text}</span>
+          {/* Instructions Box */}
+          {question.instructions && question.instructions.length > 0 && (
+            <div className="bg-blue border-l-4 border-blue-500 p-4 mb-6 rounded">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-2" />
+                How to Answer This Question:
+              </h4>
+              <ol className="space-y-1 text-sm text-blue-900">
+                {question.instructions.map((instr, idx) => (
+                  <li key={idx}>
+                    <span className="font-semibold">Step {idx + 1}:</span> {instr}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* Question Content (for scenarios, emails, etc) */}
+          {question.content && (
+            <div className="bg-gray p-4 rounded-lg mb-6 font-mono text-sm whitespace-pre-wrap">
+              {question.content}
+            </div>
+          )}
+
+          {/* Email Data Display */}
+          {question.email_data && (
+            <div className="bg-gray p-4 rounded-lg mb-6 space-y-3 text-sm">
+              <div>
+                <span className="font-semibold">From:</span> {question.email_data.from}
+              </div>
+              <div>
+                <span className="font-semibold">To:</span> {question.email_data.to}
+              </div>
+              <div>
+                <span className="font-semibold">Subject:</span> {question.email_data.subject}
+              </div>
+              {question.email_data.body && (
+                <div className="border-t pt-3">
+                  <span className="font-semibold block mb-2">Message:</span>
+                  <div className="whitespace-pre-wrap">{question.email_data.body}</div>
                 </div>
-              </button>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
+
+          {/* Answer Options */}
+          {question.options && question.options.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-semibold">Select your answer:</h4>
+              {question.options.map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleAnswerSelect(question.id, option.text || option)}
+                  className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                    userAnswers[question.id] === (option.text || option)
+                      ? 'border-blue-500 bg-blue'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="font-semibold">{String.fromCharCode(65 + idx)}.</span> {option.text || option}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Text Input for Open-ended */}
+          {!question.options && (
+            <div>
+              <h4 className="font-semibold mb-2">Your Analysis:</h4>
+              <textarea
+                value={userAnswers[question.id] || ''}
+                onChange={(e) => handleAnswerSelect(question.id, e.target.value)}
+                placeholder="Write your detailed analysis here..."
+                className="w-full p-3 border-2 border-gray-200 rounded-lg font-mono text-sm bg-gray-800 text-white"
+                rows="6"
+              />
+            </div>
+          )}
+        </Card>
+
+        {/* Feedback */}
+        {isAnswered && feedback && (
+          <Card className={`mb-6 p-4 ${feedback.isCorrect ? 'bg-green border-green-200' : 'bg-red border-red-200'}`}>
+            <div className="flex items-start">
+              {feedback.isCorrect ? (
+                <CheckCircle2 className="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p className="font-semibold">{feedback.feedback}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Notes & Learning */}
+        {question.notes && question.notes.length > 0 && (
+          <Card className="mb-6 p-4 bg-yellow border-yellow-200">
+            <h4 className="font-semibold mb-2 flex items-center text-yellow-900">
+              <Flag className="w-4 h-4 mr-2" />
+              Important Notes:
+            </h4>
+            <ul className="space-y-1 text-sm text-yellow-900">
+              {question.notes.map((note, idx) => (
+                <li key={idx} className="flex">
+                  <span className="mr-2">•</span>
+                  <span>{note}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        {/* Explanation */}
+        <Card className="mb-6 p-4 bg-purple border-purple-200">
+          <button
+            onClick={() => handleShowExplanation(question.id)}
+            className="w-full font-semibold text-purple-900 flex items-center justify-between"
+          >
+            <span className="flex items-center">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              {showDetailedExplanation[question.id] ? 'Hide' : 'Show'} Detailed Explanation
+            </span>
+            {showDetailedExplanation[question.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+          
+          {showDetailedExplanation[question.id] && (
+            <div className="mt-4 pt-4 border-t border-purple-200 text-sm space-y-3">
+              <div>
+                <p className="font-semibold text-purple-900 mb-1">Explanation:</p>
+                <p className="text-purple-800">{question.explanation}</p>
+              </div>
+              {question.learning_objective && (
+                <div>
+                  <p className="font-semibold text-purple-900 mb-1">Learning Objective:</p>
+                  <p className="text-purple-800">{question.learning_objective}</p>
+                </div>
+              )}
+              {question.real_world_context && (
+                <div>
+                  <p className="font-semibold text-purple-900 mb-1">Real-World Context:</p>
+                  <p className="text-purple-800">{question.real_world_context}</p>
+                </div>
+              )}
+              {question.cialdini_principle && (
+                <div>
+                  <p className="font-semibold text-purple-900 mb-1">Cialdini Principle Used:</p>
+                  <Badge variant="outline" className="bg-purple-100">{question.cialdini_principle}</Badge>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex gap-3 justify-between">
           <Button
-            variant="outline"
-            onClick={handlePrevious}
+            onClick={handlePreviousQuestion}
             disabled={currentQuestionIdx === 0}
+            variant="outline"
           >
+            <ChevronLeft className="w-4 h-4 mr-2" />
             Previous
           </Button>
 
-          <div className="text-sm text-muted-foreground">
-            {Object.keys(quizAnswers).length}/{generatedQuiz.questions.length} answered
-          </div>
-
-          {currentQuestionIdx < generatedQuiz.questions.length - 1 ? (
-            <Button onClick={handleNext}>
-              Next
+          {currentQuestionIdx === generatedChallenge.questions.length - 1 ? (
+            <Button
+              onClick={calculateAndSubmitResults}
+              disabled={Object.keys(userAnswers).length < generatedChallenge.questions.length}
+              className="ml-auto"
+            >
+              Submit Challenge
+              <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
             <Button
-              onClick={handleSubmit}
-              disabled={Object.keys(quizAnswers).length !== generatedQuiz.questions.length}
-              className="bg-tertiary hover:bg-tertiary/90 text-background"
-              data-testid="submit-ai-quiz-btn"
+              onClick={handleNextQuestion}
+              className="ml-auto"
             >
-              Submit Quiz
+              Next
+              <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           )}
         </div>
@@ -493,153 +957,108 @@ Generate exactly ${numQuestions} questions. Mix difficulty and Cialdini principl
     );
   }
 
-  // Initial Setup View
-  return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-4xl font-bold mb-2">🤖 AI-Generated Challenge</h1>
-        <p className="text-muted-foreground font-mono">
-          Generate custom social engineering quizzes powered by AI
-        </p>
-      </div>
+  // Results Screen
+  if (showResults) {
+    const totalQuestions = generatedChallenge.questions.length;
+    const answeredQuestions = Object.keys(userAnswers).length;
+    const correctAnswers = Object.entries(userAnswers).filter(([qId, answer]) => {
+      const q = generatedChallenge.questions.find(qu => qu.id === qId);
+      return q && answer === q.correct_answer;
+    }).length;
 
-      {!llmConfigured && (
-        <Card className="glass-panel p-6 border-warning/50">
-          <div className="flex items-start space-x-4">
-            <AlertTriangle className="w-6 h-6 text-warning mt-1" />
-            <div className="flex-1">
-              <h3 className="font-bold text-lg mb-2">LLM Not Configured</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                You need to configure an LLM API key to use AI-generated challenges.
-              </p>
-              <Button onClick={() => navigate('/settings')}>
-                Go to Settings
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {llmConfigured && (
-        <Card className="glass-panel p-8">
-          <Zap className="w-16 h-16 text-warning mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-center mb-2">Berikan Challenge Soal</h2>
-          <p className="text-center text-muted-foreground mb-8">
-            AI akan generate soal pilihan ganda tentang social engineering
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        {/* Score Card */}
+        <Card className="mb-6 p-8 text-center bg-gradient-to-r from-blue-50 to-purple-50">
+          <Award className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
+          <h2 className="text-4xl font-bold mb-2">{finalScore}%</h2>
+          <p className="text-xl text-gray-600 mb-6">
+            You answered {correctAnswers} out of {totalQuestions} questions correctly
           </p>
-
-          <div className="space-y-6">
-            {/* Mode Selection */}
-            <div>
-              <label className="block text-sm font-medium mb-3">Mode Simulasi:</label>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => setChallengeMode('quiz')}
-                  className={`p-4 rounded-lg border transition-colors ${challengeMode === 'quiz'
-                      ? 'bg-primary text-background border-primary'
-                      : 'bg-muted/10 border-muted/30 hover:border-primary/50'
-                    }`}
-                >
-                  <div className="font-bold mb-1">📝 Quiz</div>
-                  <div className="text-xs opacity-80">Multiple choice questions</div>
-                </button>
-                <button
-                  onClick={() => setChallengeMode('conversation')}
-                  className={`p-4 rounded-lg border transition-colors ${challengeMode === 'conversation'
-                      ? 'bg-primary text-background border-primary'
-                      : 'bg-muted/10 border-muted/30 hover:border-primary/50'
-                    }`}
-                >
-                  <div className="font-bold mb-1">💬 Percakapan</div>
-                  <div className="text-xs opacity-80">Interactive conversation</div>
-                </button>
-                <button
-                  onClick={() => setChallengeMode('scenario')}
-                  className={`p-4 rounded-lg border transition-colors ${challengeMode === 'scenario'
-                      ? 'bg-primary text-background border-primary'
-                      : 'bg-muted/10 border-muted/30 hover:border-primary/50'
-                    }`}
-                >
-                  <div className="font-bold mb-1">🎯 Skenario</div>
-                  <div className="text-xs opacity-80">Story-based challenge</div>
-                </button>
-              </div>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium mb-3">Kategori Challenge:</label>
-              <div className="grid grid-cols-5 gap-3">
-                {['phishing', 'pretexting', 'baiting', 'ceo_fraud', 'tech_support'].map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-2 rounded-lg border transition-colors text-sm ${selectedCategory === cat
-                        ? 'bg-primary text-background border-primary'
-                        : 'bg-muted/10 border-muted/30 hover:border-primary/50'
-                      }`}
-                  >
-                    {cat.replace('_', ' ').toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Number of Questions */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Jumlah Soal:</label>
-                <Select value={numQuestions.toString()} onValueChange={(val) => setNumQuestions(parseInt(val))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5 soal</SelectItem>
-                    <SelectItem value="10">10 soal</SelectItem>
-                    <SelectItem value="15">15 soal</SelectItem>
-                    <SelectItem value="20">20 soal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Difficulty */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Tingkat Kesulitan:</label>
-                <Select value={difficulty} onValueChange={setDifficulty}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="easy">Easy (Mudah)</SelectItem>
-                    <SelectItem value="medium">Medium (Sedang)</SelectItem>
-                    <SelectItem value="hard">Hard (Sulit)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            size="lg"
-            onClick={generateQuiz}
-            disabled={generating}
-            className="w-full mt-8 uppercase tracking-wider"
-            data-testid="generate-challenge-btn"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Generating {numQuestions} questions...
-              </>
-            ) : (
-              <>
-                <Zap className="w-5 h-5 mr-2" />
-                Generate {numQuestions} Questions
-              </>
-            )}
-          </Button>
+          
+          {finalScore >= 80 && (
+            <Badge className="mb-4 text-lg py-2">🏆 Outstanding Performance!</Badge>
+          )}
+          {finalScore >= 60 && finalScore < 80 && (
+            <Badge className="mb-4 text-lg py-2">✅ Good Job!</Badge>
+          )}
+          {finalScore < 60 && (
+            <Badge className="mb-4 text-lg py-2">📚 Keep Learning</Badge>
+          )}
         </Card>
-      )}
-    </div>
-  );
+
+        {/* Results Summary */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <Card className="p-4 text-center">
+            <div className="text-3xl font-bold text-blue-600">{totalQuestions}</div>
+            <div className="text-sm text-gray-600">Total Questions</div>
+          </Card>
+          <Card className="p-4 text-center">
+            <div className="text-3xl font-bold text-green-600">{correctAnswers}</div>
+            <div className="text-sm text-gray-600">Correct Answers</div>
+          </Card>
+          <Card className="p-4 text-center">
+            <div className="text-3xl font-bold text-red-600">{totalQuestions - correctAnswers}</div>
+            <div className="text-sm text-gray-600">To Review</div>
+          </Card>
+        </div>
+
+        {/* Detailed Review */}
+        <Card className="mb-6 p-6">
+          <h3 className="text-2xl font-bold mb-4">Detailed Review</h3>
+          <div className="space-y-4">
+            {generatedChallenge.questions.map((question) => {
+              const userAnswer = userAnswers[question.id];
+              const isCorrect = userAnswer === question.correct_answer;
+              return (
+                <div key={question.id} className={`p-4 rounded-lg border-l-4 ${isCorrect ? 'bg-green border-green-500' : 'bg-red border-red-500'}`}>
+                  <div className="flex items-start mb-2">
+                    {isCorrect ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-semibold">{question.question}</p>
+                      <p className="text-sm mt-1">
+                        <span className={isCorrect ? 'text-green-700' : 'text-red-700'}>Your answer:</span> {userAnswer}
+                      </p>
+                      {!isCorrect && (
+                        <p className="text-sm text-red-700">
+                          Correct answer: {question.correct_answer}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-gray p-3 rounded mt-2 text-sm">
+                    <p className="font-semibold mb-2">Explanation:</p>
+                    <p>{question.explanation}</p>
+                    {question.cialdini_principle && (
+                      <p className="mt-2"><span className="font-semibold">Cialdini Principle:</span> {question.cialdini_principle}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Actions */}
+        <div className="flex gap-3 justify-center">
+          <Button variant="outline" onClick={downloadReport}>
+            <Download className="w-4 h-4 mr-2" />
+            Download Report
+          </Button>
+          <Button variant="outline" onClick={resetChallenge}>
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Try Another Challenge
+          </Button>
+          <Button onClick={() => navigate('/simulations')}>
+            View Challenge History
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
 }
