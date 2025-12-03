@@ -51,6 +51,7 @@
     "start_quiz": "Start Quiz",
     "questions": "Questions",
     "question": "Question",
+    "page_description": "Multiple-choice assessments with instant feedback.",
     "no_quizzes": "No quizzes available. Import YAML files to get started.",
     "quiz_completed": "Quiz Completed!",
     "score": "Score",

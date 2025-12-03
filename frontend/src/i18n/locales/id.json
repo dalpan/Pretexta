@@ -51,6 +51,7 @@
     "start_quiz": "Mulai Kuis",
     "questions": "Pertanyaan",
     "question": "Pertanyaan",
+    "page_description": "Kuis pilihan ganda dengan umpan balik instan.",
     "no_quizzes": "Tidak ada kuis tersedia. Impor file YAML untuk memulai.",
     "quiz_completed": "Kuis Selesai!",
     "score": "Skor",
