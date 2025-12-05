@@ -386,14 +386,10 @@ async def generate_pretext(request: Dict[str, Any], current_user: User = Depends
         raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}")
 
 def sanitize_llm_output(text: str) -> str:
-    """Remove PII from LLM outputs"""
-    # Remove email patterns
-    text = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[EMAIL_REDACTED]', text)
-    # Remove phone patterns
-    text = re.sub(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', '[PHONE_REDACTED]', text)
-    # Remove SSN patterns
-    text = re.sub(r'\b\d{3}-\d{2}-\d{4}\b', '[SSN_REDACTED]', text)
-    return text
+    """Sanitize LLM outputs - no PII removal needed for simulation"""
+    # Just clean up markdown artifacts if any
+    text = text.replace('\\[TRAINING\\]', '').replace('\\[TRAINING MATERIAL\\]', '')
+    return text.strip()
 
 # Settings Routes
 @api_router.get("/settings", response_model=Settings)
