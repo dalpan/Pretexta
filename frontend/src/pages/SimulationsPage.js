@@ -676,7 +676,9 @@ export default function SimulationsPage() {
                           <div className="space-y-2 max-h-96 overflow-y-auto">
                             {simulation.challenge_data.questions && simulation.challenge_data.questions.map((q, idx) => {
                               const userAnswer = simulation.answers?.[q.id];
-                              const isCorrect = userAnswer === q.correct_answer;
+                              // Use AI evaluation results if available (stored during challenge), otherwise fallback to exact match
+                              const evalResult = simulation.evaluation_results?.[q.id];
+                              const isCorrect = evalResult ? evalResult.isCorrect : (userAnswer === q.correct_answer);
 
                               return (
                                 <div
@@ -698,7 +700,12 @@ export default function SimulationsPage() {
                                         </span>{' '}
                                         {userAnswer || '(not answered)'}
                                       </p>
-                                      {!isCorrect && (
+                                      {evalResult && evalResult.feedback && (
+                                        <p className="text-xs text-blue-700 mt-1 italic">
+                                          <span className="font-semibold">AI Feedback:</span> {evalResult.feedback}
+                                        </p>
+                                      )}
+                                      {!isCorrect && !evalResult && (
                                         <p className="text-sm text-red-700">
                                           Correct: {q.correct_answer}
                                         </p>
