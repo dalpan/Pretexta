@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -40,6 +40,13 @@ export default function AIChallengePage() {
   const [showResults, setShowResults] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [showDetailedExplanation, setShowDetailedExplanation] = useState({});
+
+  // Chatbot state
+  const [chatHistory, setChatHistory] = useState([]);
+  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [conversationState, setConversationState] = useState('question');
+  const [evaluationResults, setEvaluationResults] = useState({}); // Store AI evaluation results
 
   // Challenge Type Configuration
   const challengeTypes = {
@@ -174,6 +181,11 @@ export default function AIChallengePage() {
   };
 
   const buildPrompt = (type, config) => {
+    const langLabel = language === 'indonesian' ? 'Indonesian' : 'English';
+    const langInstructions = language === 'indonesian' 
+      ? 'Semua teks harus dalam Bahasa Indonesia'
+      : 'All text should be in English';
+    
     const basePrompt = `You are an expert social engineering security trainer creating an interactive challenge for awareness training.
 
 Challenge Type: ${config.label}
@@ -181,8 +193,10 @@ Category: ${selectedCategory}
 Difficulty: ${difficulty}
 Number of Questions: ${numQuestions}
 Target Formats: ${config.formats.join(', ')}
+Language: ${langLabel}
 
-Create a comprehensive, detailed challenge in Indonesian with the following characteristics:`;
+Create a comprehensive, detailed challenge with the following characteristics:
+${langInstructions}`;
 
     const typeSpecificPrompts = {
       comprehensive: `
@@ -398,15 +412,98 @@ CRITICAL REQUIREMENTS:
         throw new Error('No questions generated');
       }
 
-      // Ensure each question has required fields
+      // Ensure each question has required fields and normalize types
       challengeData.questions.forEach((q, idx) => {
         if (!q.id) q.id = `q${idx + 1}`;
         if (!q.type) q.type = 'multiple_choice';
+
+        // Normalize question text
         if (!q.question) throw new Error(`Question ${idx + 1} missing question text`);
+        if (typeof q.question !== 'string') q.question = JSON.stringify(q.question, null, 2);
+
+        // Ensure explanation is a string
         if (!q.explanation) q.explanation = 'Penjelasan akan ditampilkan setelah Anda menjawab.';
+        if (typeof q.explanation !== 'string') q.explanation = JSON.stringify(q.explanation, null, 2);
+
+        // Normalize content (could be object for scenarios/emails)
+        if (q.content && typeof q.content !== 'string') {
+          try {
+            q.content = typeof q.content === 'object' ? JSON.stringify(q.content, null, 2) : String(q.content);
+          } catch (e) {
+            q.content = String(q.content);
+          }
+        }
+
+        // Normalize instructions/notes/learning objective
         if (!q.instructions) q.instructions = [];
+        q.instructions = q.instructions.map(instr => (typeof instr === 'string' ? instr : JSON.stringify(instr)));
+
         if (!q.notes) q.notes = [];
+        q.notes = q.notes.map(n => (typeof n === 'string' ? n : JSON.stringify(n)));
+
         if (!q.learning_objective) q.learning_objective = 'Belajar tentang social engineering tactics';
+        if (typeof q.learning_objective !== 'string') q.learning_objective = JSON.stringify(q.learning_objective);
+
+        // Normalize options: ensure array of { text }
+        if (q.options && Array.isArray(q.options)) {
+          q.options = q.options.map(opt => {
+            if (typeof opt === 'string') return { text: opt };
+            if (opt && typeof opt === 'object') {
+              if (opt.text) return opt;
+              // try common keys
+              const text = opt.label || opt.choice || opt.answer || JSON.stringify(opt);
+              return { ...opt, text };
+            }
+            return { text: String(opt) };
+          });
+        }
+
+        // Normalize correct_answer to the option text (if options present)
+        if (q.correct_answer !== undefined && q.correct_answer !== null) {
+          const normalizeToText = (ans) => {
+            if (typeof ans === 'number') {
+              if (q.options && q.options[ans]) return q.options[ans].text;
+              return String(ans);
+            }
+            if (typeof ans === 'string') {
+              const a = ans.trim();
+              // letter -> index (A,B,C)
+              if (/^[A-Za-z]$/.test(a) && q.options) {
+                const idx = a.toUpperCase().charCodeAt(0) - 65;
+                if (q.options[idx]) return q.options[idx].text;
+              }
+              // numeric string
+              if (/^\d+$/.test(a) && q.options) {
+                const idx = parseInt(a, 10) - 1;
+                if (q.options[idx]) return q.options[idx].text;
+              }
+              // try to match option text
+              if (q.options) {
+                const found = q.options.find(o => String(o.text).trim().toLowerCase() === a.toLowerCase());
+                if (found) return found.text;
+              }
+              return a;
+            }
+            return String(ans);
+          };
+
+          if (Array.isArray(q.correct_answer)) {
+            q.correct_answer = q.correct_answer.map(a => normalizeToText(a));
+          } else {
+            q.correct_answer = normalizeToText(q.correct_answer);
+          }
+        } else {
+          // mark explicit no correct answer
+          q.correct_answer = null;
+        }
+
+        // Normalize email_data fields
+        if (q.email_data && typeof q.email_data === 'object') {
+          const ed = q.email_data;
+          ['from', 'to', 'subject', 'body'].forEach(k => {
+            if (ed[k] && typeof ed[k] !== 'string') ed[k] = JSON.stringify(ed[k], null, 2);
+          });
+        }
       });
 
       console.log('✅ Challenge validated:', challengeData);
@@ -417,40 +514,152 @@ CRITICAL REQUIREMENTS:
     }
   };
 
-  const handleAnswerSelect = (questionId, answer) => {
-    setUserAnswers({
-      ...userAnswers,
-      [questionId]: answer
-    });
-    // Immediately provide feedback
-    evaluateAnswer(questionId, answer);
+  // Helper to safely render values that might be objects
+  const renderSafe = (val) => {
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'object') return JSON.stringify(val, null, 2);
+    return String(val);
   };
 
-  const evaluateAnswer = (questionId, userAnswer) => {
-    const question = generatedChallenge.questions.find(q => q.id === questionId);
-    if (!question) return;
+  const initializeChatbot = useCallback(() => {
+    if (generatedChallenge && chatHistory.length === 0) {
+      const firstQuestion = generatedChallenge.questions[0];
+      setChatHistory([
+        {
+          type: 'assistant',
+          content: firstQuestion.question,
+          question: firstQuestion,
+          timestamp: new Date()
+        }
+      ]);
+      setConversationState('question');
+    }
+  }, [generatedChallenge, chatHistory.length]);
 
-    const isCorrect = userAnswer === question.correct_answer ||
-      (Array.isArray(question.correct_answer) &&
-        question.correct_answer.includes(userAnswer));
+  useEffect(() => {
+    if (generatedChallenge) {
+      initializeChatbot();
+    }
+  }, [generatedChallenge, initializeChatbot]);
 
-    setQuestionFeedback({
-      ...questionFeedback,
-      [questionId]: {
-        isCorrect,
-        userAnswer,
-        feedback: isCorrect
-          ? '✅ Jawaban yang tepat!'
-          : '❌ Jawaban tidak sesuai, perhatikan penjelasan di bawah.'
+  const submitAnswer = async () => {
+    if (!currentAnswer.trim()) return;
+
+    const currentQuestion = generatedChallenge.questions[currentQuestionIdx];
+    setIsEvaluating(true);
+    setConversationState('evaluating');
+
+    // Add user message to chat
+    const newHistory = [
+      ...chatHistory,
+      {
+        type: 'user',
+        content: currentAnswer,
+        timestamp: new Date()
       }
-    });
-  };
+    ];
 
-  const handleShowExplanation = (questionId) => {
-    setShowDetailedExplanation({
-      ...showDetailedExplanation,
-      [questionId]: !showDetailedExplanation[questionId]
-    });
+    try {
+      // Call AI to evaluate the answer
+      const token = localStorage.getItem('soceng_token');
+      const evaluationPrompt = `
+You are evaluating a social engineering simulation answer. 
+Question: ${currentQuestion.question}
+User Answer: ${currentAnswer}
+Expected/Correct Answer: ${currentQuestion.correct_answer || 'Open-ended - provide feedback'}
+Explanation: ${currentQuestion.explanation}
+
+Provide brief, encouraging feedback (2-3 sentences max) on their answer. Then provide a BRIEF insight about the scenario.
+Format your response as:
+FEEDBACK: [feedback here]
+INSIGHT: [one key learning point]
+NEXT: [Should they proceed? YES or NO]`;
+
+      const response = await axios.post(
+        `${API}/llm/generate`,
+        {
+          prompt: evaluationPrompt,
+          context: { type: 'evaluation', challenge_type: selectedChallengeType }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const responseText = response.data.generated_text;
+      const feedbackMatch = responseText.match(/FEEDBACK:\s*(.+?)(?=INSIGHT:|$)/s);
+      const insightMatch = responseText.match(/INSIGHT:\s*(.+?)(?=NEXT:|$)/s);
+      const nextMatch = responseText.match(/NEXT:\s*(.+?)$/s);
+
+      const feedback = feedbackMatch ? feedbackMatch[1].trim() : 'Jawaban dicatat.';
+      const insight = insightMatch ? insightMatch[1].trim() : '';
+      const shouldProceed = nextMatch ? nextMatch[1].includes('YES') : true;
+
+      // Determine if AI considers it correct based on feedback
+      const isCorrect = feedback.toLowerCase().includes('benar') || 
+                        feedback.toLowerCase().includes('tepat') || 
+                        feedback.toLowerCase().includes('correct') ||
+                        feedback.toLowerCase().includes('good');
+
+      newHistory.push({
+        type: 'assistant',
+        content: `${feedback}\n\n💡 ${insight}`,
+        isEvaluation: true,
+        timestamp: new Date()
+      });
+
+      setChatHistory(newHistory);
+      setUserAnswers({
+        ...userAnswers,
+        [currentQuestion.id]: currentAnswer
+      });
+
+      // Store evaluation result from AI
+      setEvaluationResults({
+        ...evaluationResults,
+        [currentQuestion.id]: {
+          isCorrect,
+          feedback,
+          insight
+        }
+      });
+
+      // Move to next question or finish
+      if (currentQuestionIdx < generatedChallenge.questions.length - 1 && shouldProceed) {
+        setTimeout(() => {
+          const nextIdx = currentQuestionIdx + 1;
+          setCurrentQuestionIdx(nextIdx);
+          const nextQuestion = generatedChallenge.questions[nextIdx];
+          setChatHistory(prev => [
+            ...prev,
+            {
+              type: 'assistant',
+              content: nextQuestion.question,
+              question: nextQuestion,
+              timestamp: new Date()
+            }
+          ]);
+          setCurrentAnswer('');
+          setConversationState('question');
+        }, 1500);
+      } else if (currentQuestionIdx >= generatedChallenge.questions.length - 1) {
+        setTimeout(() => {
+          setShowResults(true);
+          calculateAndSubmitResults();
+        }, 1500);
+      } else {
+        setConversationState('question');
+      }
+    } catch (error) {
+      console.error('Error evaluating answer:', error);
+      newHistory.push({
+        type: 'assistant',
+        content: 'Ada error dalam evaluasi. Silakan lanjut ke soal berikutnya.',
+        timestamp: new Date()
+      });
+      setChatHistory(newHistory);
+      setConversationState('question');
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
   const handleNextQuestion = () => {
@@ -465,21 +674,90 @@ CRITICAL REQUIREMENTS:
     }
   };
 
+  function stringSimilarity(a, b) {
+    if (!a || !b) return 0;
+    a = a.trim().toLowerCase();
+    b = b.trim().toLowerCase();
+    if (a === b) return 1;
+    // Levenshtein distance
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= a.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+    const distance = matrix[b.length][a.length];
+    const maxLen = Math.max(a.length, b.length);
+    return maxLen === 0 ? 1 : 1 - distance / maxLen;
+  }
+
   const calculateAndSubmitResults = async () => {
     if (!generatedChallenge) return;
 
     let correctCount = 0;
+    let scoredQuestions = 0;
+    let similarityScores = {};
+
     generatedChallenge.questions.forEach(q => {
       const userAnswer = userAnswers[q.id];
-      if (userAnswer && (userAnswer === q.correct_answer ||
-        (Array.isArray(q.correct_answer) && q.correct_answer.includes(userAnswer)))) {
-        correctCount++;
+      if (q.correct_answer !== null && q.correct_answer !== undefined) {
+        scoredQuestions++;
+        
+        // Use stored evaluation result from AI (for chatbot flow)
+        const aiEval = evaluationResults[q.id];
+        if (aiEval) {
+          // Use AI's evaluation result
+          if (aiEval.isCorrect) correctCount++;
+          similarityScores[q.id] = aiEval.isCorrect ? 1 : 0;
+        } else if (userAnswer) {
+          // Fallback: if no AI evaluation stored, use string matching
+          const normalize = v => (v === null || v === undefined) ? '' : String(v).trim().toLowerCase();
+          const ua = normalize(userAnswer);
+          let correctVals = [];
+          if (Array.isArray(q.correct_answer)) {
+            correctVals = q.correct_answer.map(c => normalize(c));
+          } else {
+            correctVals = [normalize(q.correct_answer)];
+          }
+          // MCQ: exact match
+          if (q.options && q.options.length > 0) {
+            if (correctVals.includes(ua)) correctCount++;
+            similarityScores[q.id] = correctVals.includes(ua) ? 1 : 0;
+          } else {
+            // Essay: use similarity
+            let maxSim = 0;
+            correctVals.forEach(cv => {
+              const sim = stringSimilarity(ua, cv);
+              if (sim > maxSim) maxSim = sim;
+            });
+            similarityScores[q.id] = maxSim;
+            if (maxSim >= 0.7) correctCount++; // threshold for 'correct'
+          }
+        } else {
+          similarityScores[q.id] = 0;
+        }
       }
     });
 
-    const score = Math.round((correctCount / generatedChallenge.questions.length) * 100);
+    const score = scoredQuestions > 0 ? Math.round((correctCount / scoredQuestions) * 100) : 0;
     setFinalScore(score);
     setShowResults(true);
+    // Save similarity scores for review
+    window._aiChallengeSimilarityScores = similarityScores;
 
     // Show toast feedback
     if (score >= 80) {
@@ -745,239 +1023,140 @@ CRITICAL REQUIREMENTS:
     );
   }
 
-  // Challenge Display Screen
+  // Challenge Display Screen - Chatbot Style
   if (generatedChallenge && !showResults) {
     const question = generatedChallenge.questions[currentQuestionIdx];
-    const feedback = questionFeedback[question.id];
-    const isAnswered = !!userAnswers[question.id];
+    const hasOptions = question.options && question.options.length > 0;
 
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-3xl mx-auto p-6 h-screen flex flex-col">
         {/* Header */}
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold mb-2">{generatedChallenge.challenge_title}</h2>
-          <div className="flex items-center gap-4">
+        <div className="mb-4">
+          <h2 className="text-2xl font-bold mb-2">{generatedChallenge.challenge_title}</h2>
+          <div className="flex items-center justify-between">
             <Badge variant="outline">
               {currentQuestionIdx + 1} / {generatedChallenge.questions.length}
             </Badge>
-            <Badge variant="outline">{difficulty}</Badge>
-            <div className="ml-auto text-sm text-gray-600">
-              Answered: {Object.keys(userAnswers).length} / {generatedChallenge.questions.length}
-            </div>
-          </div>
-          <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
-              style={{ width: `${((currentQuestionIdx + 1) / generatedChallenge.questions.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Question Content */}
-        <Card className="mb-6 p-6">
-          {/* Question Type Badge */}
-          <div className="mb-4">
-            <Badge className="mb-4">{question.type.replace(/_/g, ' ').toUpperCase()}</Badge>
-          </div>
-
-          {/* Question Text */}
-          <h3 className="text-2xl font-semibold mb-4">{question.question}</h3>
-
-          {/* Instructions Box */}
-          {question.instructions && question.instructions.length > 0 && (
-            <div className="bg-blue border-l-4 border-blue-500 p-4 mb-6 rounded">
-              <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-2" />
-                How to Answer This Question:
-              </h4>
-              <ol className="space-y-1 text-sm text-blue-900">
-                {question.instructions.map((instr, idx) => (
-                  <li key={idx}>
-                    <span className="font-semibold">Step {idx + 1}:</span> {instr}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-
-          {/* Question Content (for scenarios, emails, etc) */}
-          {question.content && (
-            <div className="bg-gray p-4 rounded-lg mb-6 font-mono text-sm whitespace-pre-wrap">
-              {question.content}
-            </div>
-          )}
-
-          {/* Email Data Display */}
-          {question.email_data && (
-            <div className="bg-gray p-4 rounded-lg mb-6 space-y-3 text-sm">
-              <div>
-                <span className="font-semibold">From:</span> {question.email_data.from}
-              </div>
-              <div>
-                <span className="font-semibold">To:</span> {question.email_data.to}
-              </div>
-              <div>
-                <span className="font-semibold">Subject:</span> {question.email_data.subject}
-              </div>
-              {question.email_data.body && (
-                <div className="border-t pt-3">
-                  <span className="font-semibold block mb-2">Message:</span>
-                  <div className="whitespace-pre-wrap">{question.email_data.body}</div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Answer Options */}
-          {question.options && question.options.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="font-semibold">Select your answer:</h4>
-              {question.options.map((option, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleAnswerSelect(question.id, option.text || option)}
-                  className={`w-full p-3 rounded-lg border-2 transition-all text-left ${userAnswers[question.id] === (option.text || option)
-                    ? 'border-blue-500 bg-blue'
-                    : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                >
-                  <span className="font-semibold">{String.fromCharCode(65 + idx)}.</span> {option.text || option}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Text Input for Open-ended */}
-          {!question.options && (
-            <div>
-              <h4 className="font-semibold mb-2">Your Analysis:</h4>
-              <textarea
-                value={userAnswers[question.id] || ''}
-                onChange={(e) => handleAnswerSelect(question.id, e.target.value)}
-                placeholder="Write your detailed analysis here..."
-                className="w-full p-3 border-2 border-gray-200 rounded-lg font-mono text-sm bg-gray-800 text-white"
-                rows="6"
+            <div className="w-40 bg-gray-300 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all"
+                style={{ width: `${((currentQuestionIdx + 1) / generatedChallenge.questions.length) * 100}%` }}
               />
             </div>
-          )}
-        </Card>
+          </div>
+        </div>
 
-        {/* Feedback */}
-        {isAnswered && feedback && (
-          <Card className={`mb-6 p-4 ${feedback.isCorrect ? 'bg-green border-green-200' : 'bg-red border-red-200'}`}>
-            <div className="flex items-start">
-              {feedback.isCorrect ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" />
-              ) : (
-                <XCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0 mt-0.5" />
-              )}
-              <div>
-                <p className="font-semibold">{feedback.feedback}</p>
+        {/* Chat Container */}
+        <div className="flex-1 overflow-y-auto mb-4 space-y-4 bg-gradient-to-b from-gray-900 to-gray-800 p-4 rounded-lg">
+          {chatHistory.map((msg, idx) => (
+            <div key={idx} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-2xl px-4 py-3 rounded-lg ${
+                  msg.type === 'user'
+                    ? 'bg-blue-600 text-white rounded-br-none'
+                    : 'bg-gray-700 text-gray-100 rounded-bl-none'
+                }`}
+              >
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+                {msg.question && (
+                  <div className="mt-3 pt-3 border-t border-gray-600">
+                    {/* Question metadata */}
+                    {msg.question.email_data && (
+                      <div className="text-sm space-y-1 mt-2">
+                        <p><strong>From:</strong> {renderSafe(msg.question.email_data.from)}</p>
+                        <p><strong>Subject:</strong> {renderSafe(msg.question.email_data.subject)}</p>
+                        {msg.question.email_data.body && (
+                          <div className="mt-2 p-2 bg-gray-600 rounded text-xs">
+                            <p className="whitespace-pre-wrap">{renderSafe(msg.question.email_data.body)}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {msg.question.content && (
+                      <div className="text-sm mt-2 p-2 bg-gray-600 rounded">
+                        <p className="whitespace-pre-wrap">{renderSafe(msg.question.content)}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-          </Card>
-        )}
-
-        {/* Notes & Learning */}
-        {question.notes && question.notes.length > 0 && (
-          <Card className="mb-6 p-4 bg-yellow border-yellow-200">
-            <h4 className="font-semibold mb-2 flex items-center text-yellow-900">
-              <Flag className="w-4 h-4 mr-2" />
-              Important Notes:
-            </h4>
-            <ul className="space-y-1 text-sm text-yellow-900">
-              {question.notes.map((note, idx) => (
-                <li key={idx} className="flex">
-                  <span className="mr-2">•</span>
-                  <span>{note}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-
-        {/* Explanation */}
-        <Card className="mb-6 p-4 bg-purple border-purple-200">
-          <button
-            onClick={() => handleShowExplanation(question.id)}
-            className="w-full font-semibold text-purple-900 flex items-center justify-between"
-          >
-            <span className="flex items-center">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              {showDetailedExplanation[question.id] ? 'Hide' : 'Show'} Detailed Explanation
-            </span>
-            {showDetailedExplanation[question.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-
-          {showDetailedExplanation[question.id] && (
-            <div className="mt-4 pt-4 border-t border-purple-200 text-sm space-y-3">
-              <div>
-                <p className="font-semibold text-purple-900 mb-1">Explanation:</p>
-                <p className="text-purple-800">{question.explanation}</p>
+          ))}
+          {isEvaluating && (
+            <div className="flex justify-start">
+              <div className="bg-gray-700 text-gray-100 px-4 py-3 rounded-lg rounded-bl-none">
+                <Loader2 className="w-5 h-5 animate-spin" />
               </div>
-              {question.learning_objective && (
-                <div>
-                  <p className="font-semibold text-purple-900 mb-1">Learning Objective:</p>
-                  <p className="text-purple-800">{question.learning_objective}</p>
-                </div>
-              )}
-              {question.real_world_context && (
-                <div>
-                  <p className="font-semibold text-purple-900 mb-1">Real-World Context:</p>
-                  <p className="text-purple-800">{question.real_world_context}</p>
-                </div>
-              )}
-              {question.cialdini_principle && (
-                <div>
-                  <p className="font-semibold text-purple-900 mb-1">Cialdini Principle Used:</p>
-                  <Badge variant="outline" className="bg-purple-100">{question.cialdini_principle}</Badge>
-                </div>
-              )}
             </div>
-          )}
-        </Card>
-
-        {/* Navigation */}
-        <div className="flex gap-3 justify-between">
-          <Button
-            onClick={handlePreviousQuestion}
-            disabled={currentQuestionIdx === 0}
-            variant="outline"
-          >
-            <ChevronLeft className="w-4 h-4 mr-2" />
-            Previous
-          </Button>
-
-          {currentQuestionIdx === generatedChallenge.questions.length - 1 ? (
-            <Button
-              onClick={calculateAndSubmitResults}
-              disabled={Object.keys(userAnswers).length < generatedChallenge.questions.length}
-              className="ml-auto"
-            >
-              Submit Challenge
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          ) : (
-            <Button
-              onClick={handleNextQuestion}
-              className="ml-auto"
-            >
-              Next
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
           )}
         </div>
+
+        {/* Answer Input - MCQ Options */}
+        {hasOptions && (
+          <div className="space-y-2 mb-4">
+            {question.options.map((option, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  setCurrentAnswer((option && option.text) ? option.text : option);
+                }}
+                disabled={isEvaluating}
+                className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                  currentAnswer === ((option && option.text) ? option.text : option)
+                    ? 'border-cyan-400 bg-cyan-500 bg-opacity-20 text-white'
+                    : 'border-gray-500 hover:border-gray-400 text-gray-100'
+                }`}
+              >
+                <span className="font-semibold">{String.fromCharCode(65 + idx)}.</span>{' '}
+                {renderSafe((option && option.text) ? option.text : option)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Answer Input - Open-ended */}
+        {!hasOptions && (
+          <div className="mb-4">
+            <textarea
+              value={currentAnswer}
+              onChange={(e) => setCurrentAnswer(e.target.value)}
+              placeholder="Tulis analisis atau jawaban Anda di sini..."
+              disabled={isEvaluating}
+              className="w-full p-3 border-2 border-gray-600 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:border-cyan-400 focus:outline-none"
+              rows="3"
+            />
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <Button
+          onClick={submitAnswer}
+          disabled={!currentAnswer.trim() || isEvaluating}
+          className="w-full"
+        >
+          {isEvaluating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              AI sedang menilai...
+            </>
+          ) : (
+            <>
+              Submit Jawaban
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </>
+          )}
+        </Button>
       </div>
     );
-  }
-
-  // Results Screen
+  }  // Results Screen
   if (showResults) {
     const totalQuestions = generatedChallenge.questions.length;
     const answeredQuestions = Object.keys(userAnswers).length;
-    const correctAnswers = Object.entries(userAnswers).filter(([qId, answer]) => {
-      const q = generatedChallenge.questions.find(qu => qu.id === qId);
-      return q && answer === q.correct_answer;
+    
+    // Use AI evaluation results for correctness
+    const correctAnswers = Object.keys(userAnswers).filter(qId => {
+      const evalResult = evaluationResults[qId];
+      return evalResult && evalResult.isCorrect;
     }).length;
 
     return (
@@ -1023,7 +1202,9 @@ CRITICAL REQUIREMENTS:
           <div className="space-y-4">
             {generatedChallenge.questions.map((question) => {
               const userAnswer = userAnswers[question.id];
-              const isCorrect = userAnswer === question.correct_answer;
+              const evalResult = evaluationResults[question.id];
+              const isCorrect = evalResult ? evalResult.isCorrect : false;
+              
               return (
                 <div key={question.id} className={`p-4 rounded-lg border-l-4 ${isCorrect ? 'bg-green border-green-500' : 'bg-red border-red-500'}`}>
                   <div className="flex items-start mb-2">
@@ -1037,10 +1218,8 @@ CRITICAL REQUIREMENTS:
                       <p className="text-sm mt-1">
                         <span className={isCorrect ? 'text-green-700' : 'text-red-700'}>Your answer:</span> {userAnswer}
                       </p>
-                      {!isCorrect && (
-                        <p className="text-sm text-red-700">
-                          Correct answer: {question.correct_answer}
-                        </p>
+                      {evalResult && (
+                        <p className="text-xs mt-1 text-blue-700 italic">{evalResult.feedback}</p>
                       )}
                     </div>
                   </div>
