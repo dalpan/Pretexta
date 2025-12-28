@@ -220,6 +220,7 @@ export default function SettingsPage() {
                     <SelectItem value="gemini">Google Gemini</SelectItem>
                     <SelectItem value="claude">Anthropic Claude</SelectItem>
                     <SelectItem value="generic">Generic OpenAI-Compatible</SelectItem>
+                    <SelectItem value="openrouter">OpenRouter</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
