@@ -14,11 +14,11 @@
 
 ---
 
-## 🎯 About
+## About
 
-**Pretexta** is an advanced social engineering simulation lab designed to help security professionals, educators, and organizations understand *why* attacks succeed. 
+Pretexta is a social engineering simulation lab designed to help security professionals, educators, and organizations understand **why social engineering attacks succeed**.
 
-Rather than focusing on technical exploits, Pretexta models the **human layer**—simulating how attackers manipulate trust, authority, urgency, and cognitive biases using sophisticated AI Personas.
+Rather than teaching how to exploit people, Pretexta focuses on **pretexting, cognitive bias, and trust manipulation**, allowing participants to experience realistic scenarios within a controlled and responsible environment.
 
 **Key Difference:** Unlike standard phishing simulators that just send emails, Pretexta engages users in **real-time, interactive conversations** with AI-driven threat actors, providing a safe sandbox to experience the pressure of a targeted attack.
 
@@ -39,7 +39,7 @@ Rather than focusing on technical exploits, Pretexta models the **human layer**�
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Docker (Recommended)
 
@@ -61,7 +61,7 @@ make seed
 # Login: soceng / Cialdini@2025!
 ```
 
-### 🔑 LLM Configuration (Required)
+### LLM Configuration (Required)
 
 To use the AI Chat features, you need an API key. We recommend **Groq** for the best speed/free-tier experience.
 
@@ -76,7 +76,7 @@ To use the AI Chat features, you need an API key. We recommend **Groq** for the 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 *   **Frontend**: React 18, Tailwind CSS, Lucide Icons, Axios
 *   **Backend**: Python FastAPI, LangChain, Motor (MongoDB Async)
@@ -85,7 +85,7 @@ To use the AI Chat features, you need an API key. We recommend **Groq** for the 
 
 ---
 
-## 🤝 Contributions
+## Contributions
 
 We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to add new scenarios, quizzes, or features.
 
@@ -106,12 +106,12 @@ Then run `make seed` to import it.
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
 <div align="center">
 
-**Pretexta** - *Defend the Human OS*
+**Pretexta** - *The Psychology Behind Successful Attacks*
 
 </div>
