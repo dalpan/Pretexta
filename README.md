@@ -1,6 +1,7 @@
 <div align="center">
 
-# PRETEXTA
+<img height="50px" alt="Pretexta" src="https://github.com/user-attachments/assets/fc119f85-9703-4ae6-ba2d-f71460f10c7c" />
+
 ### The Psychology Behind Successful Attacks
 
 ![Version](https://img.shields.io/badge/Version-2.0.0-blue)
