@@ -130,7 +130,7 @@ export default function QuizzesPage() {
     <div className="space-y-8">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-4xl font-bold mb-2">{t('quizzes.title')}</h1>
+          <h1 className="text-3xl font-bold font-mono uppercase tracking-widest text-primary">{t('quizzes.title')}</h1>
           <p className="text-muted-foreground mb-4">
             {t('quizzes.page_description')}
           </p>

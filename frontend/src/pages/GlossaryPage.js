@@ -128,7 +128,7 @@ export default function GlossaryPage() {
     return (
         <div className="container mx-auto p-6 max-w-5xl animate-in fade-in">
             <div className="mb-8">
-                <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent mb-2">
+                <h1 className="text-3xl font-bold font-mono uppercase tracking-widest text-primary">
                     Security Glossary
                 </h1>
                 <p className="text-muted-foreground text-lg">
@@ -166,7 +166,7 @@ export default function GlossaryPage() {
                 {filteredData.map((item, idx) => (
                     <Card key={idx} className="glass-panel overflow-hidden border transition-all hover:border-primary/50 hover:shadow-lg group">
                         <div className={`h-2 w-full ${item.category === 'Psychology' ? 'bg-purple-500' :
-                                item.category === 'Attack Vector' ? 'bg-red-500' : 'bg-blue-500'
+                            item.category === 'Attack Vector' ? 'bg-red-500' : 'bg-blue-500'
                             }`} />
 
                         <div className="p-6">

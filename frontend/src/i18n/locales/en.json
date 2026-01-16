@@ -30,7 +30,7 @@
     "take_quiz": "Take a Quiz"
   },
   "scenarios": {
-    "title": "Social Engineering Scenarios",
+    "title": "Scenarios",
     "no_results": "No scenarios match your search/filter criteria.",
     "page_description": "Interactive training to identify and counter adaptive social engineering techniques. Each scenario challenges you to make the right decisions.",
     "note_title": "Important Note: Starting a Scenario",

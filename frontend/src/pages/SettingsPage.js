@@ -151,7 +151,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8 p-4">
       <div>
-        <h1 className="text-4xl font-bold mb-2">{t('settings.title')}</h1>
+        <h1 className="text-3xl font-bold font-mono uppercase tracking-widest text-primary">{t('settings.title')}</h1>
         <p className="text-muted-foreground font-mono">Configure your Pretexta preferences</p>
       </div>
 

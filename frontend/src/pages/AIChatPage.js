@@ -107,7 +107,7 @@ export default function AIChatPage() {
         return (
             <div className="container mx-auto p-6 max-w-6xl animate-in fade-in">
                 <div className="text-center mb-10">
-                    <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                    <h1 className="text-3xl font-bold font-mono uppercase tracking-widest text-primary">
                         Realtime AI Simulations
                     </h1>
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto">

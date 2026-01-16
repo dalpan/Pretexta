@@ -128,7 +128,11 @@ export default function QuizPlayerPage() {
           timestamp: new Date().toISOString()
         })),
         title: quiz.title,
-        challenge_Title: quiz.title
+        challenge_Title: quiz.title,
+        metadata: {
+          correct_count: correctCount,
+          total_questions: quiz.questions.length
+        }
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
