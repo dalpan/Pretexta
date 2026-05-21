@@ -1,0 +1,54 @@
+type: challenge
+title: "Social Media Account Verification"
+description: "'Verified badge' opportunity in social media. Scarcity + social proof."
+difficulty: medium
+cialdini_categories:
+  - scarcity
+  - social_proof
+  - authority
+estimated_time: 8
+
+metadata:
+  author: "Pretexta"
+  tags: [social_media, verification, scam]
+
+nodes:
+  - id: start
+    type: message
+    channel: social_media
+    content_en:
+      from: "Instagram Verification Team"
+      body: "Congratulations! Your account qualifies for verification. Only 100 spots available this month. 50 already claimed. Secure your blue checkmark now: verify-instagram-official.com. Expires in 6 hours."
+    content_id:
+      from: "Tim Verifikasi Instagram"
+      body: "Selamat! Akun Anda memenuhi syarat verifikasi. Hanya 100 slot tersedia bulan ini. 50 sudah diklaim. Amankan centang biru Anda sekarang: verify-instagram-official.com. Berakhir dalam 6 jam."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "Limited spots! What do you do?"
+    options:
+      - text: "Click to get verified before spots run out"
+        next: bad_outcome
+        score_impact: -15
+      - text: "Check Instagram's official help center"
+        next: good_outcome
+        score_impact: +20
+      - text: "Report as scam"
+        next: good_outcome
+        score_impact: +15
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "Account Stolen!"
+      explanation: "Fake verification harvested login credentials. Red flags: 1) Instagram never reaches out unsolicited, 2) Scarcity (100 spots), 3) Social proof (50 claimed), 4) External link. Real verification is done in-app."
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_en:
+      title: "Scam Detected!"
+      explanation: "Excellent! Verification scams use scarcity + social proof to create FOMO. Real platforms never use external links for verification."

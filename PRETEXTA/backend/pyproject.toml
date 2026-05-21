@@ -1,0 +1,32 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "S",    # flake8-bandit (security)
+]
+ignore = [
+    "S105",  # hardcoded-password-string (we handle this via env vars)
+    "S106",  # hardcoded-password-func-arg
+    "B008",  # function-call-in-default-argument (FastAPI Depends pattern)
+    "B904",  # raise-without-from-inside-except (FastAPI HTTPException pattern)
+    "S110",  # try-except-pass (intentional silent fallback in model detection)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["S"]  # Allow security warnings in utility scripts
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

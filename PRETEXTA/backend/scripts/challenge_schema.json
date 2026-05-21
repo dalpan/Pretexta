@@ -1,0 +1,88 @@
+{
+  "title": "Challenge Schema",
+  "type": "object",
+  "required": [
+    "type",
+    "title",
+    "description",
+    "difficulty",
+    "cialdini_categories",
+    "estimated_time",
+    "nodes"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["challenge"]
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["easy", "medium", "hard"]
+    },
+    "cialdini_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "estimated_time": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "author": { "type": "string" },
+        "license": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["message", "question", "end"] },
+          "channel": { "type": "string", "enum": ["email_inbox", "chat", "narrator", "telephone", "phone_sim", "sms", "social_media", "chat_ui"] },
+          "next": { "type": "string" },
+          "result": { "type": "string", "enum": ["success", "failure"] },
+          "content_en": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "subject": { "type": "string" },
+              "from": { "type": "string" },
+              "body": { "type": "string" },
+              "explanation": { "type": "string" },
+              "title": { "type": "string" }
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["text", "next", "score_impact"],
+              "properties": {
+                "text": { "type": "string" },
+                "next": { "type": "string" },
+                "score_impact": { "type": "integer" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

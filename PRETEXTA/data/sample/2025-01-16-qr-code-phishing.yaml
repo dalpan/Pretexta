@@ -1,0 +1,145 @@
+type: challenge
+title: "QR Code Parking Scam"
+description: "A parking violation notice with a QR code appears on your windshield. Pay now or get towed."
+difficulty: easy
+cialdini_categories:
+  - urgency
+  - authority
+estimated_time: 8
+metadata:
+  author: "Pretexta"
+  tags: [quishing, qr-code, physical-social-engineering]
+
+nodes:
+  - id: start
+    type: message
+    channel: narrator
+    content_en:
+      text: "You return to your car after lunch. A yellow notice is stuck to your windshield: 'PARKING VIOLATION — Zone B. Fine: $85. Vehicle will be towed in 30 minutes if unpaid. Scan QR code to pay immediately. Ref: PKV-2025-8841.'"
+    content_id:
+      text: "Kamu kembali ke mobil setelah makan siang. Sebuah pemberitahuan kuning ditempel di kaca depan: 'PELANGGARAN PARKIR — Zona B. Denda: $85. Kendaraan akan diderek dalam 30 menit jika belum dibayar. Scan kode QR untuk bayar segera. Ref: PKV-2025-8841.'"
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "The notice looks official with a reference number. Your car could be towed in 30 minutes. What do you do?"
+    content_id:
+      text: "Pemberitahuan terlihat resmi dengan nomor referensi. Mobilmu bisa diderek dalam 30 menit. Apa yang kamu lakukan?"
+    options:
+      - text: "Scan the QR code and pay immediately to avoid towing"
+        text_id: "Scan kode QR dan bayar segera untuk menghindari derek"
+        next: scanned_qr
+        score_impact: -25
+      - text: "Take a photo of the notice and call the city parking authority's official number"
+        text_id: "Foto pemberitahuan dan hubungi nomor resmi otoritas parkir kota"
+        next: good_outcome_call
+        score_impact: 30
+      - text: "Look around for other cars with similar notices"
+        text_id: "Lihat sekitar apakah ada mobil lain dengan pemberitahuan serupa"
+        next: investigate
+        score_impact: 15
+      - text: "Ignore it — probably a scam"
+        text_id: "Abaikan — mungkin penipuan"
+        next: ignore_outcome
+        score_impact: 5
+
+  - id: scanned_qr
+    type: message
+    channel: browser
+    content_en:
+      text: "The QR code opens a website that looks like a city payment portal. It asks for your credit card number, expiration date, CVV, and billing zip code to 'pay the fine'. The URL is pay-parking-fines-city.com."
+    content_id:
+      text: "Kode QR membuka website yang terlihat seperti portal pembayaran kota. Meminta nomor kartu kredit, tanggal kadaluarsa, CVV, dan kode pos penagihan untuk 'membayar denda'. URL-nya pay-parking-fines-city.com."
+    next: choice_payment
+
+  - id: choice_payment
+    type: question
+    content_en:
+      text: "The payment page asks for full credit card details. The domain is pay-parking-fines-city.com, not the official city website. What do you do?"
+    content_id:
+      text: "Halaman pembayaran meminta detail kartu kredit lengkap. Domainnya pay-parking-fines-city.com, bukan website resmi kota. Apa yang kamu lakukan?"
+    options:
+      - text: "Enter payment details — you need to pay the fine"
+        text_id: "Masukkan detail pembayaran — kamu harus bayar denda"
+        next: bad_outcome_creds
+        score_impact: -50
+      - text: "Stop — the URL doesn't match the official city website. Close the page and call the city directly."
+        text_id: "Berhenti — URL tidak cocok dengan website resmi kota. Tutup halaman dan hubungi kota langsung."
+        next: good_outcome_url
+        score_impact: 30
+
+  - id: investigate
+    type: message
+    channel: narrator
+    content_en:
+      text: "You walk around the parking lot. Five other cars have identical yellow notices. One driver is scanning the QR code. You notice the notices aren't in official city envelopes and the paper quality is different from real parking tickets you've received before."
+    content_id:
+      text: "Kamu berjalan di sekitar parkiran. Lima mobil lain memiliki pemberitahuan kuning identik. Seorang pengemudi sedang memindai kode QR. Kamu perhatikan pemberitahuan tidak dalam amplop resmi kota dan kualitas kertasnya berbeda dari tiket parkir asli yang pernah kamu terima."
+    next: choice_investigate
+
+  - id: choice_investigate
+    type: question
+    content_en:
+      text: "Multiple cars have identical notices. The paper quality is off. Another driver is about to scan. What now?"
+    content_id:
+      text: "Beberapa mobil punya pemberitahuan identik. Kualitas kertas berbeda. Pengemudi lain akan memindai. Sekarang apa?"
+    options:
+      - text: "Warn the other driver and call police to report the scam"
+        text_id: "Peringatkan pengemudi lain dan hubungi polisi untuk melaporkan penipuan"
+        next: good_outcome_hero
+        score_impact: 40
+      - text: "Scan it anyway to check — maybe it's real"
+        text_id: "Scan saja untuk cek — mungkin ini asli"
+        next: scanned_qr
+        score_impact: -15
+
+  - id: bad_outcome_creds
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Credit Card Stolen"
+      explanation: "You entered your credit card details into a phishing site. The scammers will use your card for fraudulent purchases within minutes. QR code phishing ('quishing') is growing rapidly because QR codes bypass email security filters. Always check the URL before entering payment information, and verify parking fines through official city channels."
+    content_id:
+      title: "Terkompromi — Kartu Kredit Dicuri"
+      explanation: "Kamu memasukkan detail kartu kredit ke situs phishing. Penipu akan menggunakan kartumu untuk pembelian penipuan dalam hitungan menit. Selalu cek URL sebelum memasukkan informasi pembayaran."
+
+  - id: ignore_outcome
+    type: end
+    result: success
+    content_en:
+      title: "Safe — But Could Help Others"
+      explanation: "Good instinct to be suspicious, but the best response is to also report the scam so others don't fall for it. Consider photographing the notice and reporting to local police and the parking authority."
+    content_id:
+      title: "Aman — Tapi Bisa Bantu Orang Lain"
+      explanation: "Insting bagus untuk curiga, tapi respons terbaik juga melaporkan penipuan agar orang lain tidak tertipu."
+
+  - id: good_outcome_call
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Official Verification"
+      explanation: "You called the city parking authority and they confirmed no violation was issued for your vehicle. The QR code scam was part of a wave hitting the area. By calling the official number (not any number on the fake notice), you verified through a trusted channel."
+    content_id:
+      title: "Berhasil Bertahan — Verifikasi Resmi"
+      explanation: "Kamu menghubungi otoritas parkir kota dan mereka mengonfirmasi tidak ada pelanggaran yang dikeluarkan untuk kendaraanmu."
+
+  - id: good_outcome_url
+    type: end
+    result: success
+    content_en:
+      title: "Defended — URL Check Saved You"
+      explanation: "Checking the URL before entering payment details is a critical skill. The domain 'pay-parking-fines-city.com' is not an official government website. Real city payment portals use .gov domains. This simple check prevented credit card theft."
+    content_id:
+      title: "Berhasil Bertahan — Pengecekan URL Menyelamatkanmu"
+      explanation: "Memeriksa URL sebelum memasukkan detail pembayaran adalah keterampilan kritis. Domain 'pay-parking-fines-city.com' bukan website pemerintah resmi."
+
+  - id: good_outcome_hero
+    type: end
+    result: success
+    content_en:
+      title: "Defended & Protected Others"
+      explanation: "Outstanding response. Not only did you recognize the scam through physical evidence (paper quality, mass distribution), you also warned another potential victim and reported it to authorities. The police were able to catch the scammers who were placing notices in the parking lot. Community defense at its best."
+    content_id:
+      title: "Bertahan & Melindungi Orang Lain"
+      explanation: "Respons luar biasa. Kamu tidak hanya mengenali penipuan melalui bukti fisik, tapi juga memperingatkan calon korban lain dan melaporkan ke pihak berwenang."

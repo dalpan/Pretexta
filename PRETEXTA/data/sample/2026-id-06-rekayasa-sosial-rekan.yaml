@@ -1,0 +1,381 @@
+type: challenge
+title: "Rekayasa Sosial: Rekan Baru yang Terlalu Ramah"
+description: "Rekan kerja baru di tim Anda sangat ramah dan membangun hubungan baik. Setelah beberapa hari, dia mulai menggali informasi sensitif tentang sistem dan prosedur internal. Kenali rekayasa sosial lewat hubungan pertemanan."
+difficulty: medium
+cialdini_categories:
+  - liking
+  - reciprocity
+  - commitment
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [social_engineering, insider_threat, pretexting, reconnaissance, indonesia, workplace]
+  attack_vector: in_person_chat
+  technique: "Pretexting — Insider Reconnaissance via Rapport Building"
+  mitre_technique: "T1598 - Phishing for Information"
+  context_id: "Rekayasa sosial melalui hubungan pertemanan adalah teknik paling efektif — korban tidak menyadari sedang dimanipulasi karena rasa kepercayaan yang sudah terbangun."
+
+nodes:
+  - id: start
+    type: message
+    channel: chat
+    content_id:
+      from: "Farid — Karyawan Baru (IT)"
+      body: |
+        Hei! Gimana kabar? Aku Farid, baru gabung minggu lalu di divisi IT.
+        Kamu udah lama di sini ya? Kayaknya kamu tau banyak soal sistem di sini.
+
+        Ngomong-ngomong, nanti makan siang bareng yuk? Aku masih adaptasi
+        dan pengen kenal lebih banyak orang di kantor 😊
+    content_en:
+      from: "Farid — New Employee (IT)"
+      body: |
+        Hey! How are you? I'm Farid, just joined last week in IT.
+        You've been here a while? You seem to know a lot about the systems here.
+        Lunch together later? I'm still adapting and want to meet more people 😊
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_id:
+      text: "Karyawan baru dari divisi IT mengajak makan siang. Apa respons Anda?"
+    content_en:
+      text: "New IT employee invites you to lunch. What's your response?"
+    options:
+      - text: "Ajak makan siang — itu hal normal dan ramah untuk dilakukan"
+        text_id: "Ajak makan siang — itu hal normal dan ramah untuk dilakukan"
+        next: lunch
+        score_impact: 0
+      - text: "Tolak halus — lebih baik tidak bergaul dengan orang yang baru dikenal"
+        text_id: "Tolak halus — lebih baik tidak bergaul dengan orang yang baru dikenal"
+        next: declined
+        score_impact: 0
+
+  - id: declined
+    type: message
+    channel: chat
+    content_id:
+      from: "Farid"
+      body: |
+        Oh oke, ga apa-apa. Mungkin lain kali ya!
+        Eh tapi sambil ngobrol sebentar aja boleh ga?
+        Aku lagi kebingungan soal sistem helpdesk yang kita pakai.
+        Ticket yang aku buka kemarin kok ga bisa diakses?
+        Password system helpdesk-nya ada di dokumentasi yang mana ya?
+    content_en:
+      from: "Farid"
+      body: |
+        Oh okay, maybe next time!
+        But can we chat briefly? I'm confused about the helpdesk system.
+        My ticket from yesterday isn't accessible. Where's the helpdesk system password documentation?
+    next: choice_2
+
+  - id: lunch
+    type: message
+    channel: chat
+    content_id:
+      from: "sistem@pretexta.lab"
+      body: |
+        Makan siang berlangsung menyenangkan. Farid terdengar ramah, bercerita tentang
+        pengalamannya sebelumnya di perusahaan tech, bertanya tentang keluarga Anda,
+        dan menawarkan untuk mengajari Anda beberapa shortcut Excel yang berguna.
+
+        Keesokan harinya, dia menghubungi Anda lagi via chat...
+    content_en:
+      from: "sistem@pretexta.lab"
+      body: |
+        Lunch was pleasant. Farid seemed friendly, shared his background, asked about your family,
+        offered to teach you some Excel shortcuts. The next day, he contacts you again...
+    next: next_day
+
+  - id: next_day
+    type: message
+    channel: chat
+    content_id:
+      from: "Farid"
+      body: |
+        Makasih banyak kemarin ya! Nanti aku kirimin shortcut Excel-nya 😊
+
+        Oh iya, aku mau tanya — kamu tahu nomor IP server production kita yang utama?
+        Aku lagi mapping infrastruktur untuk dokumentasi, tapi dokumennya belum lengkap
+        dan supervisorku lagi meeting seharian. Urgent nih buat presentasi sore ini.
+    content_en:
+      from: "Farid"
+      body: |
+        Thanks for yesterday! I'll send those Excel shortcuts 😊
+        By the way, do you know the IP address of our main production server?
+        I'm mapping infrastructure for documentation, my supervisor is in meetings all day,
+        and I need it for a presentation this afternoon.
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_id:
+      text: "Farid (yang kemarin ajak makan siang) meminta nomor IP server production. Apa respons Anda?"
+    content_en:
+      text: "Farid (who had lunch with you) asks for production server IP. Your response?"
+    options:
+      - text: "Berikan — dia rekan kerja di IT, mungkin memang perlu"
+        text_id: "Berikan — dia rekan kerja di IT, mungkin memang perlu"
+        next: gave_info
+        score_impact: -25
+        cialdini_trigger: liking
+      - text: "Sarankan dia tanya langsung ke supervisor atau akses dokumentasi resmi"
+        text_id: "Sarankan dia tanya langsung ke supervisor atau akses dokumentasi resmi"
+        next: redirected
+        score_impact: +25
+      - text: "Tanya kenapa dia tidak punya akses ke dokumentasi sistem melalui jalur resmi"
+        text_id: "Tanya kenapa dia tidak punya akses ke dokumentasi sistem melalui jalur resmi"
+        next: questioned_access
+        score_impact: +20
+      - text: "Cek dulu identitas Farid di sistem HR — apakah dia benar-benar karyawan baru?"
+        text_id: "Cek dulu identitas Farid di sistem HR — apakah dia benar-benar karyawan baru?"
+        next: verified_identity
+        score_impact: +25
+
+  - id: gave_info
+    type: message
+    channel: chat
+    content_id:
+      from: "Farid"
+      body: |
+        Wah makasih! Kamu baik banget. Oh iya, IP-nya pakai autentikasi apa?
+        Basic auth atau ada VPN khusus? Dan port berapa yang dibuka?
+
+        Oh sama, password default untuk monitoring dashboard ada yang tau ga?
+        Tadi aku coba akses tapi ga bisa masuk.
+    content_en:
+      from: "Farid"
+      body: |
+        Thanks so much! You're so helpful. What authentication does it use?
+        Basic auth or special VPN? Which ports are open?
+        Also, does anyone know the default password for the monitoring dashboard?
+    next: choice_3
+
+  - id: choice_3
+    type: question
+    content_id:
+      text: "Setelah dapat IP server, Farid kini bertanya tentang autentikasi, port, dan password. Pola apa yang Anda lihat?"
+    content_en:
+      text: "After getting server IP, Farid now asks about auth, ports, and passwords. What pattern do you see?"
+    options:
+      - text: "Terus bantu — mungkin dia memang sedang dokumentasi infrastruktur"
+        text_id: "Terus bantu — mungkin dia memang sedang dokumentasi infrastruktur"
+        next: gave_more_info
+        score_impact: -30
+        cialdini_trigger: commitment
+      - text: "Hentikan dan laporkan ke atasan dan tim keamanan"
+        text_id: "Hentikan dan laporkan ke atasan dan tim keamanan"
+        next: good_outcome
+        score_impact: +25
+      - text: "Tanya supervisor Farid untuk konfirmasi bahwa ini memang tugasnya"
+        text_id: "Tanya supervisor Farid untuk konfirmasi bahwa ini memang tugasnya"
+        next: ask_supervisor
+        score_impact: +20
+
+  - id: redirected
+    type: message
+    channel: chat
+    content_id:
+      from: "Farid"
+      body: |
+        "Oh iya, kamu bener juga. Sebenarnya aku udah coba tanya supervisor tapi
+        beliau bilang kamu yang paling tahu soal sistem lama ini. Jadi aku diarahkan ke kamu.
+
+        Ini penting banget buat presentasi sore ke direksi. Please, cuma sebentar aja."
+    content_en:
+      from: "Farid"
+      body: |
+        "You're right, but my supervisor actually said YOU know the old systems best,
+        so I was directed to you. This is important for a director presentation this afternoon. Please."
+    next: choice_4
+
+  - id: choice_4
+    type: question
+    content_id:
+      text: "Farid mengklaim diarahkan oleh supervisornya ke Anda. Apa yang Anda lakukan?"
+    content_en:
+      text: "Farid claims his supervisor directed him to you. What do you do?"
+    options:
+      - text: "Bantu — supervisornya sudah approve jadi aman"
+        text_id: "Bantu — supervisornya sudah approve jadi aman"
+        next: gave_info
+        score_impact: -20
+        cialdini_trigger: authority
+      - text: "Hubungi supervisor Farid langsung untuk konfirmasi"
+        text_id: "Hubungi supervisor Farid langsung untuk konfirmasi"
+        next: ask_supervisor
+        score_impact: +25
+      - text: "Tolak dan sampaikan bahwa informasi teknis harus melalui jalur resmi"
+        text_id: "Tolak dan sampaikan bahwa informasi teknis harus melalui jalur resmi"
+        next: good_outcome
+        score_impact: +20
+
+  - id: ask_supervisor
+    type: message
+    channel: chat
+    content_id:
+      from: "Rizky (Supervisor IT)"
+      body: |
+        "Halo, ada apa?
+
+        Farid? Saya tidak pernah minta dia ke kamu untuk minta data infrastruktur.
+        Tugasnya saat ini adalah dokumentasi prosedur onboarding, bukan mapping infrastruktur.
+
+        Bisa forward chat-nya ke saya? Dan tolong jangan berikan informasi teknis itu dulu.
+        Saya akan bicara dengan Farid dan laporkan ke keamanan jika perlu."
+    content_en:
+      from: "Rizky (IT Supervisor)"
+      body: |
+        "Farid? I never sent him to you for infrastructure data.
+        His current task is onboarding documentation, not infrastructure mapping.
+        Please forward the chat and do NOT share the technical info."
+    next: good_outcome
+
+  - id: questioned_access
+    type: message
+    channel: chat
+    content_id:
+      from: "Farid"
+      body: |
+        "Akses dokumentasi sistemnya kan masih diproses sama admin, kata mereka
+        butuh 1-2 minggu. Tapi keperluanku udah mendesak sekarang.
+
+        Kamu kan udah lama di sini, pasti tahu. Cuma IP server aja, bukan password-nya 😅"
+    content_en:
+      from: "Farid"
+      body: |
+        "My documentation access is still being processed, 1-2 weeks they said.
+        But I need it urgently now. You've been here long, you must know. Just the server IP, not the password 😅"
+    next: choice_5
+
+  - id: choice_5
+    type: question
+    content_id:
+      text: "Farid berargumen 'cuma IP, bukan password'. Apakah ini masuk akal?"
+    content_en:
+      text: "Farid argues 'just the IP, not the password'. Is this a valid distinction?"
+    options:
+      - text: "IP saja tidak berbahaya — berikan saja"
+        text_id: "IP saja tidak berbahaya — berikan saja"
+        next: gave_info
+        score_impact: -20
+        cialdini_trigger: commitment
+      - text: "IP server production adalah data sensitif — tolak dan sarankan jalur resmi"
+        text_id: "IP server production adalah data sensitif — tolak dan sarankan jalur resmi"
+        next: good_outcome
+        score_impact: +25
+      - text: "Verifikasi dulu ke HR atau supervisor apakah Farid punya izin"
+        text_id: "Verifikasi dulu ke HR atau supervisor apakah Farid punya izin"
+        next: ask_supervisor
+        score_impact: +20
+
+  - id: verified_identity
+    type: message
+    channel: chat
+    content_id:
+      from: "sistem@pretexta.lab"
+      body: |
+        Anda mengecek sistem HR.
+
+        Farid MEMANG terdaftar sebagai karyawan baru — onboarding minggu lalu.
+        TAPI jabatan resmi: IT Help Desk Level 1
+
+        Akses yang diberikan: Hanya sistem helpdesk, bukan infrastruktur
+        Status dokumentasi: Sedang dalam proses onboarding standar
+
+        Catatan: IT Help Desk L1 TIDAK memiliki wewenang untuk mengakses atau mendokumentasikan
+        infrastruktur server production. Tugasnya adalah menangani tiket user.
+
+        Ini adalah red flag — permintaan di luar scope jabatannya.
+    content_en:
+      from: "sistem@pretexta.lab"
+      body: |
+        HR check: Farid is a real new employee — IT Help Desk Level 1.
+        Access granted: helpdesk system only, NOT infrastructure.
+        RED FLAG: Production server access is outside his job scope.
+    next: good_outcome
+
+  - id: gave_more_info
+    type: message
+    channel: chat
+    content_id:
+      from: "sistem@pretexta.lab"
+      body: |
+        ⚠️ PERINGATAN SIMULASI
+
+        Anda sudah memberikan: IP server, jenis autentikasi, port yang terbuka.
+        Dalam serangan nyata, penyerang kini memiliki:
+        1. Peta infrastruktur jaringan internal
+        2. Informasi untuk menyusun serangan yang lebih terarah
+        3. Data untuk mempersiapkan exploitasi kerentanan
+
+        Ini adalah teknik "social engineering + reconnaissance" yang digunakan
+        oleh APT sebelum melancarkan serangan utama.
+
+        Farid mungkin bukan karyawan sungguhan — atau dia adalah insider threat
+        yang bekerja untuk pihak luar.
+    content_en:
+      from: "sistem@pretexta.lab"
+      body: |
+        SIMULATION: You provided server IP, authentication type, open ports.
+        Attacker now has a network infrastructure map for targeted attack planning.
+    next: bad_outcome
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_id:
+      title: "Rekayasa Sosial Berhasil Dideteksi!"
+      explanation: |
+        Anda berhasil mendeteksi serangan rekayasa sosial melalui rapport building
+        (pembangunan hubungan kepercayaan) yang menarget informasi infrastruktur.
+
+        Tanda-tanda yang perlu diwaspadai:
+        1. Membangun hubungan sosial SEBELUM meminta sesuatu yang tidak wajar
+        2. Menghindari jalur resmi dengan alasan "mendesak" atau "supervisor tidak ada"
+        3. Memulai dengan permintaan kecil, lalu eskalasi bertahap
+        4. Permintaan di luar scope jabatan resmi karyawan
+        5. Referensi otoritas yang tidak bisa diverifikasi langsung
+
+        Prinsip keamanan di tempat kerja:
+        • Informasi teknis sensitif HANYA melalui jalur formal (tiket, approval resmi)
+        • "Rekan kerja yang ramah" bukan alasan untuk bypass prosedur keamanan
+        • Selalu verifikasi scope akses seseorang sebelum memberikan informasi
+        • Jika ragu, laporkan — lebih baik salah waspada daripada lalai
+    content_en:
+      title: "Social Engineering Detected!"
+      explanation: |
+        You identified rapport-building social engineering targeting infrastructure information.
+        Key: Technical info only through formal channels. Friendliness is not authorization.
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_id:
+      title: "Informasi Infrastruktur Bocor — Simulasi Selesai"
+      explanation: |
+        Anda memberikan informasi infrastruktur sensitif melalui teknik rekayasa sosial
+        rapport building yang sangat efektif.
+
+        Mengapa sulit untuk dideteksi:
+        1. Rasa kebersamaan dan persahabatan sangat sulit dilawan
+        2. Permintaan dimulai kecil dan terkesan wajar
+        3. Konteks "karyawan baru butuh bantuan" terasa normal
+        4. Alasan "darurat presentasi" menciptakan tekanan psikologis
+
+        Pelajaran:
+        • Keramahan bukan otorisasi — informasi sensitif tetap butuh jalur formal
+        • Eskalasi permintaan adalah red flag (IP → auth method → port → password)
+        • Verifikasi scope kerja sebelum memberikan informasi teknis
+        • Laporkan pola mencurigakan ke tim keamanan
+
+        Taktik yang digunakan:
+        • Liking: membangun hubungan pertemanan dan rapport terlebih dahulu
+        • Reciprocity: menawarkan bantuan (Excel shortcuts) sebelum meminta
+        • Commitment: eskalasi bertahap dari permintaan kecil ke besar
+    content_en:
+      title: "Infrastructure Information Leaked — Simulation Complete"
+      explanation: |
+        You provided sensitive infrastructure data through rapport-building social engineering.
+        Lesson: Friendliness is not authorization. Technical info requires formal channels.

@@ -1,0 +1,96 @@
+type: challenge
+title: "CEO Wire Transfer Fraud"
+description: "The CEO is contacting you for an urgent transfer. Is this legitimate?"
+difficulty: medium
+cialdini_categories:
+  - authority
+  - urgency
+estimated_time: 10
+
+metadata:
+  author: "Pretexta"
+  license: "MIT"
+  tags: [ceo_fraud, email, wire_transfer]
+
+nodes:
+  - id: start
+    type: message
+    channel: email_inbox
+    content_en:
+      subject: "URGENT: Wire Transfer Required"
+      from: "ceo@company-exec.com"
+      body: "I'm in a board meeting and need you to process a $50,000 wire transfer to our new vendor immediately. Details: Account 9876543210, Bank XYZ. Confirm when done."
+    content_id:
+      subject: "MENDESAK: Transfer Wire Diperlukan"
+      from: "ceo@company-exec.com"
+      body: "Saya sedang rapat dewan dan perlu Anda memproses transfer wire $50,000 ke vendor baru kami segera. Detail: Rekening 9876543210, Bank XYZ. Konfirmasi setelah selesai."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "What do you do?"
+    content_id:
+      text: "Apa yang Anda lakukan?"
+    options:
+      - text: "Process the transfer immediately"
+        text_id: "Proses transfer segera"
+        next: bad_outcome
+        score_impact: -25
+      - text: "Call CEO on known number to verify"
+        text_id: "Telepon CEO di nomor yang dikenal untuk verifikasi"
+        next: good_outcome
+        score_impact: +20
+      - text: "Reply asking for more details"
+        text_id: "Balas meminta detail lebih"
+        next: escalate
+        score_impact: -10
+
+  - id: escalate
+    type: message
+    channel: email_inbox
+    content_en:
+      subject: "RE: URGENT: Wire Transfer Required"
+      from: "ceo@company-exec.com"
+      body: "I don't have time for this! Just do it NOW or there will be consequences. This is a critical business deal."
+    content_id:
+      subject: "RE: MENDESAK: Transfer Wire Diperlukan"
+      from: "ceo@company-exec.com"
+      body: "Saya tidak punya waktu untuk ini! Lakukan SEKARANG atau akan ada konsekuensi. Ini kesepakatan bisnis penting."
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "The CEO seems angry. What now?"
+    content_id:
+      text: "CEO terlihat marah. Sekarang bagaimana?"
+    options:
+      - text: "Process to avoid anger"
+        text_id: "Proses untuk hindari kemarahan"
+        next: bad_outcome
+        score_impact: -20
+      - text: "Still verify through proper channels"
+        text_id: "Tetap verifikasi melalui saluran resmi"
+        next: good_outcome
+        score_impact: +25
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "$50,000 Lost to Fraud!"
+      explanation: "This was CEO fraud. The real CEO never sent this. Red flags: 1) Wrong domain (company-exec.com vs company.com), 2) Unusual urgency, 3) Pressure tactics, 4) No proper approval process."
+    content_id:
+      title: "$50,000 Hilang karena Penipuan!"
+      explanation: "Ini adalah penipuan CEO. CEO asli tidak pernah mengirim ini. Tanda bahaya: 1) Domain salah (company-exec.com vs company.com), 2) Urgensi tidak wajar, 3) Taktik tekanan, 4) Tidak ada proses persetujuan."
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_en:
+      title: "Fraud Prevented!"
+      explanation: "Excellent! You verified through proper channels. CEO fraud relies on authority + urgency. Always verify financial requests through known contacts."
+    content_id:
+      title: "Penipuan Dicegah!"
+      explanation: "Bagus sekali! Anda memverifikasi melalui saluran resmi. Penipuan CEO mengandalkan otoritas + urgensi. Selalu verifikasi permintaan keuangan melalui kontak yang dikenal."

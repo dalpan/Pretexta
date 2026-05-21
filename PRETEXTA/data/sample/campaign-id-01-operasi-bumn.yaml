@@ -1,0 +1,44 @@
+type: campaign
+title: "Operasi Infiltrasi BUMN"
+description: "Simulasi serangan APT multi-tahap terhadap BUMN strategis Indonesia. Peserta menghadapi rangkaian serangan terkoordinasi — dari rekognisi via LinkedIn hingga CEO Fraud dan vishing bank."
+difficulty: hard
+estimated_time: 90
+is_published: true
+cialdini_categories:
+  - authority
+  - scarcity
+  - liking
+  - commitment
+
+stages:
+  - stage_id: "stage-bumn-01"
+    title: "Fase 1: Rekayasa Sosial Rekan Baru"
+    description: "Karyawan baru di tim IT mulai menggali informasi sensitif melalui percakapan biasa. Kenali teknik rekonisans via rapport building."
+    channel: "chat"
+    challenge_title: "Rekayasa Sosial: Rekan Baru yang Terlalu Ramah"
+    order: 0
+    unlock_condition: "always"
+
+  - stage_id: "stage-bumn-02"
+    title: "Fase 2: Spear Phishing BSSN"
+    description: "Menggunakan data dari fase sebelumnya, penyerang mengirim spear phishing sangat personal menyamar sebagai BSSN."
+    channel: "email_inbox"
+    challenge_title: "Spear Phishing: Email BSSN ke Pegawai Instansi Pemerintah"
+    order: 1
+    unlock_condition: "complete_previous"
+
+  - stage_id: "stage-bumn-03"
+    title: "Fase 3: CEO Fraud — Transfer Dana Direktur"
+    description: "Serangan BEC puncak: penyerang menyamar sebagai Direktur Utama dan meminta transfer dana miliaran rupiah."
+    channel: "email_inbox"
+    challenge_title: "CEO Fraud: Perintah Transfer Dana Direktur Utama BUMN"
+    order: 2
+    unlock_condition: "complete_previous"
+
+  - stage_id: "stage-bumn-04"
+    title: "Fase 4: Vishing CS Bank"
+    description: "Follow-up via telepon mengatasnamakan CS bank untuk mencuri kode OTP dan menguras rekening."
+    channel: "telephone"
+    challenge_title: "Vishing: Customer Service Bank BRI Palsu"
+    order: 3
+    unlock_condition: "complete_previous"

@@ -1,0 +1,148 @@
+type: challenge
+title: "MFA Fatigue Attack"
+description: "Your phone won't stop buzzing with login approval requests. Then 'IT Security' calls."
+difficulty: hard
+cialdini_categories:
+  - authority
+  - urgency
+  - social_proof
+estimated_time: 12
+metadata:
+  author: "Pretexta"
+  tags: [mfa, account-takeover, push-notification, fatigue-attack]
+
+nodes:
+  - id: start
+    type: message
+    channel: narrator
+    content_en:
+      text: "It's 11:30 PM. Your phone buzzes. And again. And again. You've received 14 MFA push notifications in the last 3 minutes, all asking you to 'Approve Login'. Then your phone rings."
+    content_id:
+      text: "Jam 11:30 malam. Handphone-mu bergetar. Dan lagi. Dan lagi. Kamu sudah menerima 14 notifikasi push MFA dalam 3 menit terakhir, semua meminta 'Setujui Login'. Lalu teleponmu berdering."
+    next: soc_call
+
+  - id: soc_call
+    type: message
+    channel: phone_call
+    content_en:
+      caller: "IT Security Operations Center"
+      transcript: "Hi, this is Mike from the Security Operations Center. We've detected an active brute-force attack on your account. The push notifications you're receiving are from the attacker. We need you to approve the NEXT push — that's our security team deploying a lockdown on your account. After that, deny everything else."
+    content_id:
+      caller: "Pusat Operasi Keamanan IT"
+      transcript: "Halo, ini Mike dari Pusat Operasi Keamanan. Kami mendeteksi serangan brute-force aktif pada akun Anda. Notifikasi push yang Anda terima berasal dari penyerang. Kami butuh Anda untuk menyetujui push BERIKUTNYA — itu tim keamanan kami melakukan lockdown akun Anda. Setelah itu, tolak semuanya."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "Someone claiming to be from the SOC wants you to approve the next MFA push notification. The notifications are still flooding your phone. What do you do?"
+    content_id:
+      text: "Seseorang yang mengaku dari SOC ingin kamu menyetujui notifikasi MFA push berikutnya. Notifikasi masih membanjiri handphone-mu. Apa yang kamu lakukan?"
+    options:
+      - text: "Approve the next push notification as instructed"
+        text_id: "Setujui notifikasi push berikutnya sesuai instruksi"
+        next: bad_outcome_approved
+        score_impact: -50
+      - text: "Ask the caller for their employee ID and extension number"
+        text_id: "Minta ID karyawan dan nomor ekstensi penelepon"
+        next: verify_caller
+        score_impact: 10
+      - text: "Hang up and call the IT helpdesk number from the company intranet directly"
+        text_id: "Tutup telepon dan hubungi nomor helpdesk IT dari intranet perusahaan langsung"
+        next: good_outcome_direct
+        score_impact: 40
+      - text: "Deny all push notifications and disable MFA temporarily on your phone"
+        text_id: "Tolak semua notifikasi push dan nonaktifkan MFA sementara di handphone"
+        next: partial_outcome
+        score_impact: 5
+
+  - id: verify_caller
+    type: message
+    channel: phone_call
+    content_en:
+      caller: "IT Security Operations Center"
+      transcript: "My badge number is SOC-4471. Look, every second you wait, the attacker is trying more passwords. Your account WILL be compromised if we don't act NOW. Just approve the next push. You can verify me with my manager Sarah Chen after we lock this down. We're trying to help you."
+    content_id:
+      caller: "Pusat Operasi Keamanan IT"
+      transcript: "Nomor badge saya SOC-4471. Dengar, setiap detik kamu menunggu, penyerang mencoba lebih banyak password. Akun kamu AKAN dikompromikan jika kita tidak bertindak SEKARANG. Setujui saja push berikutnya. Kamu bisa verifikasi saya dengan manajer saya Sarah Chen setelah kita amankan ini."
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "The caller gave a badge number and their manager's name. They sound professional and urgent. The notifications keep coming. What's your move?"
+    content_id:
+      text: "Penelepon memberikan nomor badge dan nama manajernya. Mereka terdengar profesional dan urgent. Notifikasi terus berdatangan. Apa langkahmu?"
+    options:
+      - text: "This sounds legitimate — approve the next push"
+        text_id: "Ini terdengar sah — setujui push berikutnya"
+        next: bad_outcome_social
+        score_impact: -40
+      - text: "Say: 'I appreciate you trying to help, but I'm going to call the helpdesk directly and report this.'"
+        text_id: "Bilang: 'Saya menghargai bantuan Anda, tapi saya akan menghubungi helpdesk langsung dan melaporkan ini.'"
+        next: good_outcome_firm
+        score_impact: 30
+      - text: "Go to your company's identity portal and change your password immediately"
+        text_id: "Pergi ke portal identitas perusahaan dan ubah password segera"
+        next: good_outcome_password
+        score_impact: 25
+
+  - id: partial_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "Partial Defense — But Risky"
+      explanation: "Denying notifications was right, but disabling MFA weakened your security. The correct response is to keep MFA active, deny all unexpected pushes, and report the incident through official channels. Disabling MFA is exactly what the attacker wants."
+    content_id:
+      title: "Pertahanan Parsial — Tapi Berisiko"
+      explanation: "Menolak notifikasi itu benar, tapi menonaktifkan MFA melemahkan keamananmu. Respons yang benar adalah tetap aktifkan MFA, tolak semua push tak terduga, dan laporkan insiden melalui channel resmi."
+
+  - id: bad_outcome_approved
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — MFA Fatigue Successful"
+      explanation: "By approving the push notification, you gave the attacker authenticated access to your account. The 'SOC' caller was the attacker themselves, coordinating the social engineering with the MFA bombing. Real IT security will NEVER ask you to approve a push notification over the phone. The correct action is always to deny all unexpected pushes and report through official channels."
+    content_id:
+      title: "Terkompromi — MFA Fatigue Berhasil"
+      explanation: "Dengan menyetujui notifikasi push, kamu memberikan akses terautentikasi ke akunmu kepada penyerang. Penelepon 'SOC' adalah penyerangnya sendiri. Keamanan IT yang asli TIDAK AKAN pernah meminta kamu menyetujui notifikasi push melalui telepon."
+
+  - id: bad_outcome_social
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Social Engineering Worked"
+      explanation: "The attacker provided a fake badge number and manager name — information that sounds convincing but is unverifiable in the moment. The combination of MFA fatigue (annoyance) with social engineering (fake authority) is a well-known attack pattern used against major tech companies. Never approve MFA pushes you didn't initiate."
+    content_id:
+      title: "Terkompromi — Social Engineering Berhasil"
+      explanation: "Penyerang memberikan nomor badge palsu dan nama manajer — informasi yang terdengar meyakinkan tapi tidak bisa diverifikasi saat itu juga. Kombinasi MFA fatigue (gangguan) dengan social engineering (otoritas palsu) adalah pola serangan yang terkenal."
+
+  - id: good_outcome_direct
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Out-of-Band Verification"
+      explanation: "Perfect response. You recognized that an incoming call asking you to approve MFA pushes is a major red flag. By hanging up and calling the real helpdesk, you confirmed that no one from IT had called you. The SOC team then locked the attacker's session and traced the source. Key principle: never trust inbound calls about security — always verify through channels you initiate."
+    content_id:
+      title: "Berhasil Bertahan — Verifikasi Out-of-Band"
+      explanation: "Respons sempurna. Kamu menyadari bahwa panggilan masuk yang meminta menyetujui push MFA adalah tanda bahaya besar. Dengan menutup telepon dan menghubungi helpdesk asli, kamu mengonfirmasi bahwa tidak ada dari IT yang meneleponmu."
+
+  - id: good_outcome_firm
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Stood Firm Against Pressure"
+      explanation: "Excellent. Even after the caller provided seemingly credible details (badge number, manager name), you recognized that legitimate IT security would support verification, not pressure you against it. By insisting on using official channels, you prevented account compromise."
+    content_id:
+      title: "Berhasil Bertahan — Teguh Melawan Tekanan"
+      explanation: "Luar biasa. Bahkan setelah penelepon memberikan detail yang tampak kredibel (nomor badge, nama manajer), kamu menyadari bahwa keamanan IT yang sah akan mendukung verifikasi, bukan menekan untuk menghindarinya."
+
+  - id: good_outcome_password
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Proactive Response"
+      explanation: "Good instinct. Changing your password immediately invalidated the attacker's stolen credentials, stopping the MFA bombing at its source. Combined with reporting the incident, this was an effective defensive response. Even better would be to also call IT directly to report the attack."
+    content_id:
+      title: "Berhasil Bertahan — Respons Proaktif"
+      explanation: "Insting bagus. Mengubah password segera membuat kredensial yang dicuri penyerang tidak valid, menghentikan MFA bombing dari sumbernya. Dikombinasikan dengan melaporkan insiden, ini adalah respons defensif yang efektif."

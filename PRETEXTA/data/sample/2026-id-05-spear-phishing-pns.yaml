@@ -1,0 +1,298 @@
+type: challenge
+title: "Spear Phishing: Email BSSN ke Pegawai Instansi Pemerintah"
+description: "Anda seorang PNS yang menerima email spear phishing bertarget sangat spesifik, mengatasnamakan BSSN (Badan Siber dan Sandi Negara), berisi lampiran 'Surat Edaran Keamanan Siber' yang sebenarnya adalah malware."
+difficulty: hard
+cialdini_categories:
+  - authority
+  - social_proof
+  - commitment
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [spear_phishing, pns, government, bssn, malware, indonesia, targeted_attack]
+  attack_vector: email
+  technique: "Spear Phishing — Government Authority with Malicious Attachment"
+  mitre_technique: "T1566.001 - Spearphishing Attachment"
+  context_id: "Spear phishing terhadap instansi pemerintah semakin meningkat. Serangan ini sangat berbahaya karena personal dan spesifik — penyerang tahu nama Anda, jabatan, dan instansi Anda."
+
+nodes:
+  - id: start
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "SE No. 3/BSSN/2026 — Kewajiban Pembaruan Kebijakan Keamanan Siber [UNTUK: [Nama Anda], [Instansi]]"
+      from: "keamanan-siber@bssn-go.id"
+      body: |
+        Yth. [Nama Anda]
+        [Jabatan] — [Instansi Anda]
+
+        Menindaklanjuti Surat Edaran BSSN No. 3 Tahun 2026 tentang Peningkatan Keamanan
+        Infrastruktur Siber Kritis, dengan hormat kami sampaikan hal-hal sebagai berikut:
+
+        1. Seluruh pejabat yang mengelola sistem informasi WAJIB memperbarui kebijakan
+           keamanan paling lambat 17 Mei 2026.
+
+        2. Lampiran berisi: Formulir Self-Assessment Keamanan Siber (SAKSI) yang wajib diisi
+           dan dikembalikan ke BSSN sebelum batas waktu.
+
+        3. Instansi yang tidak memenuhi kewajiban ini akan mendapat catatan dalam
+           evaluasi SPBE (Sistem Pemerintahan Berbasis Elektronik) Semester I 2026.
+
+        📎 SE_BSSN_No3_2026_SAKSI_Form.docx (2.4 MB)
+
+        Untuk informasi lebih lanjut, hubungi: pusat-siber@bssn.go.id | 021-5797-4552
+
+        Hormat kami,
+        Pusat Operasi Keamanan Siber Nasional (POKSN)
+        BSSN — Badan Siber dan Sandi Negara
+    content_en:
+      subject: "SE No. 3/BSSN/2026 — Mandatory Cybersecurity Policy Update [FOR: [Your Name], [Agency]]"
+      from: "keamanan-siber@bssn-go.id"
+      body: |
+        Dear [Your Name], [Position] — [Your Agency]
+        Per BSSN Circular Letter No. 3/2026, all IT officials must update cybersecurity policy by May 17.
+        Attached: Self-Assessment Form (mandatory). Non-compliance will affect SPBE evaluation.
+        📎 SE_BSSN_No3_2026_SAKSI_Form.docx (2.4 MB)
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_id:
+      text: "Email dari 'BSSN' dengan lampiran formulir wajib. Email ini mengetahui nama dan jabatan Anda. Apa yang Anda lakukan?"
+    content_en:
+      text: "Email from 'BSSN' with mandatory form attachment, and they know your name and position. What do you do?"
+    options:
+      - text: "Buka lampiran dan isi formulir — ini kewajiban dari BSSN"
+        text_id: "Buka lampiran dan isi formulir — ini kewajiban dari BSSN"
+        next: opened_attachment
+        score_impact: -40
+        cialdini_trigger: authority
+      - text: "Periksa domain email dengan teliti — apakah benar dari BSSN?"
+        text_id: "Periksa domain email dengan teliti — apakah benar dari BSSN?"
+        next: check_domain
+        score_impact: +20
+      - text: "Tanya ke rekan di instansi lain — apakah mereka dapat email yang sama?"
+        text_id: "Tanya ke rekan di instansi lain — apakah mereka dapat email yang sama?"
+        next: asked_colleague
+        score_impact: +15
+      - text: "Laporkan ke pengelola TI instansi sebelum membuka apapun"
+        text_id: "Laporkan ke pengelola TI instansi sebelum membuka apapun"
+        next: reported_it
+        score_impact: +25
+
+  - id: check_domain
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "Analisis Header Email"
+      from: "system@pretexta.lab"
+      body: |
+        Anda memeriksa domain pengirim dengan seksama.
+
+        Email diterima dari: keamanan-siber@bssn-GO.id
+        Domain resmi BSSN: @bssn.GO.ID
+
+        Tampak sama? Perhatikan lebih dekat:
+        • Email palsu: bssn-GO.id (domain terpisah yang dibeli penyerang)
+        • Email asli: bssn.GO.ID (domain resmi pemerintah)
+
+        Pemeriksaan header email menunjukkan:
+        • Dikirim dari server di luar negeri (bukan server pemerintah RI)
+        • SPF/DKIM: FAIL — domain tidak terverifikasi
+
+        Ini adalah spear phishing yang sangat canggih — penyerang tahu:
+        • Nama lengkap Anda
+        • Jabatan dan instansi Anda
+        • Konteks regulasi BSSN yang nyata (SE BSSN memang ada)
+        • Deadline SPBE yang relevan untuk instansi Anda
+
+        Data tersebut kemungkinan diperoleh dari: LPSE, website instansi, LinkedIn, atau data breach.
+    content_en:
+      subject: "Email Header Analysis"
+      from: "system@pretexta.lab"
+      body: |
+        Sender: keamanan-siber@bssn-GO.id (fake: "bssn-go.id" is a different domain)
+        Real BSSN: @bssn.GO.ID
+        Header shows: sent from foreign server, SPF/DKIM FAIL.
+        This is sophisticated spear phishing — attacker knew your name, position, and relevant regulations.
+    next: choice_2
+
+  - id: asked_colleague
+    type: message
+    channel: email_inbox
+    content_id:
+      from: "Rekan dari instansi lain"
+      body: |
+        "Hei, aku juga dapat email yang sama tadi pagi dari 'BSSN'.
+        Tapi aku belum buka lampirannya karena domainnya agak aneh —
+        bssn-go.id bukan bssn.go.id.
+
+        Tim IT kami bilang itu PHISHING. Jangan dibuka!
+        Mereka sedang koordinasi dengan BSSN yang asli untuk konfirmasi."
+    content_en:
+      from: "Colleague from another agency"
+      body: |
+        "I got the same email! But I haven't opened it — the domain looks off: bssn-go.id vs bssn.go.id.
+        Our IT team says it's PHISHING. Don't open it!"
+    next: good_outcome
+
+  - id: reported_it
+    type: end
+    result: success
+    content_id:
+      title: "Ancaman Dilaporkan — Tindakan Terbaik!"
+      explanation: |
+        Melaporkan ke pengelola TI sebelum membuka apapun adalah respons TERBAIK untuk
+        email mencurigakan yang mengandung lampiran.
+
+        Mengapa ini penting di lingkungan pemerintahan:
+        • Satu komputer yang terinfeksi dapat menyebar ke seluruh jaringan intranet instansi
+        • Data warga negara yang sensitif bisa tereksfiltasi
+        • Operasional layanan publik bisa terganggu
+        • Menyebabkan insiden siber nasional
+
+        Tim IT Anda akan:
+        • Menganalisis email dan lampiran dalam sandbox
+        • Memblokir domain di seluruh instansi
+        • Melaporkan ke BSSN dan POKSN
+        • Mengeluarkan peringatan ke instansi lain
+
+        Ini adalah respons yang paling melindungi keamanan nasional.
+    content_en:
+      title: "Reported to IT — Best Action!"
+      explanation: |
+        Reporting to IT before opening anything is the BEST response for suspicious attachments in government context.
+
+  - id: choice_2
+    type: question
+    content_id:
+      text: "Domain terkonfirmasi palsu — ini spear phishing canggih. Apa tindakan Anda?"
+    content_en:
+      text: "Domain confirmed fake — sophisticated spear phishing. Your action?"
+    options:
+      - text: "Laporkan ke pengelola TI dan CSIRT instansi"
+        text_id: "Laporkan ke pengelola TI dan CSIRT instansi"
+        next: good_outcome
+        score_impact: +25
+      - text: "Tetap buka lampiran tapi di komputer lain yang tidak terhubung jaringan"
+        text_id: "Tetap buka lampiran tapi di komputer lain yang tidak terhubung jaringan"
+        next: opened_attachment
+        score_impact: -20
+        cialdini_trigger: commitment
+      - text: "Hubungi BSSN langsung di 021-5797-4552 untuk konfirmasi"
+        text_id: "Hubungi BSSN langsung di 021-5797-4552 untuk konfirmasi"
+        next: called_bssn
+        score_impact: +20
+
+  - id: called_bssn
+    type: message
+    channel: phone
+    content_id:
+      from: "BSSN — 021-5797-4552"
+      body: |
+        *Telepon ke nomor BSSN resmi*
+
+        Petugas BSSN: "Terima kasih sudah menghubungi kami.
+
+        BSSN TIDAK mengirimkan Surat Edaran via email dengan lampiran ke instansi.
+        Seluruh edaran resmi BSSN dikirimkan melalui sistem SRIKANDI (Sistem Informasi
+        Kearsipan Dinamis Nasional) dengan tanda tangan elektronik BSrE.
+
+        Email yang Anda terima adalah PHISHING yang menarget pegawai pemerintah.
+        Kami sudah menerima laporan dari beberapa instansi hari ini.
+
+        Mohon JANGAN buka lampiran tersebut dan laporkan ke CSIRT instansi Anda.
+        Juga bisa lapor ke kami di: lapor@bssn.go.id"
+    content_en:
+      from: "BSSN — 021-5797-4552"
+      body: |
+        "BSSN does NOT send official circulars via email with attachments.
+        All official BSSN communications go through the SRIKANDI e-document system.
+        This is phishing targeting government employees. Do NOT open the attachment."
+    next: good_outcome
+
+  - id: opened_attachment
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "SIMULASI: Malware Terinstal"
+      from: "system@pretexta.lab"
+      body: |
+        ⚠️ PERINGATAN SIMULASI
+
+        Dalam serangan nyata, setelah membuka dokumen Word tersebut:
+        1. Macro VBA dieksekusi secara otomatis
+        2. Remote Access Trojan (RAT) terinstal di background
+        3. Penyerang mendapat akses penuh ke komputer Anda
+        4. Seluruh file dokumen dapat dibaca dan dicuri
+        5. Keylogger aktif → password sistem pemerintah dicuri
+        6. Komputer Anda menjadi pivot untuk menyerang komputer lain di jaringan instansi
+
+        Ini bukan serangan acak — ini adalah serangan APT (Advanced Persistent Threat)
+        yang menarget infrastruktur pemerintah Indonesia secara sistematis.
+
+        Teknik: Malicious macro in Word document (sangat umum dalam serangan APT ke pemerintah)
+        Dampak potensial: Data warga negara, dokumen rahasia negara, akses ke sistem kritis
+    content_en:
+      from: "system@pretexta.lab"
+      body: |
+        SIMULATION: Opening the document executed a VBA macro → RAT installed.
+        Attacker has full access to your computer and can pivot to the entire government network.
+    next: bad_outcome
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_id:
+      title: "Spear Phishing APT Digagalkan!"
+      explanation: |
+        Anda berhasil mendeteksi serangan spear phishing APT (Advanced Persistent Threat)
+        yang menarget instansi pemerintah Indonesia.
+
+        Mengapa serangan ini sangat berbahaya:
+        1. Sangat personal — penyerang tahu identitas dan konteks pekerjaan Anda
+        2. Menggunakan regulasi nyata (BSSN, SPBE) untuk terkesan sah
+        3. Lampiran Word dengan macro adalah vektor serangan APT yang paling umum
+        4. Satu infeksi bisa menyebar ke seluruh jaringan instansi
+
+        Cara BSSN dan instansi pemerintah berkomunikasi RESMI:
+        • Surat melalui SRIKANDI (Sistem Informasi Kearsipan Dinamis Nasional)
+        • Dokumen dengan tanda tangan elektronik BSrE
+        • TIDAK via email biasa dengan lampiran Word
+
+        Selalu laporkan insiden ke: CSIRT Nasional | lapor@bssn.go.id
+    content_en:
+      title: "APT Spear Phishing Defeated!"
+      explanation: |
+        You stopped a sophisticated APT spear phishing attack against the Indonesian government.
+        Key: BSSN communicates officially through SRIKANDI, not email attachments.
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_id:
+      title: "Jaringan Instansi Dikompromikan — Simulasi Selesai"
+      explanation: |
+        Anda menjadi korban spear phishing APT yang menarget instansi pemerintah.
+
+        Ini bukan serangan biasa:
+        • Data korban dikumpulkan dari sumber publik (LPSE, website instansi, LinkedIn)
+        • Regulasi nyata digunakan sebagai pretext yang meyakinkan
+        • Tujuan jangka panjang: mengakses sistem kritis, mencuri data rahasia negara
+
+        Pelajaran keamanan nasional:
+        1. BSSN tidak mengirimkan edaran via email dengan lampiran
+        2. Selalu verifikasi lampiran dengan pengelola TI sebelum dibuka
+        3. Komputer pemerintah tidak boleh membuka lampiran dari email tidak terverifikasi
+        4. Aktifkan fitur "Protected View" di Microsoft Word untuk dokumen dari internet
+        5. Laporkan semua email mencurigakan ke CSIRT instansi
+
+        Taktik yang digunakan:
+        • Authority: menyamar sebagai BSSN + regulasi resmi yang nyata
+        • Social Proof: "seluruh pejabat wajib" memberi kesan massa sudah patuh
+        • Commitment: deadline dan konsekuensi penilaian SPBE
+    content_en:
+      title: "Agency Network Compromised — Simulation Complete"
+      explanation: |
+        You fell for an APT spear phishing attack using real BSSN context.
+        Lesson: BSSN communicates via SRIKANDI, not email. Always check with IT before opening attachments.

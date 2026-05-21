@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/d/DEFCON/Pretexta/**)",
+      "Bash(python -c ' *)",
+      "Bash(git -C \"d:/DEFCON\" show HEAD:PRETEXTA/backend/routes/campaigns.py)"
+    ]
+  }
+}

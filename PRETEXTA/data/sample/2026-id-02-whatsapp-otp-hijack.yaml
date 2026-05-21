@@ -1,0 +1,236 @@
+type: challenge
+title: "Pembajakan WhatsApp via Kode OTP"
+description: "Seseorang mengaku teman Anda meminta kode OTP yang dikirim ke nomor Anda. Kenali serangan pembajakan akun WhatsApp yang sangat umum di Indonesia."
+difficulty: easy
+cialdini_categories:
+  - liking
+  - scarcity
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [whatsapp, otp, social_engineering, account_takeover, indonesia, mobile]
+  attack_vector: sms_whatsapp
+  technique: "Account Takeover via OTP Forwarding"
+  mitre_technique: "T1078 - Valid Accounts"
+  context_id: "Modus pembajakan WhatsApp adalah salah satu serangan siber terbanyak di Indonesia — penipu memanfaatkan kepercayaan pertemanan untuk mendapatkan kode OTP."
+
+nodes:
+  - id: start
+    type: message
+    channel: whatsapp
+    content_id:
+      from: "Reza (teman SMA) — +62812-XXXX-XXXX"
+      body: |
+        Heyy! Bro, maaf ganggu. Tolong bantu aku dong, darurat banget nih 😅
+
+        Aku lagi daftar akun buat lomba coding, tapi nomorku udah dipakai di device lain.
+        Nanti bakal ada kode 6 digit yang masuk ke WA kamu — itu buat verifikasi aku.
+
+        Langsung forward ke aku ya begitu dapat? Makasih banget bro, gua balikin nanti 🙏
+    content_en:
+      from: "Reza (high school friend) — +62812-XXXX-XXXX"
+      body: |
+        Hey! Sorry to bother you. Can you help me? It's urgent 😅
+        I'm registering for a coding contest but my number is already used on another device.
+        A 6-digit code will come to your WhatsApp — it's for my verification.
+        Just forward it to me when you get it? Thanks so much, I'll return the favor 🙏
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_id:
+      text: "Teman Anda meminta kode OTP yang masuk ke nomor Anda. Apa yang Anda lakukan?"
+    content_en:
+      text: "Your friend is asking for an OTP code sent to your number. What do you do?"
+    options:
+      - text: "Langsung forward kode — dia teman lama, pasti bisa dipercaya"
+        text_id: "Langsung forward kode — dia teman lama, pasti bisa dipercaya"
+        next: forwarded_otp
+        score_impact: -40
+        cialdini_trigger: liking
+      - text: "Tanya dulu kenapa kode harus masuk ke nomorku, bukan nomornya sendiri"
+        text_id: "Tanya dulu kenapa kode harus masuk ke nomorku, bukan nomornya sendiri"
+        next: questioned
+        score_impact: +25
+      - text: "Telepon langsung Reza untuk konfirmasi — bukan via chat"
+        text_id: "Telepon langsung Reza untuk konfirmasi — bukan via chat"
+        next: called_friend
+        score_impact: +30
+      - text: "Abaikan dan jangan kirim apapun"
+        text_id: "Abaikan dan jangan kirim apapun"
+        next: ignored
+        score_impact: +15
+
+  - id: questioned
+    type: message
+    channel: whatsapp
+    content_id:
+      from: "Reza — +62812-XXXX-XXXX"
+      body: |
+        Aduh, susah jelasinnya 😅 Pokoknya itu sistemnya gitu, nomorku udah terdaftar
+        makanya kodenya dikirim ke kontak pertama di daftar teman-teman.
+        Please banget, ini deadline 5 menit lagi. Beneran darurat nih 🙏🙏
+
+        Kamu emang temen baik banget. Kode-nya udah masuk belum?
+    content_en:
+      from: "Reza — +62812-XXXX-XXXX"
+      body: |
+        It's hard to explain 😅 The system works like that, my number is already registered
+        so the code goes to the first contact. PLEASE, deadline is in 5 minutes. It's really urgent 🙏
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_id:
+      text: "Penjelasannya tidak masuk akal — tidak ada sistem yang bekerja seperti itu. Apa langkah Anda?"
+    content_en:
+      text: "The explanation makes no sense. No system works that way. What next?"
+    options:
+      - text: "Tetap bantu — dia teman lama dan terdengar panik"
+        text_id: "Tetap bantu — dia teman lama dan terdengar panik"
+        next: forwarded_otp
+        score_impact: -30
+        cialdini_trigger: liking
+      - text: "Tolak dengan tegas dan hubungi Reza via telepon untuk konfirmasi"
+        text_id: "Tolak dengan tegas dan hubungi Reza via telepon untuk konfirmasi"
+        next: called_friend
+        score_impact: +25
+      - text: "Blokir nomor ini — kemungkinan akun Reza sudah dibajak"
+        text_id: "Blokir nomor ini — kemungkinan akun Reza sudah dibajak"
+        next: good_outcome
+        score_impact: +20
+
+  - id: called_friend
+    type: message
+    channel: phone
+    content_id:
+      from: "Reza (nomor pribadi yang tersimpan)"
+      body: |
+        *Reza angkat telepon*
+
+        "Hah? Kode apa? Aku ga kirim pesan apapun ke kamu hari ini bro.
+        WA aku juga lagi error dari tadi, ga bisa masuk...
+
+        Aduh, jangan-jangan WA ku udah kena bajak ya?!"
+    content_en:
+      from: "Reza (actual phone number)"
+      body: |
+        *Reza picks up*
+        "What code? I didn't send you any message today.
+        My WhatsApp has been glitchy, I can't log in...
+        Oh no, was my account hacked?!"
+    next: good_outcome
+
+  - id: ignored
+    type: message
+    channel: whatsapp
+    content_id:
+      from: "Reza — +62812-XXXX-XXXX"
+      body: |
+        Bro?? Kodenya udah masuk belum? Please banget nih, tinggal 2 menit!
+        Masa temen sendiri ga mau bantu sih 😢 Gua tunggu ya...
+    content_en:
+      from: "Reza — +62812-XXXX-XXXX"
+      body: "Bro?? Did the code arrive? PLEASE, only 2 minutes left! 😢"
+    next: choice_3
+
+  - id: choice_3
+    type: question
+    content_id:
+      text: "Dia semakin mendesak. Apa respons Anda?"
+    content_en:
+      text: "He's getting more urgent. Your response?"
+    options:
+      - text: "Kasihan — kirim saja kodenya"
+        text_id: "Kasihan — kirim saja kodenya"
+        next: forwarded_otp
+        score_impact: -30
+        cialdini_trigger: liking
+      - text: "Hubungi Reza langsung via telepon untuk konfirmasi kebenaran ini"
+        text_id: "Hubungi Reza langsung via telepon untuk konfirmasi kebenaran ini"
+        next: called_friend
+        score_impact: +25
+      - text: "Laporkan chat ini sebagai penipuan di WhatsApp"
+        text_id: "Laporkan chat ini sebagai penipuan di WhatsApp"
+        next: good_outcome
+        score_impact: +20
+
+  - id: forwarded_otp
+    type: message
+    channel: whatsapp
+    content_id:
+      from: "sistem@pretexta.lab"
+      body: |
+        ⚠️ PERINGATAN SIMULASI
+
+        Dalam serangan nyata:
+        1. Kode yang Anda kirim adalah kode aktivasi WhatsApp ANDA SENDIRI
+        2. Penipu langsung mengambil alih akun WhatsApp Anda
+        3. Penipu menghubungi SELURUH kontak Anda meminta transfer uang darurat
+        4. Dalam 1 jam, puluhan orang di kontak Anda bisa menjadi korban berikutnya
+
+        FAKTA: Akun WhatsApp yang dibajak rata-rata digunakan untuk menipu
+        5-15 orang lain sebelum dilaporkan dan diblokir.
+
+        Akun WhatsApp Reza yang asli SUDAH dibajak sebelumnya dengan cara yang sama.
+    content_en:
+      from: "sistem@pretexta.lab"
+      body: |
+        SIMULATION WARNING: The code was YOUR OWN WhatsApp activation code.
+        The attacker now controls your WhatsApp and will scam all your contacts.
+    next: bad_outcome
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_id:
+      title: "Pembajakan WhatsApp Digagalkan!"
+      explanation: |
+        Anda berhasil mendeteksi modus pembajakan WhatsApp yang paling umum di Indonesia.
+
+        Mekanisme serangan:
+        1. Penipu pertama membajak akun WA korban pertama (dengan cara yang sama)
+        2. Menggunakan akun yang dibajak untuk menghubungi kontak-kontaknya
+        3. Meminta kode OTP yang masuk — kode itu sebenarnya adalah kode aktivasi WA Anda
+        4. Setelah dapat kode, akun WA Anda langsung dibajak
+        5. Siklus berlanjut ke kontak-kontak Anda
+
+        ATURAN EMAS:
+        • TIDAK ADA SISTEM YANG SAH yang meminta kode OTP dikirim ke orang lain
+        • Kode OTP adalah RAHASIA MUTLAK — tidak untuk siapapun, termasuk "teman"
+        • Selalu verifikasi via telepon langsung (bukan chat) jika ragu
+        • Aktifkan two-step verification di WhatsApp (Pengaturan → Akun → Verifikasi dua langkah)
+    content_en:
+      title: "WhatsApp Hijacking Defeated!"
+      explanation: |
+        You identified the most common account takeover scam in Indonesia.
+        Golden rule: NO legitimate system ever asks you to forward OTP codes to anyone.
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_id:
+      title: "Akun WhatsApp Dibajak!"
+      explanation: |
+        Anda menjadi korban modus pembajakan WhatsApp via OTP yang sangat umum di Indonesia.
+
+        Yang terjadi selanjutnya dalam serangan nyata:
+        1. Penipu kini mengendalikan akun WA Anda
+        2. Mereka mengirim pesan ke semua kontak Anda meminta "pinjaman darurat"
+        3. Meminta transfer via GoPay/OVO/dana atau transfer bank "karena HP ketinggalan"
+        4. Banyak kontak Anda akan terkena tipu karena percaya itu dari Anda
+
+        Cara pemulihan jika terjadi:
+        • Daftar ulang WA Anda segera dengan nomor yang sama
+        • Hubungi kontak penting untuk memperingatkan mereka
+        • Laporkan ke Kominfo: aduankonten.id
+        • Aktifkan two-step verification setelah akun dipulihkan
+
+        Taktik yang digunakan:
+        • Liking: memanfaatkan kepercayaan pertemanan
+        • Scarcity: tenggat waktu 5 menit yang mendesak
+    content_en:
+      title: "WhatsApp Account Hijacked!"
+      explanation: |
+        You fell for Indonesia's most common social engineering attack.
+        The OTP was your own WhatsApp activation code. The attacker now has full control of your account.

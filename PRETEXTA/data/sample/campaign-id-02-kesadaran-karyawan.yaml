@@ -1,0 +1,35 @@
+type: campaign
+title: "Program Kesadaran Keamanan Karyawan"
+description: "Program pelatihan keamanan bertahap untuk karyawan. Dari phishing email dasar hingga serangan WhatsApp dan DJP — cocok untuk onboarding keamanan di perusahaan manapun."
+difficulty: easy
+estimated_time: 45
+is_published: true
+cialdini_categories:
+  - authority
+  - scarcity
+  - liking
+
+stages:
+  - stage_id: "stage-karyawan-01"
+    title: "Modul 1: Mengenali Email Phishing"
+    description: "Dasar-dasar mengenali email phishing — cek domain pengirim, tanda bahaya urgensi, dan cara melaporkan."
+    channel: "email_inbox"
+    challenge_title: "Phishing DJP: Verifikasi NPWP Mendesak"
+    order: 0
+    unlock_condition: "always"
+
+  - stage_id: "stage-karyawan-02"
+    title: "Modul 2: Pembajakan Akun WhatsApp"
+    description: "Simulasi serangan pembajakan akun WhatsApp melalui social engineering OTP — modus paling umum di Indonesia."
+    channel: "chat"
+    challenge_title: "Pembajakan WhatsApp via Kode OTP"
+    order: 1
+    unlock_condition: "complete_previous"
+
+  - stage_id: "stage-karyawan-03"
+    title: "Modul 3: Keamanan di Tempat Kerja"
+    description: "Rekayasa sosial melalui hubungan pertemanan dan permintaan informasi teknis yang tampak wajar dari 'rekan baru'."
+    channel: "chat"
+    challenge_title: "Rekayasa Sosial: Rekan Baru yang Terlalu Ramah"
+    order: 2
+    unlock_condition: "complete_previous"

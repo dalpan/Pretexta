@@ -1,0 +1,170 @@
+type: quiz
+title: "Cialdini Principles Mastery"
+description: "Can you identify which psychological principles attackers are exploiting? Advanced quiz on Cialdini's 6 Principles of Influence."
+difficulty: medium
+cialdini_categories:
+  - authority
+  - urgency
+  - scarcity
+  - reciprocity
+  - liking
+  - social_proof
+  - commitment
+metadata:
+  author: "Pretexta"
+  tags: [cialdini, psychology, principles, advanced]
+
+questions:
+  - id: q1
+    content_en:
+      text: "An attacker says: 'I already helped you bypass that firewall issue last week, remember? Now I just need a small favor...' Which principle is being exploited?"
+      explanation: "Reciprocity: the attacker creates a sense of obligation by claiming to have done a favor first. People feel compelled to return favors, even when the original 'favor' may have been unsolicited or fabricated."
+    content_id:
+      text: "Penyerang berkata: 'Saya sudah membantu kamu melewati masalah firewall minggu lalu, ingat? Sekarang saya hanya butuh bantuan kecil...' Prinsip mana yang dieksploitasi?"
+      explanation: "Reciprocity: penyerang menciptakan rasa kewajiban dengan mengklaim telah memberikan bantuan terlebih dahulu."
+    options:
+      - text: "Authority"
+        text_id: "Otoritas"
+        correct: false
+      - text: "Reciprocity"
+        text_id: "Timbal Balik"
+        correct: true
+      - text: "Social Proof"
+        text_id: "Bukti Sosial"
+        correct: false
+      - text: "Scarcity"
+        text_id: "Kelangkaan"
+        correct: false
+    points: 10
+
+  - id: q2
+    content_en:
+      text: "'Everyone on the team already shared their passwords for the security audit. You're the last one.' Which principle?"
+      explanation: "Social Proof: by claiming that everyone else has already complied, the attacker leverages the human tendency to follow the behavior of others, especially peers in the same group."
+    content_id:
+      text: "'Semua orang di tim sudah membagikan password mereka untuk audit keamanan. Kamu yang terakhir.' Prinsip mana?"
+      explanation: "Social Proof: dengan mengklaim semua orang sudah mematuhi, penyerang memanfaatkan kecenderungan manusia untuk mengikuti perilaku orang lain."
+    options:
+      - text: "Commitment"
+        text_id: "Komitmen"
+        correct: false
+      - text: "Liking"
+        text_id: "Ketertarikan"
+        correct: false
+      - text: "Social Proof"
+        text_id: "Bukti Sosial"
+        correct: true
+      - text: "Authority"
+        text_id: "Otoritas"
+        correct: false
+    points: 10
+
+  - id: q3
+    content_en:
+      text: "'You agreed to help with Phase 1, so naturally we assumed you'd continue to Phase 2 which requires admin access.' Which principle?"
+      explanation: "Commitment & Consistency: once someone has agreed to a small request, they feel psychologically compelled to stay consistent with that commitment, even when the follow-up request is much larger (foot-in-the-door technique)."
+    content_id:
+      text: "'Kamu sudah setuju membantu Fase 1, jadi kami berasumsi kamu akan melanjutkan ke Fase 2 yang memerlukan akses admin.' Prinsip mana?"
+      explanation: "Komitmen & Konsistensi: setelah seseorang setuju pada permintaan kecil, mereka merasa terdorong untuk tetap konsisten."
+    options:
+      - text: "Commitment & Consistency"
+        text_id: "Komitmen & Konsistensi"
+        correct: true
+      - text: "Authority"
+        text_id: "Otoritas"
+        correct: false
+      - text: "Reciprocity"
+        text_id: "Timbal Balik"
+        correct: false
+      - text: "Urgency"
+        text_id: "Urgensi"
+        correct: false
+    points: 15
+
+  - id: q4
+    content_en:
+      text: "'This offer expires in 15 minutes. After that, the price doubles and we can't guarantee availability.' Which TWO principles are at play?"
+      explanation: "Scarcity (limited availability, time constraint) combined with Urgency (must act NOW). These two principles are frequently paired because they both create fear of missing out (FOMO) and bypass rational deliberation."
+    content_id:
+      text: "'Penawaran ini berakhir dalam 15 menit. Setelah itu, harga dua kali lipat dan kami tidak bisa menjamin ketersediaan.' DUA prinsip mana yang berlaku?"
+      explanation: "Kelangkaan (ketersediaan terbatas) dikombinasikan dengan Urgensi (harus bertindak SEKARANG)."
+    options:
+      - text: "Authority and Liking"
+        text_id: "Otoritas dan Ketertarikan"
+        correct: false
+      - text: "Social Proof and Commitment"
+        text_id: "Bukti Sosial dan Komitmen"
+        correct: false
+      - text: "Scarcity and Urgency"
+        text_id: "Kelangkaan dan Urgensi"
+        correct: true
+      - text: "Reciprocity and Social Proof"
+        text_id: "Timbal Balik dan Bukti Sosial"
+        correct: false
+    points: 15
+
+  - id: q5
+    content_en:
+      text: "An attacker researches your hobbies, favorite sports team, and alma mater before contact. During conversation they mention shared interests. Which principle?"
+      explanation: "Liking: people are more likely to comply with requests from people they like. By mirroring interests, shared backgrounds, and complimenting the target, attackers build artificial rapport that lowers the target's guard."
+    content_id:
+      text: "Penyerang meneliti hobi, tim olahraga favorit, dan almamater kamu sebelum menghubungi. Selama percakapan mereka menyebutkan minat bersama. Prinsip mana?"
+      explanation: "Liking: orang lebih cenderung mematuhi permintaan dari orang yang mereka sukai."
+    options:
+      - text: "Social Proof"
+        text_id: "Bukti Sosial"
+        correct: false
+      - text: "Liking"
+        text_id: "Ketertarikan"
+        correct: true
+      - text: "Reciprocity"
+        text_id: "Timbal Balik"
+        correct: false
+      - text: "Commitment"
+        text_id: "Komitmen"
+        correct: false
+    points: 10
+
+  - id: q6
+    content_en:
+      text: "Which combination of Cialdini principles makes CEO fraud (BEC) so effective?"
+      explanation: "CEO fraud combines Authority (impersonating a C-level executive) with Urgency (must act now, confidential) and often Commitment (you've always been reliable). This combination attacks from multiple psychological angles simultaneously."
+    content_id:
+      text: "Kombinasi prinsip Cialdini mana yang membuat CEO fraud (BEC) sangat efektif?"
+      explanation: "CEO fraud menggabungkan Otoritas dengan Urgensi dan sering Komitmen."
+    options:
+      - text: "Liking + Reciprocity + Social Proof"
+        text_id: "Ketertarikan + Timbal Balik + Bukti Sosial"
+        correct: false
+      - text: "Authority + Urgency + Commitment"
+        text_id: "Otoritas + Urgensi + Komitmen"
+        correct: true
+      - text: "Scarcity + Social Proof + Liking"
+        text_id: "Kelangkaan + Bukti Sosial + Ketertarikan"
+        correct: false
+      - text: "Reciprocity + Authority + Scarcity"
+        text_id: "Timbal Balik + Otoritas + Kelangkaan"
+        correct: false
+    points: 20
+
+  - id: q7
+    content_en:
+      text: "What is the 'foot-in-the-door' technique?"
+      explanation: "The foot-in-the-door technique exploits Commitment & Consistency. By getting someone to agree to a small, harmless request first, the attacker can later escalate to larger requests because people want to remain consistent with their prior behavior."
+    content_id:
+      text: "Apa itu teknik 'foot-in-the-door'?"
+      explanation: "Teknik foot-in-the-door mengeksploitasi Komitmen & Konsistensi."
+    options:
+      - text: "Physically blocking a door to tailgate into a building"
+        text_id: "Secara fisik memblokir pintu untuk masuk ke gedung"
+        correct: false
+      - text: "Starting with a small request to build toward a larger one"
+        text_id: "Memulai dengan permintaan kecil untuk membangun ke yang lebih besar"
+        correct: true
+      - text: "Using a USB drive left at an office door"
+        text_id: "Menggunakan USB drive yang ditinggalkan di depan pintu kantor"
+        correct: false
+      - text: "Impersonating a delivery person to gain building access"
+        text_id: "Menyamar sebagai kurir untuk mendapatkan akses gedung"
+        correct: false
+    points: 10

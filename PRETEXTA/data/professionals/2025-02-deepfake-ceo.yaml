@@ -1,0 +1,97 @@
+type: challenge
+title: "Advanced: AI Voice Clone CEO Vishing"
+description: "You receive a phone call from the CEO's personal number. The voice sounds exactly like him, but something feels off about the request."
+difficulty: advanced
+cialdini_categories:
+  - authority
+  - urgency
+  - liking
+estimated_time: 15
+
+metadata:
+  author: "Pretexta Pro"
+  type: "professional" # Explicit type for filtering
+  tags: [vishing, deepfake, ai_voice, ceo_fraud, professional]
+
+nodes:
+  - id: start
+    type: message
+    channel: phone_call
+    content_en:
+      caller: "CEO (Personal Cell)"
+      transcript: "Hi, it's John. Listen, I'm stuck in a regulatory meeting in Singapore and my access token isn't working. I need to authorize a merger deal wire transfer right now or the SEC will fine us. Can you verbally approve the transfer code 99-X-22 to the finance bot? I'll override the system on my end."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "The CEO is on the line asking for a verbal code override. The voice is identical to his."
+    options:
+      - text: "Approve the code immediately (Authority)"
+        next: failure_deepfake
+        score_impact: -50
+      - text: "Ask for a video call to verify identity"
+        next: evasion_1
+        score_impact: +10
+      - text: "Hang up and callback the official office line"
+        next: success_verify
+        score_impact: +40
+      - text: "Ask 'What is the SEC fine amount?' to test knowledge"
+        next: evasion_2
+        score_impact: +20
+
+  - id: evasion_1
+    type: message
+    channel: phone_call
+    content_en:
+      caller: "CEO"
+      transcript: "Video? The signal here is terrible, I'm on 3G! Look, do you want to be the reason we lose this deal? Just read the code!"
+    next: choice_2
+
+  - id: evasion_2
+    type: message
+    channel: phone_call
+    content_en:
+      caller: "CEO"
+      transcript: "The fine isn't the point! The point is reliability! Are you questioning me? I'll remember this during performance reviews."
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "He is getting aggressive and blaming connectivity. Pressure is high."
+    options:
+      - text: "Apologize and give the code"
+        next: failure_pressure
+        score_impact: -40
+      - text: "Stand firm: 'I cannot bypass protocol without a ticket'"
+        next: success_protocol
+        score_impact: +50
+
+  - id: failure_deepfake
+    type: end
+    result: failure
+    content_en:
+      title: "Deepfake Victim!"
+      explanation: "You fell for an AI Voice Clone (Vishing). Attackers can now clone voices with 3 seconds of audio. NEVER authorize financial transactions based on voice alone. Always use a secondary channel (OOB) or official ticketing system."
+
+  - id: failure_pressure
+    type: end
+    result: failure
+    content_en:
+      title: "Buckled Under Pressure"
+      explanation: "Social engineers use anger/authority to bypass logical thinking (Amygdala hijacking). The mention of 'performance review' was a classic manipulation tactic."
+  
+  - id: success_verify
+    type: end
+    result: success
+    content_en:
+      title: "Attack Thwarted!"
+      explanation: "Perfect response! Hanging up and calling the KNOWN internal number is the best defense against spoofed numbers and voice clones. The real CEO would respect security protocol."
+
+  - id: success_protocol
+    type: end
+    result: success
+    content_en:
+      title: "Protocol Defender"
+      explanation: "Excellent handling of pressure. Sticking to 'No Ticket, No Fix' is your shield against executive fraud. The attacker gave up when they realized you wouldn't break protocol."

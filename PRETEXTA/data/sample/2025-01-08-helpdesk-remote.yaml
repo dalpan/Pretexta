@@ -1,0 +1,74 @@
+type: challenge
+title: "Remote Desktop Support"
+description: "Helpdesk request remote access. Authority + social proof combo."
+difficulty: hard
+cialdini_categories:
+  - authority
+  - social_proof
+  - urgency
+estimated_time: 10
+
+metadata:
+  author: "Pretexta"
+  tags: [remote_access, helpdesk, malware]
+
+nodes:
+  - id: start
+    type: message
+    channel: phone_sim
+    content_en:
+      caller: "IT Helpdesk - Extension 5000"
+      body: "Hi, this is Mike from IT. We're installing critical security updates on all computers. 47 employees already completed. I need remote access to your computer for 10 minutes. Can you download TeamViewer from this link I'll text you?"
+    content_id:
+      caller: "IT Helpdesk - Extension 5000"
+      body: "Hai, ini Mike dari IT. Kami install update keamanan penting di semua komputer. 47 karyawan sudah selesai. Saya perlu remote access ke komputer Anda 10 menit. Bisa download TeamViewer dari link yang akan saya text?"
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "What's your response?"
+    options:
+      - text: "Download it - others already did"
+        next: bad_outcome
+        score_impact: -25
+      - text: "Ask for IT ticket number"
+        next: verify
+        score_impact: +15
+      - text: "Hang up and call IT directly"
+        next: good_outcome
+        score_impact: +30
+
+  - id: verify
+    type: message
+    channel: phone_sim
+    content_en:
+      caller: "IT Helpdesk"
+      body: "Ticket number is IT-9999. This is urgent - your computer is vulnerable. The CISO authorized this company-wide update. Download the tool now."
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "They provided a ticket number. Proceed?"
+    options:
+      - text: "Yes, download the tool"
+        next: bad_outcome
+        score_impact: -20
+      - text: "Verify ticket in IT system first"
+        next: good_outcome
+        score_impact: +25
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "System Compromised!"
+      explanation: "Fake IT installed malware. Red flags: 1) Unsolicited call, 2) Social proof (47 others), 3) Authority (CISO), 4) Urgency (vulnerable). Real IT uses official ticketing and never requests tool downloads via text."
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_en:
+      title: "Attack Prevented!"
+      explanation: "Perfect! This used authority + social proof + urgency. Real IT never asks to download tools from unknown links. Always verify through official channels."

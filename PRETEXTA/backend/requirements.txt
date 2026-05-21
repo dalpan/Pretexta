@@ -1,0 +1,25 @@
+# Core FastAPI and web framework
+fastapi
+uvicorn
+python-dotenv
+pydantic
+
+# Database
+motor  # AsyncIO MongoDB driver
+
+# Authentication & Security
+bcrypt
+PyJWT
+
+# LangChain ecosystem
+langchain-openai
+langchain-google-genai
+langchain-anthropic
+langchain-groq
+
+# Utilities
+PyYAML
+httpx
+
+# Development
+ruff

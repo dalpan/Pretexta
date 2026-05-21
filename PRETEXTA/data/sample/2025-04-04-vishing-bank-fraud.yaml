@@ -1,0 +1,205 @@
+type: challenge
+title: "Vishing: Bank Fraud Prevention Call"
+description: "You receive a phone call from someone claiming to be your bank's fraud prevention team. They say your account has been compromised. Navigate this vishing attack."
+difficulty: medium
+cialdini_categories:
+  - authority
+  - scarcity
+  - commitment
+estimated_time: 10
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [vishing, phone, bank_fraud, call_center_impersonation]
+  attack_vector: phone
+  technique: "Vishing — Voice Phishing via Bank Impersonation"
+  mitre_technique: "T1566 - Phishing via Voice"
+
+nodes:
+  - id: start
+    type: message
+    channel: phone_sim
+    content_en:
+      from: "021-5000-1234 (Bank Mandiri Fraud Prevention)"
+      text: |
+        📞 INCOMING CALL — Bank Fraud Prevention Team
+
+        [Caller]: "Good afternoon, may I speak with [your name]? This is Maya Putri from Bank Mandiri's Fraud Prevention Center. We've detected suspicious transactions on your account in the last 30 minutes — a transfer attempt of Rp 15,000,000 to an account in Surabaya that we've temporarily blocked.
+
+        To protect your account and reverse the block, I need to verify your identity. Could you please confirm your ATM card number and the OTP that we'll send to your registered phone number?"
+    content_id:
+      from: "021-5000-1234 (BRI Fraud Prevention)"
+      text: |
+        📞 PANGGILAN MASUK — Tim Pencegahan Penipuan Bank
+
+        [Penelepon]: "Selamat siang, apakah ini dengan [nama Anda]? Saya Maya Putri dari Pusat Pencegahan Penipuan Bank. Kami mendeteksi transaksi mencurigakan pada akun Anda dalam 30 menit terakhir — percobaan transfer Rp 15.000.000 ke rekening di Surabaya yang telah kami blokir sementara.
+
+        Untuk melindungi akun Anda, saya perlu memverifikasi identitas Anda. Bisakah Anda konfirmasi nomor kartu ATM dan OTP yang akan kami kirimkan ke nomor telepon terdaftar Anda?"
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "The caller knows your name and claims your money is at risk. What do you do?"
+    content_id:
+      text: "Penelepon mengetahui nama Anda dan mengklaim uang Anda berisiko. Apa yang Anda lakukan?"
+    options:
+      - text: "Provide my card number — I want to stop the fraud quickly!"
+        text_id: "Berikan nomor kartu — saya ingin menghentikan penipuan dengan cepat!"
+        next: gave_card_number
+        score_impact: -35
+        cialdini_trigger: scarcity
+      - text: "Hang up and call the bank directly using the number on my card"
+        text_id: "Tutup telepon dan hubungi bank langsung menggunakan nomor di kartu saya"
+        next: hung_up_called_back
+        score_impact: +30
+      - text: "Ask the caller to prove they are from the bank first"
+        text_id: "Minta penelepon membuktikan mereka dari bank terlebih dahulu"
+        next: ask_proof
+        score_impact: +15
+      - text: "Give them the OTP when it arrives — they need it to 'block the fraud'"
+        text_id: "Berikan OTP saat tiba — mereka butuh untuk 'blokir penipuan'"
+        next: gave_otp
+        score_impact: -40
+        cialdini_trigger: authority
+
+  - id: gave_card_number
+    type: message
+    channel: phone_sim
+    content_en:
+      from: "Pretexta Lab"
+      text: |
+        ⚠️ SIMULATION: You provided your card number.
+
+        [Caller then says]: "Thank you. Now I need the 3-digit security code on the back of your card (CVV) and please don't read the OTP you'll receive — that's our secure verification system."
+
+        STOP — This is the full vishing script:
+        1. Get card number ✓ (you gave it)
+        2. Get CVV
+        3. Get OTP (to authorize a fraudulent transaction)
+        4. Complete unauthorized purchase/transfer
+
+        Real banks NEVER ask for full card numbers or CVV over phone.
+    content_id:
+      from: "Pretexta Lab"
+      text: "⚠️ SIMULASI: Anda memberikan nomor kartu. Bank asli TIDAK PERNAH meminta nomor kartu lengkap atau CVV lewat telepon."
+    next: bad_outcome
+
+  - id: gave_otp
+    type: message
+    channel: phone_sim
+    content_en:
+      from: "Pretexta Lab"
+      text: |
+        ⚠️ SIMULATION: You shared your OTP.
+
+        This is the most critical mistake in vishing attacks.
+
+        The OTP the "bank" sent was actually to AUTHORIZE a fraudulent transaction that the attacker was setting up at the same time.
+
+        By sharing the OTP, you gave the attacker the final key needed to:
+        • Authorize a transfer from your account
+        • Make a large online purchase
+        • Add their device to your mobile banking
+
+        CRITICAL RULE: OTP (One-Time Password) is YOUR password. Never share it with anyone — not even the bank. The bank never needs your OTP.
+    content_id:
+      from: "Pretexta Lab"
+      text: "⚠️ SIMULASI: Anda membagikan OTP. OTP yang dikirim 'bank' sebenarnya untuk MENGOTORISASI transaksi penipuan. Bank TIDAK PERNAH meminta OTP Anda."
+    next: bad_outcome
+
+  - id: ask_proof
+    type: message
+    channel: phone_sim
+    content_en:
+      from: "Maya Putri (Caller)"
+      text: |
+        [Caller]: "Of course! Our bank number is 021-5000-1234, which you can verify online. I also have your account ending in [last 4 digits that they guess or found from leaked data].
+
+        Time is critical here — we need to verify you NOW before the fraud window closes. Every minute we delay risks losing your money.
+
+        Please provide your card number so we can secure your account immediately."
+    content_id:
+      from: "Maya Putri (Penelepon)"
+      text: "Penelepon memberikan 'bukti' dan meningkatkan tekanan waktu. 'Setiap menit kita tunda berisiko kehilangan uang Anda.'"
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "The caller 'proved' they know your account details and increased urgency. Now what?"
+    content_id:
+      text: "Penelepon 'membuktikan' mereka tahu detail akun Anda dan meningkatkan urgensi. Sekarang apa?"
+    options:
+      - text: "Give my card number — they know my account details so they must be real"
+        text_id: "Berikan nomor kartu — mereka tahu detail akun jadi pasti nyata"
+        next: gave_card_number
+        score_impact: -25
+        cialdini_trigger: commitment
+      - text: "Hang up and call the official bank number on my card to verify"
+        text_id: "Tutup telepon dan hubungi nomor resmi di kartu saya"
+        next: hung_up_called_back
+        score_impact: +25
+
+  - id: hung_up_called_back
+    type: end
+    result: success
+    content_en:
+      title: "Vishing Attack Defeated!"
+      explanation: |
+        Hanging up and calling back at the official number is the gold standard response.
+
+        When you call Bank Mandiri at the official number (14000):
+        • They confirm no fraud was detected
+        • They have no record of calling you
+        • You've identified an active vishing campaign
+        • You can report the scammer's number
+
+        Why this works:
+        • You initiate the call — you know who you're calling
+        • The attacker cannot intercept your outbound call
+        • Official call centers have no record of the fake call
+
+        CRITICAL RULES for banking calls:
+        1. Banks never ask for full card numbers
+        2. Banks never ask for CVV
+        3. Banks NEVER ask for OTP — ever
+        4. Hang up and call back at official number (on card/website)
+        5. Urgency is a manipulation tactic
+
+        This technique stole Rp 2.4 trillion from Indonesians in 2024.
+    content_id:
+      title: "Serangan Vishing Dikalahkan!"
+      explanation: |
+        Menutup telepon dan menelepon balik di nomor resmi adalah respons terbaik.
+
+        Aturan kritis: Bank tidak pernah meminta nomor kartu lengkap, CVV, atau OTP.
+        Teknik ini mencuri Rp 2,4 triliun dari warga Indonesia di 2024.
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "Vishing Attack Successful — Account Compromised!"
+      explanation: |
+        You fell for a vishing (voice phishing) attack — one of the most costly social engineering techniques.
+
+        The attack script you experienced:
+        Phase 1 — Establish trust: "I'm from your bank, I know your name"
+        Phase 2 — Create urgency: "Rp 15 million transfer RIGHT NOW"
+        Phase 3 — Request verification: "For your security, please provide..."
+        Phase 4 — Data extraction: Card number → CVV → OTP
+        Phase 5 — Execute fraud: Authorize transfer using your data
+
+        What attackers already know before calling (from data breaches):
+        • Your name and phone number (from leaked databases)
+        • Last 4 digits of your account (common in breaches)
+        • Bank you use (from public records or social engineering)
+
+        THE ONE RULE: No legitimate bank ever asks for your OTP. Period.
+        If someone asks for your OTP — it's 100% a scam.
+    content_id:
+      title: "Serangan Vishing Berhasil — Akun Dikompromikan!"
+      explanation: |
+        SATU ATURAN: Tidak ada bank sah yang pernah meminta OTP Anda. Titik.
+        Jika seseorang meminta OTP Anda — itu 100% penipuan.

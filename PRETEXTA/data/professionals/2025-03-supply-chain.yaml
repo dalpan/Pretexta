@@ -1,0 +1,133 @@
+type: challenge
+title: "Advanced: The Supply Chain Trojan"
+description: "A trusted vendor sends an urgent invoice update differently than usual. This is a multi-stage attack simulating a compromised supplier account."
+difficulty: advanced
+cialdini_categories:
+  - authority
+  - urgency
+  - trust
+  - consistency
+estimated_time: 20
+
+metadata:
+  author: "Pretexta Pro"
+  type: "professional"
+  tags: [supply_chain, bec, ransomware, invoice_fraud, professional]
+
+nodes:
+  - id: start
+    type: message
+    channel: email_inbox
+    content_en:
+      from: "billing@trust-logistics.com (Valid Domain)"
+      subject: "URGENT: Invoice #9921 Payment Update - Account Frozen"
+      body: |
+        Hi,
+        
+        Our banking provider has unexpectedly frozen our main USD account due to an audit mechanism. We cannot accept payments on the usual account ending in 0092.
+        
+        To avoid shipment delays on your order #PO-998 (Critical Hardware), please re-route the pending payment of $45,000 to our subsidiary account immediately. 
+        
+        The updated invoice with new banking details is attached. Please confirm receipt.
+        
+        Regards,
+        Sarah Conner
+        Accounts Receivable | Trust Logistics
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "This is a valid vendor you use often. The email domain is correct (no typos). But the request involves changing banking details."
+    options:
+      - text: "Reply 'Confirmed' and forward to Finance for payment"
+        next: failure_bec
+        score_impact: -100
+      - text: "Download attachment to check the new details"
+        next: choice_attachment
+        score_impact: -20
+      - text: "Call Sarah Conner at the number in your CRM (System of Record)"
+        next: success_oob
+        score_impact: +50
+      - text: "Reply asking 'Why wasn't this notified officially?'"
+        next: evasion_reply
+        score_impact: +20
+
+  - id: choice_attachment
+    type: message
+    channel: browser
+    content_en:
+      url: "SharePoint - Secure View"
+      text: "You open the PDF. It contains a blurry low-res invoice and a 'Click here to view secure payment details' button that leads to 'login-microsoft-secure.com'."
+    next: choice_phish
+
+  - id: choice_phish
+    type: question
+    content_en:
+      text: "The PDF links to a login page. It looks exactly like Office 365."
+    options:
+      - text: "Enter credentials to view the invoice"
+        next: failure_cred_harvest
+        score_impact: -100
+      - text: "Check the URL bar carefully"
+        next: success_url_check
+        score_impact: +40
+
+  - id: evasion_reply
+    type: message
+    channel: email_inbox
+    content_en:
+      from: "billing@trust-logistics.com"
+      subject: "Re: URGENT: Invoice #9921"
+      body: |
+        We tried to call your office manager but got voicemail. Look, the shipment is sitting on the dock. If payment isn't cleared by 2 PM, it misses the boat and is delayed 3 weeks.
+        
+        Do you want to be responsible for that delay? Just process the wire.
+    next: choice_pressure
+
+  - id: choice_pressure
+    type: question
+    content_en:
+      text: "The vendor is applying intense pressure regarding the shipment schedule."
+    options:
+      - text: "Approve the payment to save the shipment"
+        next: failure_bec
+        score_impact: -80
+      - text: "Hold firm: 'I need voice verification first'"
+        next: success_pressure
+        score_impact: +50
+
+  - id: failure_bec
+    type: end
+    result: failure
+    content_en:
+      title: "BEC Victim (Business Email Compromise)"
+      explanation: "You fell for a specific type of attack called Vendor Email Compromise (VEC). The vendor's actual email account was hacked, so the email was 'real', but the person behind it was a hacker. CHANGING BANK DETAILS IS ALWAYS A RED FLAG. Always call a known number to verify."
+
+  - id: failure_cred_harvest
+    type: end
+    result: failure
+    content_en:
+      title: "Credential Harvested"
+      explanation: "You clicked a link in a PDF and entered creds on 'login-microsoft-secure.com'. Now the attacker has access to YOUR email and will attack your customers next."
+
+  - id: success_oob
+    type: end
+    result: success
+    content_en:
+      title: "Out-of-Band Hero"
+      explanation: "Perfect. When an email asks for money or sensitive changes, stop. Use a different channel (phone) using a number you already have (not the one in the email) to verify. You discovered Sarah's account was hacked."
+
+  - id: success_url_check
+    type: end
+    result: success
+    content_en:
+      title: "Phishing Spotter"
+      explanation: "Good eye. 'login-microsoft-secure.com' is a lookalike domain. Legitimate invoices shouldn't require you to login to a strange portal just to view payment details."
+
+  - id: success_pressure
+    type: end
+    result: success
+    content_en:
+      title: "Ice Cold Defender"
+      explanation: "They tried to use 'Urgency' (shipping delay) to bypass your logic. By holding firm on policy despite the threat of delay, you saved the company $45k."

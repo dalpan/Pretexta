@@ -1,0 +1,44 @@
+type: campaign
+title: "Red Team: Infiltrasi Instansi Pemerintah"
+description: "Simulasi serangan Red Team tingkat lanjut terhadap instansi pemerintah Indonesia — dari OSINT, spear phishing BSSN, vishing DJP, hingga rekayasa sosial fisik."
+difficulty: hard
+estimated_time: 120
+is_published: true
+cialdini_categories:
+  - authority
+  - social_proof
+  - commitment
+  - liking
+
+stages:
+  - stage_id: "stage-pns-01"
+    title: "Fase 1: Spear Phishing BSSN"
+    description: "Penyerang mengirim spear phishing sangat personal menyamar sebagai BSSN dengan lampiran malware bertema 'Surat Edaran Keamanan'."
+    channel: "email_inbox"
+    challenge_title: "Spear Phishing: Email BSSN ke Pegawai Instansi Pemerintah"
+    order: 0
+    unlock_condition: "always"
+
+  - stage_id: "stage-pns-02"
+    title: "Fase 2: Penipuan Petugas Pajak (DJP)"
+    description: "Follow-up via telepon mengatasnamakan petugas DJP untuk 'verifikasi NPWP' yang menarget data rekening dan kredensial."
+    channel: "email_inbox"
+    challenge_title: "Phishing DJP: Verifikasi NPWP Mendesak"
+    order: 1
+    unlock_condition: "complete_previous"
+
+  - stage_id: "stage-pns-03"
+    title: "Fase 3: Rekayasa Sosial Internal"
+    description: "Penyerang menyamar sebagai staf IT baru yang 'tersesat' dan secara bertahap menggali informasi infrastruktur sensitif."
+    channel: "chat"
+    challenge_title: "Rekayasa Sosial: Rekan Baru yang Terlalu Ramah"
+    order: 2
+    unlock_condition: "complete_previous"
+
+  - stage_id: "stage-pns-04"
+    title: "Fase 4: CEO Fraud pada Level Instansi"
+    description: "Serangan BEC paling berbahaya — penyerang menyamar sebagai pejabat tertinggi untuk meminta transfer dana darurat."
+    channel: "email_inbox"
+    challenge_title: "CEO Fraud: Perintah Transfer Dana Direktur Utama BUMN"
+    order: 3
+    unlock_condition: "complete_previous"

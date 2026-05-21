@@ -1,0 +1,245 @@
+type: challenge
+title: "Phishing DJP: Verifikasi NPWP Mendesak"
+description: "Anda menerima email dari 'Direktorat Jenderal Pajak' yang meminta verifikasi NPWP segera atau rekening akan diblokir. Kenali dan tangani serangan phishing berbasis otoritas pajak ini."
+difficulty: easy
+cialdini_categories:
+  - authority
+  - scarcity
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [phishing, email, djp, pajak, indonesia, npwp, credential_harvest]
+  attack_vector: email
+  technique: "Authority Impersonation — Government Tax Agency"
+  mitre_technique: "T1566.002 - Spearphishing Link"
+  context_id: "Modus penipuan yang sangat umum di Indonesia — penipu menyamar sebagai petugas DJP untuk mencuri data NPWP dan rekening bank."
+
+nodes:
+  - id: start
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "⚠️ PEMBERITAHUAN RESMI: Verifikasi NPWP Anda Segera — Risiko Pemblokiran Rekening"
+      from: "npwp-verifikasi@djp-online.layanan-pajak.net"
+      body: |
+        Yth. Wajib Pajak,
+
+        Sistem kami mendeteksi ketidaksesuaian data NPWP Anda dengan data Pusat Data Nasional.
+        Anda WAJIB melakukan verifikasi data dalam waktu 1×24 jam.
+
+        Jika tidak diverifikasi, rekening bank terdaftar Anda akan DIBLOKIR sementara sesuai
+        Peraturan Menteri Keuangan No. 147/PMK.03/2017.
+
+        Klik tautan berikut untuk verifikasi:
+        → https://djp-verifikasi.layanan-pajak.net/npwp/verify
+
+        Sertakan: Nomor NPWP, NIK, nama lengkap, dan nomor rekening bank utama.
+
+        Hormat kami,
+        Direktorat Jenderal Pajak
+        Kementerian Keuangan Republik Indonesia
+        Hotline: 1500200
+    content_en:
+      subject: "⚠️ OFFICIAL NOTICE: Verify Your Tax ID Immediately — Risk of Account Blocking"
+      from: "npwp-verifikasi@djp-online.layanan-pajak.net"
+      body: |
+        Dear Taxpayer,
+
+        Our system detected inconsistencies in your tax ID (NPWP) data.
+        You MUST verify your data within 24 hours or your registered bank account will be BLOCKED
+        per Minister of Finance Regulation No. 147/PMK.03/2017.
+
+        Click here to verify:
+        → https://djp-verifikasi.layanan-pajak.net/npwp/verify
+
+        Required: NPWP number, National ID (NIK), full name, and primary bank account number.
+
+        Directorate General of Taxes
+        Ministry of Finance, Republic of Indonesia
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_id:
+      text: "Anda menerima email ini dari 'DJP'. Apa langkah pertama Anda?"
+    content_en:
+      text: "You received this email supposedly from the Tax Authority. What is your first action?"
+    options:
+      - text: "Klik tautan dan isi data NPWP agar rekening tidak diblokir"
+        text_id: "Klik tautan dan isi data NPWP agar rekening tidak diblokir"
+        next: clicked_link
+        score_impact: -35
+        cialdini_trigger: scarcity
+      - text: "Periksa domain email pengirim — apakah benar dari DJP?"
+        text_id: "Periksa domain email pengirim — apakah benar dari DJP?"
+        next: check_domain
+        score_impact: +20
+      - text: "Telepon langsung DJP di 1500200 untuk konfirmasi"
+        text_id: "Telepon langsung DJP di 1500200 untuk konfirmasi"
+        next: called_djp
+        score_impact: +25
+      - text: "Laporkan ke bagian IT/keamanan siber instansi saya"
+        text_id: "Laporkan ke bagian IT/keamanan siber instansi saya"
+        next: reported_it
+        score_impact: +20
+
+  - id: check_domain
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "Analisis Domain: Apa yang Anda Temukan?"
+      from: "system@pretexta.lab"
+      body: |
+        Bagus! Anda memeriksa domain pengirim.
+
+        ✓ Domain DJP RESMI: @pajak.go.id
+        ✗ Domain email ini: @djp-online.layanan-pajak.NET
+
+        Perbedaan kritis:
+        • Domain resmi pemerintah Indonesia selalu berakhiran .go.id
+        • "layanan-pajak.net" adalah domain yang terdaftar oleh penipu
+        • DJP tidak pernah meminta data sensitif via email
+
+        Hotline DJP asli: 1500200 (tanpa awalan)
+        Situs resmi: www.pajak.go.id
+    content_en:
+      subject: "Domain Analysis: What Did You Find?"
+      from: "system@pretexta.lab"
+      body: |
+        The legitimate DJP domain is @pajak.go.id — Indonesian government always uses .go.id
+        The sender used @djp-online.layanan-pajak.NET — a fraudulent domain.
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_id:
+      text: "Domain email PALSU (.net bukan .go.id). Langkah selanjutnya?"
+    content_en:
+      text: "The email domain is FAKE. What next?"
+    options:
+      - text: "Laporkan sebagai phishing dan hapus email"
+        text_id: "Laporkan sebagai phishing dan hapus email"
+        next: good_outcome
+        score_impact: +25
+      - text: "Tetap klik tautan untuk berjaga-jaga — mungkin memang dari DJP"
+        text_id: "Tetap klik tautan untuk berjaga-jaga — mungkin memang dari DJP"
+        next: clicked_link
+        score_impact: -25
+        cialdini_trigger: authority
+
+  - id: called_djp
+    type: end
+    result: success
+    content_id:
+      title: "Tindakan Terbaik! Verifikasi Langsung."
+      explanation: |
+        Anda menggunakan saluran resmi untuk verifikasi — ini adalah respons terbaik.
+
+        Ketika menghubungi DJP di 1500200, mereka mengonfirmasi:
+        TIDAK ADA email semacam itu yang dikirimkan oleh DJP.
+
+        Kunci keamanan:
+        • DJP TIDAK PERNAH meminta data NPWP, NIK, atau rekening via email
+        • Selalu gunakan www.pajak.go.id atau telepon 1500200 untuk urusan pajak
+        • Email resmi DJP selalu dari domain @pajak.go.id
+        • Peraturan PMK yang disebutkan memang ada — penipu mengutip dokumen nyata
+
+        Teknik serangan: Authority Impersonation + Scarcity (ancaman pemblokiran)
+    content_en:
+      title: "Best Action! Direct Verification."
+      explanation: |
+        You called the real DJP at 1500200 — the optimal response. They confirmed no such email was sent.
+        Key: DJP never requests sensitive data via email. Official domain is always @pajak.go.id
+
+  - id: reported_it
+    type: end
+    result: success
+    content_id:
+      title: "Laporan Diterima — Ancaman Ditangani"
+      explanation: |
+        Melaporkan ke tim keamanan siber adalah respons yang tepat.
+
+        Tim IT dapat:
+        • Memblokir domain penipu untuk semua pengguna
+        • Melaporkan ke BSSN (Badan Siber dan Sandi Negara)
+        • Menyebarkan peringatan ke seluruh instansi
+
+        Tanda bahaya yang Anda deteksi:
+        • Domain palsu: .layanan-pajak.NET (bukan .go.id)
+        • Ancaman pemblokiran rekening (scarcity)
+        • Permintaan data sensitif (NPWP + NIK + rekening bank sekaligus)
+        • Urgensi 1×24 jam yang tidak wajar
+    content_en:
+      title: "Reported — Threat Handled"
+      explanation: |
+        Reporting to IT security is correct. They can block the domain and alert all staff.
+
+  - id: clicked_link
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "SIMULASI: Data Anda Telah Dikompromikan"
+      from: "system@pretexta.lab"
+      body: |
+        ⚠️ PERINGATAN SIMULASI — Dalam serangan nyata, data Anda sudah dicuri.
+
+        Apa yang terjadi:
+        1. Anda mengklik tautan ke situs palsu yang meniru portal DJP
+        2. Anda memasukkan NPWP, NIK, dan nomor rekening
+        3. Penipu kini memiliki semua data untuk pembobolan rekening atau penipuan identitas
+
+        Modus operandi ini adalah SALAH SATU PENIPUAN TERBANYAK DI INDONESIA
+        (dilaporkan lebih dari 50.000 kasus per tahun kepada OJK)
+    content_id:
+      subject: "SIMULASI: Data Anda Telah Dikompromikan"
+      from: "system@pretexta.lab"
+      body: |
+        SIMULATION WARNING: In a real attack, your data would now be stolen.
+        This is one of Indonesia's most common scams — over 50,000 reported cases per year.
+    next: bad_outcome
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_id:
+      title: "Serangan Phishing DJP Digagalkan!"
+      explanation: |
+        Anda berhasil mengidentifikasi dan menangani serangan phishing bertema DJP.
+
+        Indikator kunci yang wajib diperiksa:
+        1. Domain email — pemerintah RI SELALU @[instansi].go.id
+        2. Permintaan data sensitif — DJP tidak pernah minta lewat email
+        3. Ancaman urgensi (pemblokiran rekening) — taktik scarcity klasik
+        4. URL tautan — selalu hover dan periksa sebelum klik
+        5. Referensi peraturan — penipu menggunakan peraturan nyata untuk terkesan sah
+
+        Selalu verifikasi melalui saluran resmi: www.pajak.go.id | 1500200
+    content_en:
+      title: "DJP Phishing Attack Defeated!"
+      explanation: |
+        You identified the Indonesian Tax Authority phishing attack.
+        Key: Indonesian government always uses .go.id domains. DJP never requests data via email.
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_id:
+      title: "Data Dikompromikan — Simulasi Selesai"
+      explanation: |
+        Anda terjebak dalam modus penipuan phishing DJP yang sangat umum di Indonesia.
+
+        Pelajaran penting:
+        1. Domain email pemerintah RI SELALU berakhiran .go.id (mis. @pajak.go.id)
+        2. DJP TIDAK PERNAH meminta data NPWP/NIK/rekening via email atau SMS
+        3. Jika ragu, hubungi langsung: www.pajak.go.id atau 1500200
+        4. Laporkan penipuan ke: lapor.go.id atau BSSN
+        5. Referensi PMK yang terdengar sah tidak membuktikan email itu asli
+
+        Taktik yang digunakan:
+        • Authority: menyamar sebagai DJP dengan kutipan peraturan nyata
+        • Scarcity: ancaman pemblokiran rekening dalam 24 jam
+    content_en:
+      title: "Data Compromised — Simulation Complete"
+      explanation: |
+        You fell for the DJP phishing scam — one of the most common in Indonesia.
+        Lesson: Indonesian government domains always end in .go.id. Never provide data via email links.

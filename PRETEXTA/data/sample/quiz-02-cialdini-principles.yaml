@@ -1,0 +1,148 @@
+type: quiz
+title: "Cialdini's Influence Principles"
+description: "Test your understanding of Cialdini's 6 principles of influence in the context of social engineering"
+difficulty: medium
+cialdini_categories:
+  - authority
+  - scarcity
+  - reciprocity
+  - commitment
+  - liking
+  - social_proof
+
+metadata:
+  author: "Pretexta"
+  tags: [cialdini, principles, theory]
+
+questions:
+  - id: q1
+    content_en:
+      text: "An attacker impersonates the CEO to request urgent wire transfer. Which principle is PRIMARY?"
+      explanation: "Authority is the main principle when impersonating high-ranking officials to exploit hierarchical respect."
+    content_id:
+      text: "Penyerang menyamar sebagai CEO untuk minta transfer wire mendesak. Prinsip mana yang UTAMA?"
+      explanation: "Authority adalah prinsip utama saat menyamar sebagai pejabat tinggi untuk eksploitasi respek hierarki."
+    options:
+      - text: "Authority"
+        text_id: "Otoritas"
+        correct: true
+      - text: "Scarcity"
+        text_id: "Kelangkaan"
+        correct: false
+      - text: "Social Proof"
+        text_id: "Bukti Sosial"
+        correct: false
+      - text: "Liking"
+        text_id: "Kesukaan"
+        correct: false
+    points: 10
+
+  - id: q2
+    content_en:
+      text: "'25 of your coworkers already donated to this charity.' Which principle?"
+      explanation: "Social proof leverages the tendency to follow what others are doing, especially peers."
+    content_id:
+      text: "'25 rekan kerja Anda sudah donasi ke amal ini.' Prinsip mana?"
+      explanation: "Social proof memanfaatkan kecenderungan mengikuti apa yang dilakukan orang lain, terutama rekan sebaya."
+    options:
+      - text: "Social Proof"
+        text_id: "Bukti Sosial (Social Proof)"
+        correct: true
+      - text: "Reciprocity"
+        text_id: "Timbal balik"
+        correct: false
+      - text: "Commitment"
+        text_id: "Komitmen"
+        correct: false
+      - text: "Authority"
+        text_id: "Otoritas"
+        correct: false
+    points: 10
+
+  - id: q3
+    content_en:
+      text: "A scammer sends you a free gift, then asks for a 'small favor'. Which principle?"
+      explanation: "Reciprocity creates obligation to return favors, even if the initial gift was unsolicited."
+    content_id:
+      text: "Penipu mengirim hadiah gratis, lalu minta 'bantuan kecil'. Prinsip mana?"
+      explanation: "Reciprocity menciptakan kewajiban membalas, bahkan jika hadiah awal tidak diminta."
+    options:
+      - text: "Reciprocity"
+        text_id: "Timbal balik (Reciprocity)"
+        correct: true
+      - text: "Liking"
+        text_id: "Kesukaan"
+        correct: false
+      - text: "Commitment"
+        text_id: "Komitmen"
+        correct: false
+      - text: "Scarcity"
+        text_id: "Kelangkaan"
+        correct: false
+    points: 15
+
+  - id: q4
+    content_en:
+      text: "'You agreed to the Terms of Service, now you must complete this survey.' Which principle?"
+      explanation: "Commitment exploits the desire to be consistent with previous actions or statements."
+    content_id:
+      text: "'Anda setuju Terms of Service, sekarang harus lengkapi survei ini.' Prinsip mana?"
+      explanation: "Commitment mengeksploitasi keinginan konsisten dengan tindakan atau pernyataan sebelumnya."
+    options:
+      - text: "Commitment & Consistency"
+        text_id: "Komitmen & Konsistensi"
+        correct: true
+      - text: "Authority"
+        text_id: "Otoritas"
+        correct: false
+      - text: "Social Proof"
+        text_id: "Bukti Sosial"
+        correct: false
+      - text: "Reciprocity"
+        text_id: "Timbal balik"
+        correct: false
+    points: 15
+
+  - id: q5
+    content_en:
+      text: "Attacker builds rapport by sharing common interests before asking for credentials. Which principle?"
+      explanation: "Liking increases compliance when we feel connected or similar to the person making the request."
+    content_id:
+      text: "Penyerang membangun hubungan dengan berbagi minat yang sama sebelum minta kredensial. Prinsip mana?"
+      explanation: "Liking meningkatkan kepatuhan saat kita merasa terhubung atau mirip dengan orang yang meminta."
+    options:
+      - text: "Liking"
+        text_id: "Kesukaan (Liking)"
+        correct: true
+      - text: "Social Proof"
+        text_id: "Bukti Sosial"
+        correct: false
+      - text: "Reciprocity"
+        text_id: "Timbal balik"
+        correct: false
+      - text: "Commitment"
+        text_id: "Komitmen"
+        correct: false
+    points: 15
+
+  - id: q6
+    content_en:
+      text: "'Only 3 spots left for this exclusive offer!' combines which TWO principles?"
+      explanation: "Limited availability (scarcity) combined with exclusivity (social proof - not everyone can have it)."
+    content_id:
+      text: "'Hanya 3 slot tersisa untuk penawaran eksklusif ini!' menggabungkan DUA prinsip mana?"
+      explanation: "Ketersediaan terbatas (scarcity) dikombinasikan dengan eksklusivitas (social proof - tidak semua orang bisa dapat)."
+    options:
+      - text: "Scarcity + Social Proof"
+        text_id: "Kelangkaan + Bukti Sosial"
+        correct: true
+      - text: "Authority + Urgency"
+        text_id: "Otoritas + Urgensi"
+        correct: false
+      - text: "Liking + Reciprocity"
+        text_id: "Kesukaan + Timbal balik"
+        correct: false
+      - text: "Commitment + Authority"
+        text_id: "Komitmen + Otoritas"
+        correct: false
+    points: 20

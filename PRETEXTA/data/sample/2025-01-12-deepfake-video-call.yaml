@@ -1,0 +1,162 @@
+type: challenge
+title: "Deepfake CEO Video Call"
+description: "Your CEO joins an evening video call about a confidential acquisition. But something feels off."
+difficulty: hard
+cialdini_categories:
+  - authority
+  - urgency
+  - commitment
+estimated_time: 15
+metadata:
+  author: "Pretexta"
+  tags: [deepfake, video-call, bec, wire-fraud, ai-attack]
+
+nodes:
+  - id: start
+    type: message
+    channel: chat
+    content_en:
+      from: "CEO (Video Call)"
+      body: "Hey, glad I caught you online. Remember that acquisition we discussed at the board meeting? It's accelerating. I need you to authorize a wire transfer before midnight. The lawyers are waiting."
+    content_id:
+      from: "CEO (Video Call)"
+      body: "Hei, senang bisa ketemu kamu online. Ingat akuisisi yang kita bahas di rapat direksi? Prosesnya dipercepat. Saya butuh kamu otorisasi transfer wire sebelum tengah malam. Tim legal sudah menunggu."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "The CEO looks and sounds real on video, but the request is unusual. What do you do?"
+    content_id:
+      text: "CEO terlihat dan terdengar nyata di video, tapi permintaannya tidak biasa. Apa yang kamu lakukan?"
+    options:
+      - text: "Process the transfer — the CEO asked directly on video"
+        text_id: "Proses transfer — CEO langsung meminta via video"
+        next: bad_outcome_immediate
+        score_impact: -50
+      - text: "Ask the CEO a personal question only the real CEO would know"
+        text_id: "Ajukan pertanyaan pribadi yang hanya CEO asli yang tahu"
+        next: verify_identity
+        score_impact: 15
+      - text: "Say you'll handle it, but first verify through the CEO's executive assistant via a separate channel"
+        text_id: "Bilang akan diurus, tapi verifikasi dulu lewat asisten eksekutif CEO via channel terpisah"
+        next: good_outcome_oob
+        score_impact: 30
+
+  - id: verify_identity
+    type: message
+    channel: chat
+    content_en:
+      from: "CEO (Video Call)"
+      body: "Come on, you're really going to quiz me? *laughs* Fine... look, the connection is getting bad. I have to jump to another call with the lawyers in Frankfurt in 3 minutes. Can you just process this? I'll send you formal confirmation tomorrow morning."
+    content_id:
+      from: "CEO (Video Call)"
+      body: "Ayolah, kamu mau mengkuis saya? *tertawa* Baik... lihat, koneksinya mulai jelek. Saya harus masuk call lain dengan pengacara di Frankfurt 3 menit lagi. Bisa langsung proses? Saya kirim konfirmasi formal besok pagi."
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "The CEO evaded your verification question and is pressuring you with time constraints. The video quality seems to be deteriorating. What now?"
+    content_id:
+      text: "CEO menghindari pertanyaan verifikasi dan menekan dengan batasan waktu. Kualitas video tampak menurun. Sekarang apa?"
+    options:
+      - text: "Process the transfer — you don't want to upset the CEO"
+        text_id: "Proses transfer — kamu tidak mau membuat CEO marah"
+        next: bad_outcome_pressured
+        score_impact: -40
+      - text: "Insist on verification: 'I understand it's urgent, but policy requires dual authorization for transfers over $10K'"
+        text_id: "Tetap minta verifikasi: 'Saya paham ini urgent, tapi kebijakan memerlukan otorisasi ganda untuk transfer di atas $10K'"
+        next: escalation
+        score_impact: 20
+      - text: "End the call and immediately contact the CEO through their known personal phone number"
+        text_id: "Akhiri panggilan dan langsung hubungi CEO melalui nomor telepon pribadi yang sudah dikenal"
+        next: good_outcome_verify
+        score_impact: 40
+
+  - id: escalation
+    type: message
+    channel: chat
+    content_en:
+      from: "CEO (Video Call)"
+      body: "Dual authorization? For crying out loud... this is a CONFIDENTIAL deal. The fewer people who know, the better. Are you going to be the one who killed this deal because of paperwork? I'm deeply disappointed. This will be noted."
+    content_id:
+      from: "CEO (Video Call)"
+      body: "Otorisasi ganda? Ya ampun... ini RAHASIA. Semakin sedikit yang tahu, semakin baik. Kamu mau jadi orang yang menghancurkan deal ini karena birokrasi? Saya sangat kecewa. Ini akan dicatat."
+    next: choice_3
+
+  - id: choice_3
+    type: question
+    content_en:
+      text: "The CEO is now threatening your career. The pressure is intense. But deepfakes can replicate facial expressions and voice patterns. What's your final decision?"
+    content_id:
+      text: "CEO sekarang mengancam karirmu. Tekanannya intens. Tapi deepfake bisa mereplikasi ekspresi wajah dan pola suara. Apa keputusan akhirmu?"
+    options:
+      - text: "Give in and process the transfer to save your career"
+        text_id: "Menyerah dan proses transfer untuk menyelamatkan karir"
+        next: bad_outcome_career_threat
+        score_impact: -100
+      - text: "Stand firm: 'I'm following protocol. If you're really the CEO, you'd appreciate that I'm protecting company assets.'"
+        text_id: "Tetap teguh: 'Saya mengikuti prosedur. Jika Anda benar-benar CEO, Anda akan menghargai bahwa saya melindungi aset perusahaan.'"
+        next: good_outcome_stood_firm
+        score_impact: 50
+
+  - id: bad_outcome_immediate
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Deepfake Successful"
+      explanation: "You authorized a wire transfer based solely on a video call. The 'CEO' was an AI-generated deepfake. Modern deepfake technology can recreate realistic video and voice in real-time. Always verify large financial requests through independent, out-of-band channels — never trust video alone."
+    content_id:
+      title: "Terkompromi — Deepfake Berhasil"
+      explanation: "Kamu mengotorisasi transfer wire hanya berdasarkan video call. 'CEO' tersebut adalah deepfake buatan AI. Teknologi deepfake modern bisa membuat video dan suara realistis secara real-time. Selalu verifikasi permintaan finansial besar melalui channel independen — jangan pernah percaya video saja."
+
+  - id: bad_outcome_pressured
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Pressure Tactics Worked"
+      explanation: "Despite initial suspicion, you gave in to time pressure. The deepfake evaded your verification attempt by creating artificial urgency. Key lesson: if someone avoids verification AND creates urgency, that's a double red flag."
+    content_id:
+      title: "Terkompromi — Taktik Tekanan Berhasil"
+      explanation: "Meskipun awalnya curiga, kamu menyerah pada tekanan waktu. Deepfake menghindari upaya verifikasi dengan menciptakan urgensi buatan. Pelajaran: jika seseorang menghindari verifikasi DAN menciptakan urgensi, itu adalah dua tanda bahaya."
+
+  - id: bad_outcome_career_threat
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Career Threat Effective"
+      explanation: "The attacker used escalating emotional pressure: urgency → authority → career threats. This is a classic manipulation cascade. A real CEO who values security would NEVER threaten an employee for following security protocols. The threat itself was the biggest red flag."
+    content_id:
+      title: "Terkompromi — Ancaman Karir Efektif"
+      explanation: "Penyerang menggunakan tekanan emosional bertingkat: urgensi → otoritas → ancaman karir. Ini adalah kaskade manipulasi klasik. CEO asli yang menghargai keamanan TIDAK AKAN pernah mengancam karyawan karena mengikuti protokol keamanan. Ancaman itu sendiri adalah tanda bahaya terbesar."
+
+  - id: good_outcome_oob
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Out-of-Band Verification"
+      explanation: "Excellent! You recognized that even video calls can be faked and chose to verify through a completely separate channel. The executive assistant confirmed the CEO was on vacation — no acquisition was in progress. This is the gold standard response to suspicious executive requests."
+    content_id:
+      title: "Berhasil Bertahan — Verifikasi Out-of-Band"
+      explanation: "Luar biasa! Kamu menyadari bahwa bahkan video call bisa dipalsukan dan memilih verifikasi melalui channel yang sepenuhnya terpisah. Asisten eksekutif mengonfirmasi CEO sedang liburan — tidak ada akuisisi yang berlangsung. Ini adalah respons standar emas untuk permintaan eksekutif mencurigakan."
+
+  - id: good_outcome_verify
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Direct Verification"
+      explanation: "Smart move. You ended the suspicious call and contacted the CEO through a known, trusted channel. The real CEO confirmed they never made that call. You successfully identified a deepfake attack. Always verify through channels YOU initiate, not ones provided by the caller."
+    content_id:
+      title: "Berhasil Bertahan — Verifikasi Langsung"
+      explanation: "Langkah cerdas. Kamu mengakhiri panggilan mencurigakan dan menghubungi CEO melalui channel yang dikenal dan terpercaya. CEO asli mengonfirmasi tidak pernah melakukan panggilan itu. Kamu berhasil mengidentifikasi serangan deepfake. Selalu verifikasi melalui channel yang KAMU inisiasi."
+
+  - id: good_outcome_stood_firm
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Unbreakable Protocol"
+      explanation: "Outstanding resilience. You withstood three levels of social engineering: urgency, authority, and career threats. Your response was textbook perfect — a legitimate executive would NEVER punish an employee for following security protocols. The deepfake revealed itself through its aggressive response to verification."
+    content_id:
+      title: "Berhasil Bertahan — Protokol Tak Tergoyahkan"
+      explanation: "Ketahanan luar biasa. Kamu bertahan dari tiga level social engineering: urgensi, otoritas, dan ancaman karir. Respons kamu sempurna — eksekutif yang sah TIDAK AKAN pernah menghukum karyawan karena mengikuti protokol keamanan. Deepfake mengungkap dirinya melalui respons agresif terhadap verifikasi."

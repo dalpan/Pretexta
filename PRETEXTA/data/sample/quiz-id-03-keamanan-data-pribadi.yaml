@@ -1,0 +1,166 @@
+type: quiz
+title: "Perlindungan Data Pribadi dan Keamanan Digital Indonesia"
+description: "Uji pengetahuan Anda tentang perlindungan data pribadi, keamanan mobile banking, dan regulasi siber Indonesia — termasuk UU PDP, OJK, dan best practices."
+difficulty: medium
+cialdini_categories:
+  - authority
+  - scarcity
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [data_protection, pdp, ojk, mobile_banking, password, indonesia, regulations]
+
+questions:
+  - id: q1
+    content_id:
+      text: "UU Perlindungan Data Pribadi (UU PDP) No. 27 Tahun 2022 di Indonesia mewajibkan apa kepada perusahaan yang mengalami kebocoran data?"
+      explanation: "UU PDP mewajibkan notifikasi kepada pemilik data paling lambat 14 hari setelah mengetahui kebocoran data. Pelanggaran dapat dikenai sanksi administratif berupa denda hingga 2% dari pendapatan tahunan global. Ini memberikan hak kepada warga negara Indonesia untuk mengetahui jika data mereka bocor."
+    content_en:
+      text: "Indonesia's Personal Data Protection Law (UU PDP No. 27/2022) requires companies that experience data breaches to do what?"
+      explanation: "UU PDP requires notification to data subjects within 14 days of discovering a breach. Violations carry administrative sanctions up to 2% of global annual revenue."
+    options:
+      - text: "Memberitahu pemilik data dalam 14 hari sejak mengetahui kebocoran"
+        text_id: "Memberitahu pemilik data dalam 14 hari sejak mengetahui kebocoran"
+        correct: true
+      - text: "Hanya perlu lapor ke BSSN, tidak perlu beritahu pengguna"
+        text_id: "Hanya perlu lapor ke BSSN, tidak perlu beritahu pengguna"
+        correct: false
+      - text: "Tidak ada kewajiban — pemberitahuan bersifat sukarela"
+        text_id: "Tidak ada kewajiban — pemberitahuan bersifat sukarela"
+        correct: false
+      - text: "Menutup layanan sementara hingga sistem diperbaiki"
+        text_id: "Menutup layanan sementara hingga layanan diperbaiki"
+        correct: false
+    points: 15
+
+  - id: q2
+    content_id:
+      text: "Anda menemukan bahwa data KTP dan nomor HP Anda dijual di dark web. Apa langkah paling penting yang PERTAMA kali harus dilakukan?"
+      explanation: "Data KTP + nomor HP yang bocor paling berbahaya ketika dikombinasikan dengan mobile banking. Prioritas pertama: ubah PIN dan password semua akun finansial + aktifkan notifikasi transaksi. Kemudian lapor ke BSSN dan OJK. Tidak perlu langsung ganti nomor HP — itu justru bisa membuat Anda kehilangan akses ke akun yang terverifikasi nomor tersebut."
+    content_en:
+      text: "You discover your KTP data and phone number are being sold on the dark web. What is the MOST IMPORTANT first step?"
+      explanation: "KTP + phone number data is most dangerous when combined with mobile banking. First priority: change PIN and password for all financial accounts + enable transaction notifications."
+    options:
+      - text: "Ubah PIN/password semua akun finansial dan aktifkan notifikasi transaksi"
+        text_id: "Ubah PIN/password semua akun finansial dan aktifkan notifikasi transaksi"
+        correct: true
+      - text: "Ganti nomor HP segera agar tidak bisa dihubungi penipu"
+        text_id: "Ganti nomor HP segera agar tidak bisa dihubungi penipu"
+        correct: false
+      - text: "Post di media sosial untuk peringatkan orang lain"
+        text_id: "Post di media sosial untuk peringatkan orang lain"
+        correct: false
+      - text: "Tunggu dan monitor apakah ada transaksi mencurigakan"
+        text_id: "Tunggu dan monitor apakah ada transaksi mencurigakan"
+        correct: false
+    points: 15
+
+  - id: q3
+    content_id:
+      text: "Fitur keamanan mana yang PALING EFEKTIF untuk melindungi akun WhatsApp dari pembajakan?"
+      explanation: "Two-Step Verification WhatsApp (Pengaturan → Akun → Verifikasi dua langkah) menambahkan PIN 6 digit yang dibutuhkan saat mendaftar nomor ke perangkat baru. Bahkan jika penipu mendapatkan kode OTP Anda, mereka masih butuh PIN ini. Ini adalah lapisan keamanan paling kritis untuk WhatsApp."
+    content_en:
+      text: "Which security feature is MOST EFFECTIVE in protecting WhatsApp accounts from hijacking?"
+      explanation: "Two-Step Verification adds a 6-digit PIN required when registering the number on a new device. Even if an attacker gets your OTP, they still need this PIN."
+    options:
+      - text: "Two-Step Verification / Verifikasi Dua Langkah (PIN 6 digit)"
+        text_id: "Two-Step Verification / Verifikasi Dua Langkap (PIN 6 digit)"
+        correct: true
+      - text: "Sembunyikan foto profil dari publik"
+        text_id: "Sembunyikan foto profil dari publik"
+        correct: false
+      - text: "Gunakan WhatsApp Web hanya di perangkat sendiri"
+        text_id: "Gunakan WhatsApp Web hanya di perangkat sendiri"
+        correct: false
+      - text: "Aktifkan 'Last Seen' hidden agar penipu tidak tahu kapan Anda online"
+        text_id: "Aktifkan 'Last Seen' hidden agar penipu tidak tahu kapan Anda online"
+        correct: false
+    points: 10
+
+  - id: q4
+    content_id:
+      text: "Password mana yang paling aman menurut standar keamanan modern?"
+      explanation: "Passphrase panjang (4+ kata tidak berhubungan) lebih aman dari password pendek kompleks. 'KucingMerahLompat2026!' memiliki entropi tinggi karena panjang dan mengandung huruf besar, angka, karakter khusus, tapi tetap dapat diingat. Hindari data pribadi seperti tanggal lahir, nama, atau kata-kata umum."
+    content_en:
+      text: "Which password is most secure according to modern security standards?"
+      explanation: "Long passphrases (4+ unrelated words) are more secure than short complex passwords. Length and entropy matter more than complexity alone."
+    options:
+      - text: "KucingMerahLompat2026! (panjang, campuran karakter)"
+        text_id: "KucingMerahLompat2026! (panjang, campuran karakter)"
+        correct: true
+      - text: "P@ssw0rd (kompleks tapi pendek dan umum digunakan)"
+        text_id: "P@ssw0rd (kompleks tapi pendek dan umum digunakan)"
+        correct: false
+      - text: "Bandung17Agustus1945 (berisi tanggal bersejarah yang bisa ditebak)"
+        text_id: "Bandung17Agustus1945 (berisi tanggal bersejarah yang bisa ditebak)"
+        correct: false
+      - text: "12345678 (mudah diingat, cepat diketik)"
+        text_id: "12345678 (mudah diingat, cepat diketik)"
+        correct: false
+    points: 10
+
+  - id: q5
+    content_id:
+      text: "Anda menerima email yang terlihat resmi dari BCA dengan subjek 'Konfirmasi Pembayaran Tagihan Kartu Kredit Anda'. Email berisi link ke bca-secure.net. Apa tindakan paling tepat?"
+      explanation: "Domain resmi BCA adalah klikbca.com dan bca.co.id. 'bca-secure.net' adalah domain lookalike. Tindakan terbaik: JANGAN klik link apapun — buka browser dan ketik klikbca.com atau bca.co.id langsung. Atau hubungi Halo BCA di 1500888."
+    content_en:
+      text: "You receive a seemingly official BCA email with subject 'Confirm Your Credit Card Payment'. Email contains a link to bca-secure.net. Most appropriate action?"
+      explanation: "Official BCA domains are klikbca.com and bca.co.id. 'bca-secure.net' is a lookalike domain. Best action: don't click any link — type klikbca.com directly or call Halo BCA at 1500888."
+    options:
+      - text: "Tutup email, buka browser, ketik klikbca.com secara manual"
+        text_id: "Tutup email, buka browser, ketik klikbca.com secara manual"
+        correct: true
+      - text: "Klik link karena HTTPS berarti situs tersebut aman"
+        text_id: "Klik link karena HTTPS berarti situs tersebut aman"
+        correct: false
+      - text: "Hover link untuk cek URL — jika tampak resmi maka aman diklik"
+        text_id: "Hover link untuk cek URL — jika tampak resmi maka aman diklik"
+        correct: false
+      - text: "Balas email dan minta konfirmasi apakah ini tagihan yang nyata"
+        text_id: "Balas email dan minta konfirmasi apakah ini tagihan yang nyata"
+        correct: false
+    points: 10
+
+  - id: q6
+    content_id:
+      text: "Apa yang dimaksud dengan 'SIM Swap' fraud dan mengapa berbahaya di Indonesia?"
+      explanation: "SIM Swap adalah penipuan di mana penipu menduplikasi kartu SIM Anda dengan berpura-pura sebagai Anda ke operator telekomunikasi. Setelah berhasil, semua OTP dan verifikasi SMS diterima penipu — bukan Anda. Mereka bisa menguras rekening bank dan akun e-wallet. Di Indonesia, kasus ini meningkat karena operator kadang kurang ketat verifikasi identitas."
+    content_en:
+      text: "What is 'SIM Swap' fraud and why is it dangerous in Indonesia?"
+      explanation: "SIM Swap is when fraudsters duplicate your SIM card by impersonating you to telecom operators. All OTPs and SMS verifications then go to the attacker. They can drain bank accounts and e-wallets."
+    options:
+      - text: "Duplikasi kartu SIM untuk mencegat OTP — memungkinkan akses semua akun"
+        text_id: "Duplikasi kartu SIM untuk mencegat OTP — memungkinkan akses semua akun"
+        correct: true
+      - text: "Penggantian SIM card fisik yang rusak — tidak ada risiko keamanan"
+        text_id: "Penggantian SIM card fisik yang rusak — tidak ada risiko keamanan"
+        correct: false
+      - text: "Pertukaran nomor HP antara dua pengguna yang berbeda operator"
+        text_id: "Pertukaran nomor HP antara dua pengguna yang berbeda operator"
+        correct: false
+      - text: "Hack ke server operator untuk mencuri data pelanggan massal"
+        text_id: "Hack ke server operator untuk mencuri data pelanggan massal"
+        correct: false
+    points: 15
+
+  - id: q7
+    content_id:
+      text: "Manakah praktik terbaik keamanan data di tempat kerja yang sesuai dengan konteks instansi pemerintah Indonesia?"
+      explanation: "Prinsip Need-to-Know: hanya bagikan data kepada pihak yang benar-benar memerlukan untuk pekerjaan mereka. Di instansi pemerintah, data sensitif dilindungi oleh UU ITE, PP 82/2012, dan Peraturan BSSN. Berbagi data klasifikasi rahasia ke pihak yang tidak berwenang bisa dikenai sanksi pidana."
+    content_en:
+      text: "Which data security best practice is appropriate for Indonesian government agency context?"
+      explanation: "Need-to-Know principle: only share data with those who truly need it for their work. In government, sensitive data is protected by UU ITE, PP 82/2012, and BSSN regulations."
+    options:
+      - text: "Bagikan data hanya berdasarkan Need-to-Know + klasifikasi dokumen yang benar"
+        text_id: "Bagikan data hanya berdasarkan Need-to-Know + klasifikasi dokumen yang benar"
+        correct: true
+      - text: "Simpan backup dokumen rahasia di Google Drive pribadi untuk keamanan"
+        text_id: "Simpan backup dokumen rahasia di Google Drive pribadi untuk keamanan"
+        correct: false
+      - text: "Kirim dokumen internal via WhatsApp — lebih cepat dari email resmi"
+        text_id: "Kirim dokumen internal via WhatsApp — lebih cepat dari email resmi"
+        correct: false
+      - text: "Bagikan dokumen ke semua rekan satu tim agar pekerjaan lebih efisien"
+        text_id: "Bagikan dokumen ke semua rekan satu tim agar pekerjaan lebih efisien"
+        correct: false
+    points: 15

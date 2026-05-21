@@ -1,0 +1,166 @@
+type: quiz
+title: "Mengenali Phishing di Konteks Indonesia"
+description: "Uji kemampuan Anda mengenali email dan pesan phishing yang menggunakan konteks Indonesia — DJP, bank nasional, BSSN, dan platform digital lokal."
+difficulty: easy
+cialdini_categories:
+  - authority
+  - scarcity
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [phishing, indonesia, djp, bank, bssn, whatsapp, ojk]
+
+questions:
+  - id: q1
+    content_id:
+      text: "Anda menerima email dari 'DJP' dengan domain @djp-pajak.net. Apa yang seharusnya Anda lakukan?"
+      explanation: "Domain resmi Direktorat Jenderal Pajak SELALU berakhiran @pajak.go.id — situs pemerintah Indonesia WAJIB menggunakan domain .go.id. Domain seperti djp-pajak.net adalah domain palsu yang dibeli penipu."
+    content_en:
+      text: "You receive an email from 'DJP' with domain @djp-pajak.net. What should you do?"
+      explanation: "The official DJP domain is always @pajak.go.id — Indonesian government websites MUST use .go.id domains."
+    options:
+      - text: "Abaikan dan laporkan — domain pemerintah RI selalu .go.id"
+        text_id: "Abaikan dan laporkan — domain pemerintah RI selalu .go.id"
+        correct: true
+      - text: "Buka email dan baca isinya untuk menentukan apakah resmi"
+        text_id: "Buka email dan baca isinya untuk menentukan apakah resmi"
+        correct: false
+      - text: "Klik tautan verifikasi yang ada di email"
+        text_id: "Klik tautan verifikasi yang ada di email"
+        correct: false
+      - text: "Balas email untuk meminta klarifikasi"
+        text_id: "Balas email untuk meminta klarifikasi"
+        correct: false
+    points: 10
+
+  - id: q2
+    content_id:
+      text: "Teman WhatsApp meminta Anda forward kode 6 digit yang masuk ke nomor Anda untuk 'verifikasi akun lomba'. Ini adalah?"
+      explanation: "Kode 6 digit yang masuk ke WhatsApp Anda adalah kode aktivasi WhatsApp Anda sendiri. Jika diforward, penipu langsung mengambil alih akun WA Anda dan menggunakannya untuk menipu seluruh kontak Anda."
+    content_en:
+      text: "A WhatsApp friend asks you to forward a 6-digit code that arrives on your number for 'contest account verification'. This is?"
+      explanation: "The 6-digit code is YOUR OWN WhatsApp activation code. Forwarding it gives the attacker full control of your WhatsApp account."
+    options:
+      - text: "Pembajakan akun WhatsApp via OTP forwarding"
+        text_id: "Pembajakan akun WhatsApp via OTP forwarding"
+        correct: true
+      - text: "Permintaan wajar yang bisa dipenuhi jika dari teman"
+        text_id: "Permintaan wajar yang bisa dipenuhi jika dari teman"
+        correct: false
+      - text: "Verifikasi sistem yang sah — beberapa aplikasi memang bekerja begini"
+        text_id: "Verifikasi sistem yang sah — beberapa aplikasi memang bekerja begini"
+        correct: false
+      - text: "Kesalahan teknis yang perlu dibantu diperbaiki"
+        text_id: "Kesalahan teknis yang perlu dibantu diperbaiki"
+        correct: false
+    points: 15
+
+  - id: q3
+    content_id:
+      text: "CS Bank BRI menelepon dengan nomor 0800-1600 mengenai transaksi mencurigakan dan meminta nomor rekening untuk verifikasi. Apa tanda bahaya utama?"
+      explanation: "Bank TIDAK PERNAH menghubungi nasabah untuk meminta nomor rekening, PIN, atau kode OTP melalui telepon. Nomor resmi BRI adalah 14017/1500017. Caller ID bisa dipalsukan (spoofed) sehingga terlihat seperti nomor resmi bank."
+    content_en:
+      text: "BRI bank CS calls from 0800-1600 about suspicious transactions and asks for your account number. What's the main red flag?"
+      explanation: "Banks NEVER call customers to ask for account numbers, PINs, or OTPs. Caller ID can be spoofed to appear as official bank numbers."
+    options:
+      - text: "Bank tidak pernah meminta data rekening via telepon — caller ID bisa dipalsukan"
+        text_id: "Bank tidak pernah meminta data rekening via telepon — caller ID bisa dipalsukan"
+        correct: true
+      - text: "Nomor 0800 adalah nomor bebas pulsa yang selalu resmi"
+        text_id: "Nomor 0800 adalah nomor bebas pulsa yang selalu resmi"
+        correct: false
+      - text: "Transaksi mencurigakan yang disebut terdengar meyakinkan"
+        text_id: "Transaksi mencurigakan yang disebut terdengar meyakinkan"
+        correct: false
+      - text: "CS menyebutkan nama dan ID karyawan jadi pasti asli"
+        text_id: "CS menyebutkan nama dan ID karyawan jadi pasti asli"
+        correct: false
+    points: 15
+
+  - id: q4
+    content_id:
+      text: "Email dari 'Tokopedia' meminta verifikasi akun dengan subjek 'Akun Anda Terdeteksi Aktivitas Tidak Wajar'. Link mengarah ke tokopedia-secure.co. Apa ini?"
+      explanation: "Domain resmi Tokopedia adalah tokopedia.com. 'tokopedia-secure.co' adalah domain lookalike yang dibuat untuk mengelabui. Platform e-commerce tidak meminta verifikasi melalui link email — selalu login langsung ke aplikasi atau situs resmi."
+    content_en:
+      text: "Email from 'Tokopedia' requests account verification — link goes to tokopedia-secure.co. What is this?"
+      explanation: "The real Tokopedia domain is tokopedia.com. 'tokopedia-secure.co' is a lookalike domain. E-commerce platforms don't ask verification via email links."
+    options:
+      - text: "Phishing dengan domain lookalike yang menyerupai Tokopedia"
+        text_id: "Phishing dengan domain lookalike yang menyerupai Tokopedia"
+        correct: true
+      - text: "Domain keamanan khusus dari Tokopedia untuk verifikasi"
+        text_id: "Domain keamanan khusus dari Tokopedia untuk verifikasi"
+        correct: false
+      - text: "Email resmi karena menyebutkan nama dan email Anda dengan benar"
+        text_id: "Email resmi karena menyebutkan nama dan email Anda dengan benar"
+        correct: false
+      - text: "Notifikasi keamanan yang perlu segera ditindaklanjuti"
+        text_id: "Notifikasi keamanan yang perlu segera ditindaklanjuti"
+        correct: false
+    points: 10
+
+  - id: q5
+    content_id:
+      text: "Mana yang merupakan nomor resmi untuk melaporkan penipuan digital di Indonesia?"
+      explanation: "OJK (Otoritas Jasa Keuangan) di 157 untuk penipuan finansial, BSSN/CSIRT Nasional di 021-5797-4552 untuk insiden siber, dan Bareskrim Polri di 110 untuk laporan kriminal. Lapor.go.id adalah portal pengaduan umum pemerintah."
+    content_en:
+      text: "Which is the correct number to report digital fraud in Indonesia?"
+      explanation: "OJK at 157 for financial fraud, BSSN at 021-5797-4552 for cyber incidents, Bareskrim at 110 for criminal reports."
+    options:
+      - text: "OJK: 157 | BSSN: 021-5797-4552 | Bareskrim: 110"
+        text_id: "OJK: 157 | BSSN: 021-5797-4552 | Bareskrim: 110"
+        correct: true
+      - text: "Hanya bisa lapor ke perusahaan platform yang bersangkutan"
+        text_id: "Hanya bisa lapor ke perusahaan platform yang bersangkutan"
+        correct: false
+      - text: "112 (nomor darurat nasional untuk semua jenis laporan)"
+        text_id: "112 (nomor darurat nasional untuk semua jenis laporan)"
+        correct: false
+      - text: "Tidak ada mekanisme pelaporan resmi di Indonesia"
+        text_id: "Tidak ada mekanisme pelaporan resmi di Indonesia"
+        correct: false
+    points: 10
+
+  - id: q6
+    content_id:
+      text: "Anda menerima SMS 'Selamat! Nomor Anda Terpilih Mendapat Hadiah BRI 250 Juta. Klaim sebelum 24 jam: bit.ly/klaim-bri'. Apa yang benar tentang SMS ini?"
+      explanation: "Bank resmi TIDAK PERNAH memberitahukan hadiah melalui SMS dengan link shortener. Tanda bahaya: link shortener (bit.ly), tenggat waktu (scarcity), tidak ada informasi verifikasi resmi, tidak menyebutkan nama lengkap penerima."
+    content_en:
+      text: "You receive SMS: 'Congratulations! Your number won BRI Prize 250 Million. Claim before 24 hours: bit.ly/klaim-bri'. What's true about this SMS?"
+      explanation: "Banks NEVER announce prizes via SMS with link shorteners. Red flags: bit.ly link, 24-hour deadline, no official verification info."
+    options:
+      - text: "Penipuan — bank tidak mengumumkan hadiah via SMS dengan link shortener"
+        text_id: "Penipuan — bank tidak mengumumkan hadiah via SMS dengan link shortener"
+        correct: true
+      - text: "Mungkin nyata — BRI memang punya program undian nasabah"
+        text_id: "Mungkin nyata — BRI memang punya program undian nasabah"
+        correct: false
+      - text: "Klik link untuk verifikasi apakah hadiah nyata — HTTPS berarti aman"
+        text_id: "Klik link untuk verifikasi apakah hadiah nyata — HTTPS berarti aman"
+        correct: false
+      - text: "Balas SMS untuk tanya info lebih detail"
+        text_id: "Balas SMS untuk tanya info lebih detail"
+        correct: false
+    points: 10
+
+  - id: q7
+    content_id:
+      text: "Bagaimana cara terbaik memverifikasi apakah email dari instansi pemerintah Indonesia itu resmi?"
+      explanation: "Tiga cara terbaik: (1) domain harus .go.id, (2) hubungi langsung via nomor resmi yang diketahui sebelumnya (bukan dari email), (3) akses portal resmi dengan mengetik URL sendiri, jangan klik link dari email."
+    content_en:
+      text: "What is the best way to verify if an email from an Indonesian government agency is legitimate?"
+      explanation: "Three best methods: domain must be .go.id, call the official number you already know, access the official portal by typing the URL yourself."
+    options:
+      - text: "Periksa domain (.go.id) + hubungi via nomor resmi yang diketahui sebelumnya"
+        text_id: "Periksa domain (.go.id) + hubungi via nomor resmi yang diketahui sebelumnya"
+        correct: true
+      - text: "Jika email terlihat profesional dan ada logo resmi maka pasti asli"
+        text_id: "Jika email terlihat profesional dan ada logo resmi maka pasti asli"
+        correct: false
+      - text: "Klik tautan di email untuk melihat apakah situsnya terlihat resmi"
+        text_id: "Klik tautan di email untuk melihat apakah situsnya terlihat resmi"
+        correct: false
+      - text: "Balas email dan minta mereka kirim ulang dengan tanda tangan digital"
+        text_id: "Balas email dan minta mereka kirim ulang dengan tanda tangan digital"
+        correct: false
+    points: 15

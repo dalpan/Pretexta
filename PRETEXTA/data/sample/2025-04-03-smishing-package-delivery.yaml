@@ -1,0 +1,204 @@
+type: challenge
+title: "Smishing: Fake Package Delivery"
+description: "You receive an SMS about a package delivery that requires immediate action. Identify this smishing (SMS phishing) attempt before it's too late."
+difficulty: easy
+cialdini_categories:
+  - scarcity
+  - social_proof
+estimated_time: 7
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [smishing, sms, phishing, package_delivery]
+  attack_vector: sms
+  technique: "Smishing — SMS Phishing via Delivery Notification"
+  mitre_technique: "T1660 - Smishing"
+
+nodes:
+  - id: start
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "+62-812-XXXX-4821"
+      text: |
+        [JNE Express] Your package (ID: JNE2025847261) could not be delivered.
+
+        Reason: Incorrect address details
+
+        Update your address within 2 hours or your package will be returned:
+        http://jne-delivery-update.site/track?id=847261
+
+        Customer Service: This is an automated message.
+    content_id:
+      from: "+62-812-XXXX-4821"
+      text: |
+        [JNE Express] Paket Anda (ID: JNE2025847261) tidak dapat dikirimkan.
+
+        Alasan: Detail alamat tidak benar
+
+        Perbarui alamat dalam 2 jam atau paket akan dikembalikan:
+        http://jne-delivery-update.site/track?id=847261
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "You receive this SMS from an unknown number. You ARE expecting a package. What do you do?"
+    content_id:
+      text: "Anda menerima SMS dari nomor tidak dikenal. Anda MEMANG menunggu paket. Apa yang Anda lakukan?"
+    options:
+      - text: "Click the link quickly — only 2 hours to fix the address!"
+        text_id: "Klik tautan cepat — hanya 2 jam untuk memperbaiki alamat!"
+        next: clicked_sms
+        score_impact: -30
+        cialdini_trigger: scarcity
+      - text: "Open the official JNE app or website directly to check my shipment"
+        text_id: "Buka aplikasi atau website JNE resmi langsung untuk cek kiriman"
+        next: official_app
+        score_impact: +25
+      - text: "Check the link URL before clicking"
+        text_id: "Periksa URL tautan sebelum mengklik"
+        next: check_url
+        score_impact: +15
+      - text: "Call JNE customer service at the official number"
+        text_id: "Hubungi customer service JNE di nomor resmi"
+        next: call_official
+        score_impact: +20
+
+  - id: clicked_sms
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "Pretexta Lab"
+      text: |
+        ⚠️ SIMULATION: You clicked a smishing link.
+
+        In a real attack, you would have been taken to a fake JNE page asking for:
+        • Your address (personal data)
+        • Your phone number
+        • Possibly a "small delivery fee" via credit card
+
+        Red flags you missed:
+        ✗ Unknown sender number (not official JNE short code)
+        ✗ Domain: jne-delivery-update.SITE (not jne.co.id)
+        ✗ 2-hour artificial urgency
+        ✗ Generic tracking number
+    content_id:
+      from: "Pretexta Lab"
+      text: "⚠️ SIMULASI: Anda mengklik tautan smishing. Domain palsu: jne-delivery-update.SITE (bukan jne.co.id)"
+    next: bad_outcome
+
+  - id: check_url
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "Pretexta Lab"
+      text: |
+        Good instinct! You examined the URL:
+
+        Fake URL: http://jne-delivery-UPDATE.site/track?id=847261
+        Real JNE: https://www.jne.co.id/en/tracking/trace
+
+        Key differences:
+        • jne-delivery-update.SITE vs jne.CO.ID
+        • HTTP (not HTTPS) — no encryption
+        • Suspicious domain extension (.site vs .co.id)
+        • Random parameter (?id=847261)
+
+        The official JNE domain is always jne.co.id
+    content_id:
+      from: "Pretexta Lab"
+      text: "URL palsu: jne-delivery-update.SITE. Asli: jne.co.id. HTTP bukan HTTPS."
+    next: good_outcome
+
+  - id: official_app
+    type: end
+    result: success
+    content_en:
+      title: "Smart Defense!"
+      explanation: |
+        Going directly to the official app/website is the safest response.
+
+        When you check the real JNE app:
+        • Your real tracking number either shows or doesn't exist
+        • If the package has a genuine issue, you'll see it there
+        • No personal data exposed to attackers
+
+        Why smishing works:
+        • People are always expecting packages (e-commerce era)
+        • Mobile phones feel more personal and urgent
+        • People click SMS links more than email links
+        • Short URLs hide the malicious domain
+
+        Defense: Bookmark official delivery sites. Always navigate directly, never via SMS links.
+    content_id:
+      title: "Pertahanan Cerdas!"
+      explanation: "Langsung ke aplikasi resmi adalah respons teraman. Smishing berhasil karena orang selalu menunggu paket."
+
+  - id: call_official
+    type: end
+    result: success
+    content_en:
+      title: "Phishing Stopped by Verification!"
+      explanation: |
+        Calling the official customer service number confirmed this was a smishing attack.
+
+        Official JNE contacts:
+        • Website: jne.co.id
+        • Phone: 021-2927-8888
+        • App: My JNE
+
+        Key rule: The number provided IN the suspicious message is part of the attack. Always use the official number from the company's real website.
+    content_id:
+      title: "Phishing Dihentikan!"
+      explanation: "Menghubungi CS resmi membuktikan ini adalah smishing. Selalu gunakan nomor resmi dari website resmi perusahaan."
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_en:
+      title: "Smishing Attack Defeated!"
+      explanation: |
+        You correctly identified this SMS phishing (smishing) attack.
+
+        Smishing red flags checklist:
+        ☑ Unknown sender number (not official company short code)
+        ☑ Domain doesn't match official company domain
+        ☑ HTTP instead of HTTPS
+        ☑ Artificial time pressure (2 hours!)
+        ☑ Asks you to click a link for sensitive action
+        ☑ Generic message (not addressed to you by name)
+
+        Defense strategy:
+        1. Never click links in unsolicited SMS messages
+        2. Navigate directly to official website or app
+        3. Verify with official customer service number
+        4. When in doubt — don't click, look up!
+    content_id:
+      title: "Serangan Smishing Dikalahkan!"
+      explanation: "Tanda bahaya smishing: nomor tidak dikenal, domain tidak cocok, HTTP bukan HTTPS, tekanan waktu buatan."
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "Smishing Attack Successful!"
+      explanation: |
+        You were caught by a smishing (SMS phishing) attack.
+
+        What the attacker gains:
+        • Your home address (for further targeting)
+        • Your phone number (confirmed active)
+        • Possible credit card details (fake "delivery fee")
+        • Potential malware installation (some links install apps)
+
+        Why smishing is particularly dangerous:
+        • People trust SMS more than email
+        • Mobile screens show shortened URLs, hiding the real domain
+        • Urgency (2 hours) bypasses rational thinking
+        • Timing with expected deliveries is often coincidental but exploitable
+
+        Next time: Check the domain, use the official app, verify with official CS.
+    content_id:
+      title: "Serangan Smishing Berhasil!"
+      explanation: "Penyerang mendapatkan alamat rumah, nomor telepon, dan mungkin detail kartu kredit Anda."

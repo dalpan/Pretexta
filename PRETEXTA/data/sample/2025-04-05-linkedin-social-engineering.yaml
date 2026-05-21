@@ -1,0 +1,307 @@
+type: challenge
+title: "LinkedIn Social Engineering: Fake Recruiter"
+description: "A convincing LinkedIn message from a 'senior recruiter' at a top tech company. This multi-stage attack aims to collect your credentials and install malware through a 'job application portal'."
+difficulty: hard
+cialdini_categories:
+  - liking
+  - social_proof
+  - scarcity
+  - reciprocity
+estimated_time: 15
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [linkedin, social_engineering, recruitment_scam, malware_delivery, hard]
+  attack_vector: social_media
+  technique: "LinkedIn Social Engineering — Fake Recruitment with Malware Delivery"
+  mitre_technique: "T1566.003 - Spearphishing via Service"
+
+nodes:
+  - id: start
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "Amanda Sari (Senior Technical Recruiter — Google)"
+      text: |
+        Hi [Your Name]! 👋
+
+        I came across your profile and I'm truly impressed by your background in cybersecurity. We have an opening for a Senior Security Engineer at Google Singapore that seems like a perfect fit.
+
+        The role: Security Lead, Trust & Safety Team
+        Compensation: SGD 18,000-25,000/month + equity + relocation
+        Process: Fast-track (2-week process)
+
+        We've been specifically looking for someone with your exact profile. Would you be open to a quick 15-minute call this week?
+
+        Best,
+        Amanda Sari | Senior Technical Recruiter | Google APAC
+        📎 [Job Description Attached: Google_Security_Engineer_JD.pdf.exe]
+    content_id:
+      from: "Amanda Sari (Senior Technical Recruiter — Google)"
+      text: |
+        Halo [Nama Anda]! 👋
+
+        Saya menemukan profil Anda dan sangat terkesan dengan latar belakang Anda di keamanan siber. Kami memiliki posisi Senior Security Engineer di Google Singapura.
+
+        Kompensasi: SGD 18.000-25.000/bulan + ekuitas + relokasi
+        Proses: Fast-track (2 minggu)
+
+        📎 [Job Description Attached: Google_Security_Engineer_JD.pdf.exe]
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "You receive this LinkedIn message. The opportunity sounds incredible. What do you do?"
+    content_id:
+      text: "Anda menerima pesan LinkedIn ini. Kesempatan ini terdengar luar biasa. Apa yang Anda lakukan?"
+    options:
+      - text: "Download and open the attached job description PDF"
+        text_id: "Unduh dan buka deskripsi pekerjaan PDF yang dilampirkan"
+        next: opened_malware
+        score_impact: -40
+        cialdini_trigger: liking
+      - text: "Verify if Amanda Sari actually works at Google by checking LinkedIn"
+        text_id: "Verifikasi apakah Amanda Sari benar bekerja di Google"
+        next: verify_recruiter
+        score_impact: +20
+      - text: "Reply expressing interest but don't download anything yet"
+        text_id: "Balas dengan menyatakan minat tapi jangan unduh apapun dulu"
+        next: replied_interested
+        score_impact: +10
+      - text: "Notice the file extension is .pdf.exe — that's a red flag"
+        text_id: "Perhatikan ekstensi file .pdf.exe — itu tanda bahaya"
+        next: noticed_extension
+        score_impact: +30
+
+  - id: opened_malware
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "Pretexta Lab"
+      text: |
+        ⚠️ SIMULATION: You opened the malware.
+
+        The file "Google_Security_Engineer_JD.pdf.exe" was a Remote Access Trojan (RAT).
+
+        What just happened on your system:
+        → Keylogger installed (captures passwords)
+        → Screen capture malware active
+        → Backdoor created for remote access
+        → Browser credentials exported
+        → Webcam access granted to attacker
+
+        Critical red flag you missed:
+        • The file was .PDF.EXE — a double extension trick
+        • PDF files end in .pdf, not .pdf.exe
+        • .exe files are executable programs, not documents
+        • Windows hides the .exe by default → looks like "file.pdf"
+    content_id:
+      from: "Pretexta Lab"
+      text: "⚠️ SIMULASI: Anda membuka malware RAT. File .pdf.EXE adalah program yang dapat dieksekusi, bukan dokumen."
+    next: bad_outcome
+
+  - id: noticed_extension
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "Pretexta Lab"
+      text: |
+        Excellent catch! You spotted the double extension attack.
+
+        File: Google_Security_Engineer_JD.pdf.exe
+
+        How this trick works:
+        • The file is actually an executable (.exe)
+        • The .pdf before it is just part of the name
+        • Windows hides known extensions → shows "Google_Security_Engineer_JD.pdf"
+        • Users think they're opening a PDF — actually running malware
+
+        This is Malware Delivery via Double Extension (T1036.007)
+
+        You correctly identified this as malicious. What do you do with the message?
+    content_id:
+      from: "Pretexta Lab"
+      text: "Bagus! File .pdf.exe adalah program yang dapat dieksekusi. Windows menyembunyikan ekstensi .exe sehingga terlihat seperti PDF."
+    next: good_outcome
+
+  - id: verify_recruiter
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "Pretexta Lab"
+      text: |
+        Smart move! You searched for Amanda Sari at Google on LinkedIn.
+
+        Findings:
+        • No "Amanda Sari" found in Google APAC's recruiter team
+        • The profile was created 3 weeks ago with only 47 connections
+        • Profile photo matches a stock photo from Shutterstock
+        • No mutual connections despite claiming to know your profile
+
+        This is a "catfish" recruiter account — fake identity to build trust.
+
+        How attackers build fake LinkedIn profiles:
+        1. Stolen/AI-generated profile photo
+        2. Copied work history from real employees
+        3. Sent connection requests to build credibility
+        4. Targeting people looking for jobs (posted about job hunting)
+    content_id:
+      from: "Pretexta Lab"
+      text: "Cerdas! Profil 'Amanda Sari' dibuat 3 minggu lalu, foto profil adalah foto stok dari Shutterstock, dan tidak ada di tim rekruter Google."
+    next: choice_3
+
+  - id: replied_interested
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "Amanda Sari (Recruiter)"
+      text: |
+        Wonderful! I'm so glad you're interested.
+
+        To proceed to the fast-track process, please:
+        1. Complete this quick application form: http://google-careers-sg.net/apply
+        2. Upload your CV
+        3. We'll send you a technical assessment within 24 hours
+
+        The Singapore team is very excited about your profile. We've had 3 other candidates drop out, so this spot is yours if you act quickly.
+
+        Looking forward to your application!
+
+        P.S. I've also included our NDA in the application — standard procedure for security roles.
+    content_id:
+      from: "Amanda Sari (Rekruter)"
+      text: |
+        Silakan lengkapi formulir aplikasi di: http://google-careers-sg.net/apply
+        Unggah CV Anda. 3 kandidat lain mengundurkan diri, jadi tempat ini untuk Anda jika Anda cepat bertindak.
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "The recruiter wants you to apply at 'google-careers-sg.net'. What do you do?"
+    content_id:
+      text: "Rekruter ingin Anda melamar di 'google-careers-sg.net'. Apa yang Anda lakukan?"
+    options:
+      - text: "Go to the link and submit my application with CV"
+        text_id: "Pergi ke tautan dan kirim lamaran dengan CV"
+        next: submitted_fake_form
+        score_impact: -30
+        cialdini_trigger: scarcity
+      - text: "Check — Google's real careers site is careers.google.com, not google-careers-sg.net"
+        text_id: "Periksa — situs karier Google asli adalah careers.google.com, bukan google-careers-sg.net"
+        next: good_outcome
+        score_impact: +25
+      - text: "Contact Google HR directly to verify this position exists"
+        text_id: "Hubungi HR Google langsung untuk verifikasi posisi ini ada"
+        next: good_outcome
+        score_impact: +20
+
+  - id: submitted_fake_form
+    type: message
+    channel: chat_ui
+    content_en:
+      from: "Pretexta Lab"
+      text: |
+        ⚠️ SIMULATION: You submitted your application.
+
+        What you just gave the attacker:
+        • Full name, address, phone number
+        • Current employer and salary (CV data)
+        • References (your professional contacts — now targets)
+        • Email address (for further phishing)
+        • If you signed the "NDA": your signature and personal details
+
+        This is a data harvesting operation, not a real job.
+        Your data will be sold or used for further targeted attacks.
+    content_id:
+      from: "Pretexta Lab"
+      text: "⚠️ SIMULASI: Data Anda dari CV sekarang ada di tangan penyerang untuk serangan lebih lanjut."
+    next: bad_outcome
+
+  - id: choice_3
+    type: question
+    content_en:
+      text: "You confirmed the recruiter is fake. What do you do?"
+    content_id:
+      text: "Anda mengkonfirmasi rekruter palsu. Apa yang Anda lakukan?"
+    options:
+      - text: "Report the profile to LinkedIn as fraudulent"
+        text_id: "Laporkan profil ke LinkedIn sebagai penipuan"
+        next: good_outcome
+        score_impact: +20
+      - text: "Ignore and block the account"
+        text_id: "Abaikan dan blokir akun"
+        next: good_outcome
+        score_impact: +10
+      - text: "Continue the conversation anyway — the job sounds too good to pass up"
+        text_id: "Lanjutkan percakapan — pekerjaan terdengar terlalu bagus untuk dilewatkan"
+        next: replied_interested
+        score_impact: -20
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_en:
+      title: "LinkedIn Social Engineering Defeated!"
+      explanation: |
+        You successfully identified a sophisticated LinkedIn-based attack.
+
+        Attack techniques used:
+        1. Catfish profile — fake recruiter identity with stolen photo
+        2. Dream job lure — exceptional salary to bypass critical thinking
+        3. Double extension malware — .pdf.exe disguised as document
+        4. Credential harvesting form — fake application portal
+        5. Urgency — "3 candidates dropped out, act now"
+
+        LinkedIn social engineering red flags:
+        • Profile created recently with few connections
+        • Job offer much better than market rate
+        • Profile photo appears in reverse image search
+        • Links to unofficial domains (careers.google.com vs google-careers-sg.net)
+        • File attachments from a stranger
+        • Urgency in any recruitment process
+
+        Security hygiene for LinkedIn:
+        → Verify recruiters via official company channels
+        → Reverse image search profile photos
+        → Check official company careers pages directly
+        → Never open .exe files disguised as documents
+        → Enable Windows "show file extensions" setting
+    content_id:
+      title: "Social Engineering LinkedIn Dikalahkan!"
+      explanation: |
+        Anda berhasil mengidentifikasi serangan LinkedIn yang canggih.
+
+        Tanda bahaya: profil baru dengan sedikit koneksi, gaji jauh di atas pasar, domain tidak resmi, file .pdf.exe, urgensi dalam proses rekrutmen.
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "LinkedIn Social Engineering Successful!"
+      explanation: |
+        You were compromised by a sophisticated LinkedIn social engineering attack.
+
+        This attack type (T1566.003) is increasingly common because:
+        • LinkedIn users expect professional outreach
+        • Job seekers lower their guard for good opportunities
+        • Platform is trusted, making messages seem legitimate
+        • Attackers can study your profile to personalize the attack
+
+        Real-world impact:
+        • North Korea's Lazarus Group uses this to target crypto companies
+        • Estimated $300M stolen via LinkedIn recruitment scams in 2024
+        • Corporate espionage via malware delivered as job offers
+
+        Protect yourself:
+        1. Never open executables from unknown senders
+        2. Verify recruiters through official channels
+        3. Enable "show all file extensions" in Windows
+        4. Use LinkedIn's "Request Contact" rather than clicking external links
+        5. If it sounds too good to be true — verify harder
+    content_id:
+      title: "Social Engineering LinkedIn Berhasil!"
+      explanation: |
+        Serangan ini umum digunakan oleh grup APT seperti Lazarus (Korea Utara).
+        Diperkirakan $300 juta dicuri melalui penipuan rekrutmen LinkedIn di 2024.

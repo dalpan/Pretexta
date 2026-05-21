@@ -1,0 +1,162 @@
+type: challenge
+title: "AI Voice Clone — Family Emergency"
+description: "A crying family member calls begging for emergency money. But their voice was cloned by AI."
+difficulty: hard
+cialdini_categories:
+  - urgency
+  - liking
+  - commitment
+estimated_time: 10
+metadata:
+  author: "Pretexta"
+  tags: [vishing, ai-voice, voice-cloning, family-scam]
+
+nodes:
+  - id: start
+    type: message
+    channel: phone_call
+    content_en:
+      caller: "Unknown Number"
+      transcript: "*crying* Oh thank God you picked up! It's me... I was in a car accident in Mexico. I'm at the hospital and they won't treat me without payment. I lost my wallet and passport. Please, I need you to wire $3,000 right now. The lawyer here will explain..."
+    content_id:
+      caller: "Nomor Tidak Dikenal"
+      transcript: "*menangis* Syukurlah kamu angkat! Ini aku... Aku kecelakaan mobil di Meksiko. Aku di rumah sakit dan mereka tidak mau merawat tanpa pembayaran. Dompet dan paspor hilang. Tolong, aku butuh kamu transfer $3,000 sekarang. Pengacara di sini akan menjelaskan..."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "The voice sounds exactly like your family member. They're clearly in distress. A 'lawyer' is waiting to take over the call. What do you do?"
+    content_id:
+      text: "Suaranya persis seperti anggota keluargamu. Mereka jelas dalam kesulitan. Seorang 'pengacara' menunggu untuk mengambil alih panggilan. Apa yang kamu lakukan?"
+    options:
+      - text: "Transfer the money immediately — your family member needs help!"
+        text_id: "Transfer uang segera — anggota keluargamu butuh bantuan!"
+        next: bad_outcome_immediate
+        score_impact: -50
+      - text: "Ask a personal question only your real family member would know"
+        text_id: "Ajukan pertanyaan pribadi yang hanya anggota keluarga asli yang tahu"
+        next: personal_question
+        score_impact: 15
+      - text: "Say 'Hold on, I need to check something' and try calling the family member on their known number"
+        text_id: "Bilang 'Tunggu, aku perlu cek sesuatu' dan coba hubungi anggota keluarga di nomor yang dikenal"
+        next: good_outcome_verify
+        score_impact: 40
+      - text: "Ask to speak with the lawyer for hospital details"
+        text_id: "Minta bicara dengan pengacara untuk detail rumah sakit"
+        next: lawyer_call
+        score_impact: 5
+
+  - id: personal_question
+    type: message
+    channel: phone_call
+    content_en:
+      caller: "Unknown Number"
+      transcript: "*sobbing louder* Why are you quizzing me right now?! I'm bleeding and scared! The doctors are getting impatient... please, just send the money. I'll explain everything when I'm safe. Please... you're the only person I can call."
+    content_id:
+      caller: "Nomor Tidak Dikenal"
+      transcript: "*menangis lebih keras* Kenapa kamu menguji aku sekarang?! Aku berdarah dan ketakutan! Dokter mulai tidak sabar... tolong, kirim saja uangnya. Aku akan jelaskan semuanya ketika aku aman. Tolong... kamu satu-satunya orang yang bisa aku hubungi."
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "They avoided your question and escalated the emotional pressure. AI voice clones can replicate tone and crying patterns but struggle with specific personal knowledge. What now?"
+    content_id:
+      text: "Mereka menghindari pertanyaanmu dan meningkatkan tekanan emosional. Kloning suara AI bisa mereplikasi nada dan pola tangisan tapi kesulitan dengan pengetahuan pribadi spesifik. Sekarang apa?"
+    options:
+      - text: "Send the money — you can't risk ignoring a real emergency"
+        text_id: "Kirim uangnya — kamu tidak bisa mengambil risiko mengabaikan keadaan darurat nyata"
+        next: bad_outcome_emotional
+        score_impact: -40
+      - text: "Hang up and call the family member's real phone number"
+        text_id: "Tutup telepon dan hubungi nomor telepon asli anggota keluarga"
+        next: good_outcome_hangup
+        score_impact: 40
+
+  - id: lawyer_call
+    type: message
+    channel: phone_call
+    content_en:
+      caller: "Lawyer (Unknown)"
+      transcript: "Hello, this is Attorney Ricardo Mendez from Hospital General de Cancún. Your family member was admitted with severe injuries from a vehicular accident. Treatment will begin once we receive payment confirmation. We accept wire transfer to our hospital trust account. I can provide the routing details now. Time is critical — the surgery window closes in 45 minutes."
+    content_id:
+      caller: "Pengacara (Tidak Dikenal)"
+      transcript: "Halo, ini Pengacara Ricardo Mendez dari Hospital General de Cancún. Anggota keluarga Anda dirawat dengan cedera parah dari kecelakaan kendaraan. Perawatan akan dimulai setelah kami menerima konfirmasi pembayaran. Kami menerima wire transfer. Saya bisa berikan detail routing sekarang."
+    next: choice_lawyer
+
+  - id: choice_lawyer
+    type: question
+    content_en:
+      text: "The 'lawyer' sounds professional and gave specific hospital details. But legitimate hospitals don't demand wire transfers before emergency treatment. What's your move?"
+    content_id:
+      text: "'Pengacara' terdengar profesional dan memberikan detail rumah sakit spesifik. Tapi rumah sakit yang sah tidak meminta wire transfer sebelum perawatan darurat. Apa langkahmu?"
+    options:
+      - text: "Wire the money — the hospital details sound real"
+        text_id: "Transfer uang — detail rumah sakit terdengar nyata"
+        next: bad_outcome_lawyer
+        score_impact: -40
+      - text: "Say you'll call the hospital directly to arrange payment, then hang up and verify"
+        text_id: "Bilang akan menghubungi rumah sakit langsung untuk mengatur pembayaran, lalu tutup telepon dan verifikasi"
+        next: good_outcome_hospital
+        score_impact: 35
+
+  - id: bad_outcome_immediate
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — AI Voice Clone Successful"
+      explanation: "The voice was generated using AI voice cloning technology, which only needs a few seconds of audio (from social media, voicemails) to create a convincing clone. Your family member was safe at home. In 2024-2025, AI voice cloning scams cost victims over $25 million globally. Always verify through a separate channel before sending money."
+    content_id:
+      title: "Terkompromi — Kloning Suara AI Berhasil"
+      explanation: "Suara dihasilkan menggunakan teknologi kloning suara AI, yang hanya butuh beberapa detik audio untuk membuat klon meyakinkan. Anggota keluargamu aman di rumah."
+
+  - id: bad_outcome_emotional
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Emotional Override"
+      explanation: "Despite correctly attempting verification, the emotional pressure overrode your rational thinking. The key red flag was that they AVOIDED your personal question while INCREASING emotional pressure. This is a textbook manipulation pattern: when challenged, real people answer; scammers deflect and escalate."
+    content_id:
+      title: "Terkompromi — Override Emosional"
+      explanation: "Meskipun benar mencoba verifikasi, tekanan emosional mengatasi pikiran rasionalmu. Tanda bahaya utama adalah mereka MENGHINDARI pertanyaan pribadi sambil MENINGKATKAN tekanan emosional."
+
+  - id: bad_outcome_lawyer
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Fake Lawyer Convinced You"
+      explanation: "The 'lawyer' was part of the scam team. Real hospitals provide emergency care regardless of payment (especially for tourists). No legitimate hospital demands wire transfers before surgery. The scammers used specific details (hospital name, city) to create false credibility."
+    content_id:
+      title: "Terkompromi — Pengacara Palsu Meyakinkanmu"
+      explanation: "'Pengacara' adalah bagian dari tim penipuan. Rumah sakit asli memberikan perawatan darurat tanpa memandang pembayaran. Tidak ada rumah sakit yang sah meminta wire transfer sebelum operasi."
+
+  - id: good_outcome_verify
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Independent Verification"
+      explanation: "Perfect response. You called your family member on their real number and they picked up — safe and confused about the call. AI voice cloning is now sophisticated enough to fool even close family members. The defense is always the same: verify through a channel YOU control. Establish a family safe word for emergencies."
+    content_id:
+      title: "Berhasil Bertahan — Verifikasi Independen"
+      explanation: "Respons sempurna. Kamu menelepon anggota keluarga di nomor asli mereka dan mereka mengangkat — aman dan bingung tentang panggilan itu. Tips: buat kata sandi keluarga untuk keadaan darurat."
+
+  - id: good_outcome_hangup
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Broke the Emotional Spell"
+      explanation: "Hanging up was the hardest but smartest thing you could do. The emotional pressure of hearing a 'loved one' in distress is specifically designed to bypass rational thinking. By hanging up and verifying independently, you confirmed it was a scam. Consider setting up a family 'code word' for real emergencies."
+    content_id:
+      title: "Berhasil Bertahan — Memutus Mantra Emosional"
+      explanation: "Menutup telepon adalah hal tersulit tapi paling cerdas yang bisa kamu lakukan. Tekanan emosional dari mendengar 'orang tercinta' dalam kesulitan dirancang khusus untuk melewati pemikiran rasional."
+
+  - id: good_outcome_hospital
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Verified the Institution"
+      explanation: "Smart approach. By insisting on calling the hospital directly (using a number you find independently, not one they provide), you would discover that no such patient was admitted. Legitimate medical facilities have their own payment processes and never demand wire transfers through third-party lawyers."
+    content_id:
+      title: "Berhasil Bertahan — Memverifikasi Institusi"
+      explanation: "Pendekatan cerdas. Dengan bersikeras menghubungi rumah sakit langsung (menggunakan nomor yang kamu temukan sendiri), kamu akan menemukan bahwa tidak ada pasien tersebut yang dirawat."

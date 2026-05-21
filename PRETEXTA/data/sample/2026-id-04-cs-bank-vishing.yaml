@@ -1,0 +1,260 @@
+type: challenge
+title: "Vishing: Customer Service Bank BRI Palsu"
+description: "Anda dihubungi seseorang yang mengaku CS Bank BRI mengenai transaksi mencurigakan di rekening Anda. Kenali teknik vishing (voice phishing) yang menarget nasabah bank di Indonesia."
+difficulty: medium
+cialdini_categories:
+  - authority
+  - scarcity
+  - commitment
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [vishing, bank, bri, phone, social_engineering, indonesia, credential_harvest]
+  attack_vector: phone
+  technique: "Vishing — Bank Customer Service Impersonation"
+  mitre_technique: "T1566 - Phishing"
+  context_id: "Penipuan mengatasnamakan CS bank adalah modus paling umum di Indonesia. Penipu menggunakan spoofed caller ID dan data korban yang bocor dari data breach untuk tampil meyakinkan."
+
+nodes:
+  - id: start
+    type: message
+    channel: phone
+    content_id:
+      from: "0800-1600 (terlihat seperti nomor resmi BRI)"
+      body: |
+        "Selamat siang, dengan Bapak/Ibu [Nama Anda]?"
+
+        "Saya Dinda dari Customer Service BRI. Kami mendeteksi aktivitas mencurigakan
+        pada rekening Anda — ada percobaan transaksi sebesar Rp 8.500.000 dari
+        Surabaya pada pukul 09.23 tadi pagi.
+
+        Untuk keamanan, rekening Anda saat ini dalam proses pemblokiran sementara.
+        Kami perlu konfirmasi identitas Anda segera untuk mencegah pemblokiran permanen.
+
+        Bisa saya minta nomor rekening dan 4 digit terakhir kartu ATM Anda
+        untuk verifikasi?"
+    content_en:
+      from: "0800-1600 (appears to be official BRI number)"
+      body: |
+        "Good afternoon, is this [Your Name]?"
+        "I'm Dinda from BRI Customer Service. We detected suspicious activity — a Rp 8.5M
+        transaction attempt from Surabaya. Your account is being temporarily blocked.
+        I need your account number and last 4 digits of your ATM card to verify your identity."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_id:
+      text: "'CS BRI' menelepon tentang transaksi mencurigakan dan meminta data rekening. Apa respons Anda?"
+    content_en:
+      text: "'BRI CS' calls about suspicious transactions and asks for account data. Your response?"
+    options:
+      - text: "Berikan data — CS bank memang perlu verifikasi untuk bantu saya"
+        text_id: "Berikan data — CS bank memang perlu verifikasi untuk bantu saya"
+        next: gave_data
+        score_impact: -35
+        cialdini_trigger: authority
+      - text: "Tanya nama lengkap dan ID karyawan — bank selalu punya ini"
+        text_id: "Tanya nama lengkap dan ID karyawan — bank selalu punya ini"
+        next: asked_id
+        score_impact: +15
+      - text: "Tutup telepon dan hubungi CS BRI di 14017 / 1500017 sendiri"
+        text_id: "Tutup telepon dan hubungi CS BRI di 14017 / 1500017 sendiri"
+        next: called_bank
+        score_impact: +30
+      - text: "Cek rekening sendiri via aplikasi BRImo — apakah benar ada transaksi?"
+        text_id: "Cek rekening sendiri via aplikasi BRImo — apakah benar ada transaksi?"
+        next: checked_app
+        score_impact: +20
+
+  - id: asked_id
+    type: message
+    channel: phone
+    content_id:
+      from: "0800-1600"
+      body: |
+        "ID karyawan saya D-2847, Dinda Permatasari. Saya bisa verifikasi dengan
+        menyebutkan nama lengkap Anda dan 3 digit pertama nomor rekening jika Anda ingin.
+
+        Tapi Bapak/Ibu, waktu sangat terbatas — proses pemblokiran otomatis akan
+        selesai dalam 10 menit. Jika tidak diverifikasi, Anda harus datang ke kantor cabang
+        dan prosesnya bisa memakan waktu 3-5 hari kerja.
+
+        Lebih cepat jika kita selesaikan sekarang. Nomor rekeningnya berapa?"
+    content_en:
+      from: "0800-1600"
+      body: |
+        "My ID is D-2847, Dinda Permatasari. But we're running out of time —
+        auto-blocking completes in 10 minutes. If not verified, you must visit a branch,
+        3-5 business days. Faster if we do it now. Your account number?"
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_id:
+      text: "Dia menyebutkan ID dan nama karyawan, tapi tetap mendesak. Apa yang Anda lakukan?"
+    content_en:
+      text: "She gave employee ID and name, but still pushing. What do you do?"
+    options:
+      - text: "Berikan — dia sudah verifikasi identitas dirinya"
+        text_id: "Berikan — dia sudah verifikasi identitas dirinya"
+        next: gave_data
+        score_impact: -25
+        cialdini_trigger: authority
+      - text: "Tutup telepon dan hubungi CS BRI di nomor resmi 14017"
+        text_id: "Tutup telepon dan hubungi CS BRI di nomor resmi 14017"
+        next: called_bank
+        score_impact: +25
+      - text: "Cek BRImo dulu — jika ada transaksi mencurigakan, baru percaya"
+        text_id: "Cek BRImo dulu — jika ada transaksi mencurigakan, baru percaya"
+        next: checked_app
+        score_impact: +20
+
+  - id: checked_app
+    type: message
+    channel: phone
+    content_id:
+      from: "sistem@pretexta.lab"
+      body: |
+        Anda membuka aplikasi BRImo dan memeriksa mutasi rekening.
+
+        TIDAK ADA transaksi mencurigakan dari Surabaya.
+        Rekening status: Normal, tidak ada pemblokiran.
+        Saldo: Normal, tidak ada aktivitas tidak biasa.
+
+        Kesimpulan: Informasi yang diberikan "CS BRI" adalah BOHONG.
+        Tidak ada transaksi mencurigakan yang nyata.
+    content_en:
+      from: "sistem@pretexta.lab"
+      body: |
+        You checked BRImo — NO suspicious transactions. Account status: Normal.
+        The "CS BRI" information was completely fabricated.
+    next: choice_3
+
+  - id: choice_3
+    type: question
+    content_id:
+      text: "Rekening normal — tidak ada transaksi mencurigakan. Penipu sudah bohong. Apa selanjutnya?"
+    content_en:
+      text: "Account is normal — the 'CS' lied. What next?"
+    options:
+      - text: "Konfrontasi penipu di telepon dan laporkan nomornya"
+        text_id: "Konfrontasi penipu di telepon dan laporkan nomornya"
+        next: good_outcome
+        score_impact: +20
+      - text: "Tutup telepon dan laporkan ke BI (Bank Indonesia) dan Bareskrim"
+        text_id: "Tutup telepon dan laporkan ke BI (Bank Indonesia) dan Bareskrim"
+        next: good_outcome
+        score_impact: +25
+
+  - id: called_bank
+    type: message
+    channel: phone
+    content_id:
+      from: "CS BRI Resmi — 14017"
+      body: |
+        *Anda menelepon 14017 sendiri*
+
+        CS BRI: "Selamat siang, terima kasih telah menghubungi BRI.
+        Nama saya Ari, ada yang bisa saya bantu?
+
+        Mengenai telepon tadi — kami TIDAK pernah menelepon nasabah meminta
+        data rekening atau PIN via telepon. Itu sudah pasti penipuan.
+
+        Nomor 0800-1600 itu BUKAN nomor resmi BRI.
+        Nomor resmi kami: 14017 atau 1500017.
+
+        Apakah Anda sudah memberikan data apapun? Kalau belum, rekening Anda aman.
+        Saya bisa bantu blokir nomor penipu tersebut di sistem kami."
+    content_en:
+      from: "Official BRI CS — 14017"
+      body: |
+        *You called 14017 yourself*
+        "We NEVER call customers asking for account data or PIN. That was definitely a scam.
+        0800-1600 is NOT our number. Our official numbers: 14017 / 1500017.
+        Did you give any data? If not, your account is safe."
+    next: good_outcome
+
+  - id: gave_data
+    type: message
+    channel: phone
+    content_id:
+      from: "sistem@pretexta.lab"
+      body: |
+        ⚠️ PERINGATAN SIMULASI
+
+        Dalam serangan nyata, setelah Anda memberikan data rekening:
+        1. Penipu langsung mencoba login ke mobile banking Anda
+        2. Meminta kode OTP yang dikirim ke HP Anda (alasan: "verifikasi sistem")
+        3. Setelah dapat OTP → akses penuh ke rekening Anda
+        4. Dana bisa habis dalam hitungan menit
+
+        FAKTA PENTING:
+        • CS bank TIDAK PERNAH meminta nomor rekening — mereka sudah tahu
+        • CS bank TIDAK PERNAH meminta PIN, OTP, atau password
+        • Caller ID bisa dipalsukan (spoofed) — terlihat seperti nomor resmi bank
+        • Data Anda mungkin bocor dari data breach → penipu tahu nama dan nomor HP Anda
+    content_en:
+      from: "sistem@pretexta.lab"
+      body: |
+        SIMULATION: After giving account data, attacker attempts mobile banking login,
+        then asks for OTP → full account access. Funds can be emptied in minutes.
+    next: bad_outcome
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_id:
+      title: "Vishing Bank Digagalkan!"
+      explanation: |
+        Anda berhasil mendeteksi serangan vishing yang menyamar sebagai CS bank.
+
+        Aturan emas banking Indonesia:
+        1. Bank TIDAK PERNAH menelepon meminta data rekening, PIN, atau OTP
+        2. Caller ID bisa dipalsukan — jangan percaya nomor yang terlihat di layar
+        3. SELALU tutup telepon dan hubungi nomor resmi bank sendiri
+        4. Cek status rekening sendiri via aplikasi resmi, bukan dari info penelepon
+        5. Jangan terburu-buru karena "deadline 10 menit" — itu taktik manipulasi
+
+        Nomor resmi bank Indonesia:
+        • BRI: 14017 / 1500017
+        • BCA: 1500888
+        • Mandiri: 14000
+        • BNI: 1500046
+
+        Laporkan penipuan ke: OJK 157 | Bareskrim Polri 110 | BI Careline 131
+    content_en:
+      title: "Bank Vishing Defeated!"
+      explanation: |
+        You identified the bank impersonation vishing attack.
+        Golden rule: Banks NEVER call asking for account data, PIN, or OTP. Caller ID can be spoofed.
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_id:
+      title: "Rekening Dikuras — Simulasi Selesai"
+      explanation: |
+        Anda terjebak dalam serangan vishing bank yang sangat umum di Indonesia.
+
+        Bagaimana penipu bisa terdengar meyakinkan:
+        1. Data bocor — mereka tahu nama, nomor HP, bahkan saldo Anda (dari data breach)
+        2. Caller ID spoofing — nomor tampak seperti nomor resmi bank
+        3. ID karyawan palsu terdengar resmi tapi tidak bisa diverifikasi via telepon
+        4. Skenario darurat (pemblokiran rekening) menciptakan panik yang bypass logika
+
+        Yang harus dilakukan jika sudah memberikan data:
+        1. SEGERA hubungi bank di nomor resmi untuk blokir rekening
+        2. Ganti password mobile banking dan PIN
+        3. Laporkan ke OJK (157) dan Bareskrim Polri (110)
+        4. Simpan bukti (nomor telepon penipu, waktu telepon)
+
+        Taktik yang digunakan:
+        • Authority: menyamar sebagai CS bank dengan ID palsu
+        • Scarcity: deadline 10 menit sebelum "pemblokiran permanen"
+        • Commitment: eskalasi bertahap dari data kecil ke data sensitif
+    content_en:
+      title: "Account Drained — Simulation Complete"
+      explanation: |
+        You fell for bank vishing — one of the most common financial fraud in Indonesia.
+        Banks NEVER ask for account data by phone. Hang up and call the official number yourself.

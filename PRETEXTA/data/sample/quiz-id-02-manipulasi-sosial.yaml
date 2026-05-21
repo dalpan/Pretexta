@@ -1,0 +1,170 @@
+type: quiz
+title: "Prinsip Manipulasi Sosial Cialdini di Tempat Kerja"
+description: "Uji pemahaman Anda tentang 6 prinsip manipulasi psikologis Cialdini dalam konteks tempat kerja Indonesia — BUMN, instansi pemerintah, dan perusahaan swasta."
+difficulty: medium
+cialdini_categories:
+  - authority
+  - scarcity
+  - reciprocity
+  - liking
+  - commitment
+  - social_proof
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [cialdini, social_engineering, manipulation, psychology, workplace, indonesia]
+
+questions:
+  - id: q1
+    content_id:
+      text: "Seseorang menelepon mengaku 'Auditor Internal Kantor Pusat Jakarta' dan menggunakan bahasa formal serta menyebutkan nama Dirut Anda. Prinsip Cialdini apa yang sedang dieksploitasi?"
+      explanation: "Ini adalah prinsip Authority (Otoritas). Penyerang menciptakan persepsi posisi yang lebih tinggi dan berkuasa untuk mendapatkan kepatuhan tanpa pertanyaan. Penggunaan nama pejabat nyata memperkuat ilusi otoritas."
+    content_en:
+      text: "Someone calls claiming to be 'Internal Auditor from Head Office Jakarta', using formal language and mentioning your CEO's name. Which Cialdini principle is being exploited?"
+      explanation: "This is Authority. The attacker creates perception of higher power to gain unquestioning compliance. Using real executive names strengthens the authority illusion."
+    options:
+      - text: "Authority (Otoritas) — mengeksploitasi kepatuhan pada figur berwenang"
+        text_id: "Authority (Otoritas) — mengeksploitasi kepatuhan pada figur berwenang"
+        correct: true
+      - text: "Liking (Kesukaan) — membangun rapport dengan bahasa yang ramah"
+        text_id: "Liking (Kesukaan) — membangun rapport dengan bahasa yang ramah"
+        correct: false
+      - text: "Social Proof (Bukti Sosial) — menyebut orang lain sudah mematuhi"
+        text_id: "Social Proof (Bukti Sosial) — menyebut orang lain sudah mematuhi"
+        correct: false
+      - text: "Commitment (Komitmen) — meminta persetujuan bertahap"
+        text_id: "Commitment (Komitmen) — meminta persetujuan bertahap"
+        correct: false
+    points: 10
+
+  - id: q2
+    content_id:
+      text: "'Rekrutmen khusus ini hanya untuk 5 orang terpilih, dan slot terakhir akan tutup besok pagi.' Prinsip apa yang digunakan, dan apa tujuannya?"
+      explanation: "Scarcity (Kelangkaan) menciptakan FOMO (Fear Of Missing Out) — ketakutan kehilangan kesempatan. Deadline buatan dan 'slot terbatas' memaksa keputusan cepat tanpa verifikasi yang memadai. Ini sangat umum dalam penipuan investasi dan rekrutmen palsu."
+    content_en:
+      text: "'This special recruitment is for only 5 selected people, and the last slot closes tomorrow morning.' What principle is this and what's its purpose?"
+      explanation: "Scarcity creates FOMO (Fear Of Missing Out), forcing quick decisions without adequate verification. Common in investment scams and fake recruitment."
+    options:
+      - text: "Scarcity — menciptakan FOMO untuk memaksa keputusan cepat tanpa verifikasi"
+        text_id: "Scarcity — menciptakan FOMO untuk memaksa keputusan cepat tanpa verifikasi"
+        correct: true
+      - text: "Authority — slot terbatas menunjukkan program yang eksklusif dan terpercaya"
+        text_id: "Authority — slot terbatas menunjukkan program yang eksklusif dan terpercaya"
+        correct: false
+      - text: "Reciprocity — mereka memilih Anda, jadi Anda seharusnya membalas"
+        text_id: "Reciprocity — mereka memilih Anda, jadi Anda seharusnya membalas"
+        correct: false
+      - text: "Social Proof — banyak orang yang sudah daftar membuktikan ini nyata"
+        text_id: "Social Proof — banyak orang yang sudah daftar membuktikan ini nyata"
+        correct: false
+    points: 10
+
+  - id: q3
+    content_id:
+      text: "Vendor baru mengirimkan hamper Lebaran senilai mahal ke kantor Anda sebelum proses tender dimulai. Prinsip Cialdini apa yang digunakan, dan apa risikonya?"
+      explanation: "Reciprocity (Timbal Balik) — memberi hadiah terlebih dahulu menciptakan rasa 'hutang' psikologis yang tidak nyaman jika tidak dibalas. Dalam konteks bisnis, ini adalah teknik manipulasi yang bisa mempengaruhi objektivitas keputusan pengadaan."
+    content_en:
+      text: "A new vendor sends expensive Eid hampers to your office before the tender process begins. What Cialdini principle is this and what's the risk?"
+      explanation: "Reciprocity — giving gifts first creates psychological 'debt' that feels uncomfortable not to repay. In business, this can compromise procurement objectivity."
+    options:
+      - text: "Reciprocity — menciptakan rasa hutang yang bisa mempengaruhi objektivitas tender"
+        text_id: "Reciprocity — menciptakan rasa hutang yang bisa mempengaruhi objektivitas tender"
+        correct: true
+      - text: "Liking — membangun hubungan baik adalah hal yang wajar dalam bisnis"
+        text_id: "Liking — membangun hubungan baik adalah hal yang wajar dalam bisnis"
+        correct: false
+      - text: "Social Proof — semua vendor lain juga mengirim hadiah jadi ini normal"
+        text_id: "Social Proof — semua vendor lain juga mengirim hadiah jadi ini normal"
+        correct: false
+      - text: "Authority — vendor yang berani kirim hadiah mahal pasti perusahaan besar"
+        text_id: "Authority — vendor yang berani kirim hadiah mahal pasti perusahaan besar"
+        correct: false
+    points: 15
+
+  - id: q4
+    content_id:
+      text: "'Semua kepala divisi di 5 instansi lain sudah tanda tangan dokumen ini. Tinggal Anda.' Teknik manipulasi apa ini?"
+      explanation: "Social Proof (Bukti Sosial) — manusia cenderung mengikuti mayoritas ketika tidak yakin. 'Semua orang sudah melakukannya' mengurangi resistensi karena terasa menjadi satu-satunya yang menolak. Verifikasi klaim ini selalu diperlukan sebelum mengambil tindakan."
+    content_en:
+      text: "'All department heads at 5 other agencies have already signed this document. Only you remain.' What manipulation technique is this?"
+      explanation: "Social Proof — humans tend to follow the majority when uncertain. 'Everyone else did it' reduces resistance. Always verify such claims before acting."
+    options:
+      - text: "Social Proof — tekanan kelompok mayoritas untuk mengurangi resistensi"
+        text_id: "Social Proof — tekanan kelompok mayoritas untuk mengurangi resistensi"
+        correct: true
+      - text: "Authority — disebutkan bahwa instansi senior sudah menyetujui"
+        text_id: "Authority — disebutkan bahwa instansi senior sudah menyetujui"
+        correct: false
+      - text: "Commitment — sudah terlanjur jauh dalam proses sehingga sulit mundur"
+        text_id: "Commitment — sudah terlanjur jauh dalam proses sehingga sulit mundur"
+        correct: false
+      - text: "Scarcity — Anda adalah satu-satunya yang belum selesai"
+        text_id: "Scarcity — Anda adalah satu-satunya yang belum selesai"
+        correct: false
+    points: 10
+
+  - id: q5
+    content_id:
+      text: "Seorang penyerang mengajukan permintaan kecil dulu ('boleh minta email kontak Pak Budi?'), lalu beberapa hari kemudian meminta sesuatu yang lebih besar. Ini adalah teknik?"
+      explanation: "Commitment and Consistency (Komitmen dan Konsistensi) + Foot-in-the-Door. Setelah seseorang setuju dengan permintaan kecil, mereka merasa 'tidak konsisten' jika menolak permintaan berikutnya yang lebih besar. Ini karena otak kita ingin menjaga konsistensi dengan keputusan sebelumnya."
+    content_en:
+      text: "An attacker first asks a small favor ('may I have Mr. Budi's contact email?'), then days later asks for something bigger. This is the technique of?"
+      explanation: "Commitment + Foot-in-the-Door. After agreeing to a small request, people feel 'inconsistent' rejecting larger follow-up requests. The brain wants to stay consistent with prior decisions."
+    options:
+      - text: "Foot-in-the-Door / Commitment — eskalasi dari permintaan kecil ke besar"
+        text_id: "Foot-in-the-Door / Commitment — eskalasi dari permintaan kecil ke besar"
+        correct: true
+      - text: "Liking — mereka hanya ingin menjalin hubungan yang lebih erat"
+        text_id: "Liking — mereka hanya ingin menjalin hubungan yang lebih erat"
+        correct: false
+      - text: "Reciprocity — mereka membantu Anda dulu sebelum meminta balik"
+        text_id: "Reciprocity — mereka membantu Anda dulu sebelum meminta balik"
+        correct: false
+      - text: "Social Proof — banyak rekan lain yang juga sudah membantu mereka"
+        text_id: "Social Proof — banyak rekan lain yang juga sudah membantu mereka"
+        correct: false
+    points: 15
+
+  - id: q6
+    content_id:
+      text: "Manakah kombinasi prinsip Cialdini yang paling sering digunakan bersama dalam serangan CEO Fraud (BEC) terhadap staf keuangan?"
+      explanation: "BEC menggunakan Authority (menyamar sebagai CEO/pejabat senior) + Scarcity (deadline transfer hari ini) + Commitment (minta konfirmasi balasan yang membuat korban 'terlibat'). Kombinasi ini sangat efektif karena menekan dari banyak arah psikologis sekaligus."
+    content_en:
+      text: "Which Cialdini principle combination is most commonly used together in CEO Fraud (BEC) attacks against finance staff?"
+      explanation: "BEC uses Authority (impersonating CEO) + Scarcity (transfer deadline today) + Commitment (asking for confirmation reply that involves the victim). This combination is very effective as it attacks from multiple psychological angles simultaneously."
+    options:
+      - text: "Authority + Scarcity + Commitment"
+        text_id: "Authority + Scarcity + Commitment"
+        correct: true
+      - text: "Liking + Reciprocity + Social Proof"
+        text_id: "Liking + Reciprocity + Social Proof"
+        correct: false
+      - text: "Social Proof + Scarcity + Liking"
+        text_id: "Social Proof + Scarcity + Liking"
+        correct: false
+      - text: "Reciprocity + Authority + Liking"
+        text_id: "Reciprocity + Authority + Liking"
+        correct: false
+    points: 15
+
+  - id: q7
+    content_id:
+      text: "Apa cara paling efektif untuk melawan serangan yang menggunakan prinsip Scarcity (tenggat waktu mendesak) dalam konteks pekerjaan?"
+      explanation: "Verifikasi terpisah melalui saluran komunikasi berbeda adalah perlindungan terbaik. Deadline buatan kehilangan kekuatannya ketika Anda menunda sesaat untuk verifikasi. Prosedur dual-approval yang ketat juga secara struktural mencegah serangan ini berhasil."
+    content_en:
+      text: "What is the most effective way to counter attacks using the Scarcity principle (urgent deadlines) in a work context?"
+      explanation: "Separate verification through different communication channels is the best protection. Artificial deadlines lose their power when you pause to verify. Strict dual-approval procedures also structurally prevent these attacks."
+    options:
+      - text: "Verifikasi via saluran terpisah + prosedur dual-approval tanpa pengecualian"
+        text_id: "Verifikasi via saluran terpisah + prosedur dual-approval tanpa pengecualian"
+        correct: true
+      - text: "Kerjakan dengan cepat agar deadline terpenuhi lalu verifikasi sesudahnya"
+        text_id: "Kerjakan dengan cepat agar deadline terpenuhi lalu verifikasi sesudahnya"
+        correct: false
+      - text: "Minta pengirim mengirim ulang permintaan dengan format resmi yang lengkap"
+        text_id: "Minta pengirim mengirim ulang permintaan dengan format resmi yang lengkap"
+        correct: false
+      - text: "Percayai deadline jika permintaan datang dari nomor atau email yang dikenal"
+        text_id: "Percayai deadline jika permintaan datang dari nomor atau email yang dikenal"
+        correct: false
+    points: 15

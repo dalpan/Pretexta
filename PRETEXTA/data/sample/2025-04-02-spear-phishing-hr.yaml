@@ -1,0 +1,231 @@
+type: challenge
+title: "Spear Phishing: HR Benefits Update"
+description: "A targeted spear phishing email appears to come from HR, referencing your name and recent company events. Recognize the attack despite its personalization."
+difficulty: medium
+cialdini_categories:
+  - authority
+  - liking
+  - scarcity
+estimated_time: 12
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [spear_phishing, email, hr_impersonation, targeted_attack]
+  attack_vector: email
+  technique: "Spear Phishing — Targeted with OSINT data"
+  mitre_technique: "T1566.001 - Spearphishing with OSINT"
+
+nodes:
+  - id: start
+    type: message
+    channel: email_inbox
+    content_en:
+      subject: "Action Required: 2025 Benefits Enrollment — Deadline This Friday"
+      from: "hr.benefits@company-hr-portal.com"
+      body: |
+        Hi [Your Name],
+
+        As discussed in last week's all-hands meeting, we're updating our 2025 benefits package.
+
+        All employees must re-enroll by Friday, December 15th to maintain coverage.
+
+        Please review and confirm your selections here:
+        https://company-hr-portal.com/benefits/2025/enroll?token=XK7291
+
+        If you have questions, reply to this email or contact your HR partner.
+
+        Best regards,
+        Sarah Chen
+        HR Benefits Manager
+        Company Inc.
+    content_id:
+      subject: "Tindakan Diperlukan: Pendaftaran Tunjangan 2025 — Tenggat Jumat Ini"
+      from: "hr.benefits@company-hr-portal.com"
+      body: |
+        Hallo [Nama Anda],
+
+        Seperti yang dibahas dalam rapat all-hands minggu lalu, kami memperbarui paket tunjangan 2025.
+
+        Semua karyawan harus mendaftar ulang sebelum Jumat, 15 Desember.
+
+        Tinjau dan konfirmasi pilihan Anda di sini:
+        https://company-hr-portal.com/benefits/2025/enroll?token=XK7291
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "The email knows your name and references a real meeting. What's your response?"
+    content_id:
+      text: "Email mengetahui nama Anda dan merujuk rapat nyata. Apa respons Anda?"
+    options:
+      - text: "Click the link — HR knows my name so it must be legitimate"
+        text_id: "Klik tautan — HR tahu nama saya jadi pasti sah"
+        next: clicked_personalized
+        score_impact: -25
+        cialdini_trigger: liking
+      - text: "Verify the sender domain — company-hr-portal.com vs company.com"
+        text_id: "Verifikasi domain pengirim"
+        next: check_domain_spear
+        score_impact: +20
+      - text: "Go directly to the internal HR portal by typing the URL"
+        text_id: "Langsung ke portal HR internal dengan mengetik URL"
+        next: direct_navigation
+        score_impact: +25
+      - text: "Call Sarah Chen directly to confirm the email"
+        text_id: "Hubungi Sarah Chen langsung untuk mengkonfirmasi email"
+        next: phone_verify
+        score_impact: +20
+
+  - id: clicked_personalized
+    type: message
+    channel: email_inbox
+    content_en:
+      subject: "Why personalization makes spear phishing dangerous"
+      from: "system@pretexta.lab"
+      body: |
+        You fell for spear phishing — the targeted version of phishing.
+
+        The attacker used OSINT (Open Source Intelligence) to gather:
+        • Your full name (from LinkedIn, company website)
+        • Reference to a real company event (social media, press releases)
+        • A realistic deadline (urgent but not immediate)
+
+        Key insight: Personalization does NOT verify legitimacy.
+        The domain was company-hr-PORTAL.com, not company.com.
+    content_id:
+      subject: "Mengapa personalisasi membuat spear phishing berbahaya"
+      from: "system@pretexta.lab"
+      body: "Anda terjebak spear phishing. Penyerang menggunakan OSINT untuk mengumpulkan data Anda."
+    next: bad_outcome
+
+  - id: check_domain_spear
+    type: message
+    channel: email_inbox
+    content_en:
+      subject: "Domain Analysis"
+      from: "system@pretexta.lab"
+      body: |
+        Good eye! You checked the domain:
+
+        Legitimate HR: hr@company.COM
+        This email:    hr.benefits@company-hr-PORTAL.COM
+
+        The attacker registered a lookalike domain with "hr-portal" added.
+        This is a classic typosquatting technique.
+
+        The personalization came from:
+        • LinkedIn profile (your name)
+        • Company press release (the all-hands meeting)
+        • Calendar leak or social media (the date)
+    content_id:
+      subject: "Analisis Domain"
+      from: "system@pretexta.lab"
+      body: "Bagus! HR asli: hr@company.COM. Email ini: hr.benefits@company-hr-PORTAL.COM"
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_en:
+      text: "You confirmed it's a lookalike domain. What next?"
+    content_id:
+      text: "Anda mengkonfirmasi domain palsu. Apa selanjutnya?"
+    options:
+      - text: "Report to security team and navigate directly to real HR portal"
+        text_id: "Laporkan ke tim keamanan dan navigasi langsung ke portal HR asli"
+        next: good_outcome
+        score_impact: +25
+      - text: "Click anyway — the enrollment is real even if the link looks off"
+        text_id: "Klik saja — pendaftarannya nyata meskipun tautannya aneh"
+        next: clicked_personalized
+        score_impact: -20
+
+  - id: direct_navigation
+    type: end
+    result: success
+    content_en:
+      title: "Excellent Defense!"
+      explanation: |
+        Going directly to the official HR portal is the gold standard response.
+
+        Why this works:
+        • You bypass any malicious links entirely
+        • You access the authentic system
+        • If enrollment IS needed, you'll see it there
+        • If it's NOT there, you've confirmed the phishing attack
+
+        Spear phishing (T1566.001) success rate is 70% higher than generic phishing
+        because of personalization. Your defense: always navigate directly, never via links.
+    content_id:
+      title: "Pertahanan Luar Biasa!"
+      explanation: |
+        Navigasi langsung ke portal resmi adalah respons terbaik.
+        Spear phishing memiliki tingkat keberhasilan 70% lebih tinggi dari phishing biasa.
+
+  - id: phone_verify
+    type: end
+    result: success
+    content_en:
+      title: "Phishing Stopped by Verification!"
+      explanation: |
+        Calling the person directly is one of the strongest defenses against spear phishing.
+
+        When you call Sarah Chen at the official number:
+        • She confirms she sent no such email
+        • You've identified an active phishing campaign
+        • IT Security can now investigate and protect others
+
+        Important: Always call the person at their KNOWN official number, not the number provided in the suspicious email.
+    content_id:
+      title: "Phishing Dihentikan oleh Verifikasi!"
+      explanation: "Menelepon langsung adalah salah satu pertahanan terkuat terhadap spear phishing."
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_en:
+      title: "Spear Phishing Defeated!"
+      explanation: |
+        You correctly identified this targeted attack despite personalization.
+
+        Spear phishing characteristics:
+        • Uses your real name (harvested from LinkedIn/website)
+        • References real events (OSINT from social media/press)
+        • Creates urgency (enrollment deadline)
+        • Uses lookalike domain (company-hr-portal.com)
+
+        OSINT sources attackers use:
+        → LinkedIn (name, role, company events)
+        → Company website (org chart, staff listings)
+        → Social media (announcements, events)
+        → Press releases (mergers, hiring announcements)
+
+        Defense: Domain verification + direct navigation = strong protection.
+    content_id:
+      title: "Spear Phishing Dikalahkan!"
+      explanation: "Anda mengidentifikasi serangan tertarget ini meskipun dipersonalisasi."
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised by Spear Phishing!"
+      explanation: |
+        Spear phishing is far more dangerous than generic phishing because it's personalized.
+
+        How attackers built this email:
+        1. LinkedIn → your full name, role
+        2. Company website → HR manager names
+        3. Glassdoor/social media → the all-hands meeting reference
+        4. Registered lookalike domain → company-hr-portal.com
+
+        Impact of credential theft:
+        • Access to your email and files
+        • Lateral movement to other systems
+        • Potential for business email compromise
+        • Data exfiltration
+
+        Lessons: Personalization ≠ legitimacy. Always verify domain and navigate directly.
+    content_id:
+      title: "Dikompromikan oleh Spear Phishing!"
+      explanation: "Spear phishing jauh lebih berbahaya karena dipersonalisasi. Domain: company-hr-portal.com bukan company.com"

@@ -1,0 +1,284 @@
+type: challenge
+title: "CEO Fraud: Perintah Transfer Dana Direktur Utama BUMN"
+description: "Anda menerima email dari 'Direktur Utama' yang memerintahkan transfer dana mendesak untuk akuisisi rahasia. Kenali serangan Business Email Compromise (BEC) di lingkungan BUMN Indonesia."
+difficulty: hard
+cialdini_categories:
+  - authority
+  - scarcity
+  - commitment
+
+metadata:
+  author: "Pretexta Lab"
+  tags: [bec, ceo_fraud, bumn, wire_transfer, spearphishing, indonesia, finance]
+  attack_vector: email
+  technique: "Business Email Compromise — Executive Impersonation"
+  mitre_technique: "T1566.002 - Spearphishing Link"
+  context_id: "BEC atau penipuan CEO adalah serangan yang paling merugikan secara finansial — rata-rata kerugian per insiden mencapai miliaran rupiah. Target utama adalah staf keuangan BUMN dan perusahaan swasta besar."
+
+nodes:
+  - id: start
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "[RAHASIA] Transfer Dana Segera — Akuisisi Strategis Q2"
+      from: "direktur.utama@ptpertamina-corp.com"
+      body: |
+        Yth. Kepala Divisi Keuangan,
+
+        Saya sedang dalam pertemuan rahasia dengan konsultan M&A di Singapura.
+        Kami dalam tahap akhir akuisisi strategis yang sangat sensitif — tidak boleh
+        ada yang tahu termasuk internal finance team kecuali Anda.
+
+        Saya membutuhkan transfer dana SEGERA ke rekening berikut:
+        • Nama: PT Nusantara Capital Advisors
+        • Bank: DBS Singapore
+        • Nomor rekening: 023-XXXXXXX-0
+        • Nominal: Rp 4.750.000.000 (empat miliar tujuh ratus lima puluh juta)
+        • Keterangan: "Consulting Fee Q2-2026"
+
+        Lakukan hari ini sebelum pukul 15.00 WIB — jendela transfer internasional tutup.
+        JANGAN diskusikan dengan siapapun. Konfirmasi via email ini setelah selesai.
+
+        Salam,
+        [Nama Dirut]
+        Direktur Utama
+        PT Pertamina (Persero)
+    content_en:
+      subject: "[CONFIDENTIAL] Urgent Fund Transfer — Q2 Strategic Acquisition"
+      from: "direktur.utama@ptpertamina-corp.com"
+      body: |
+        I'm in a confidential M&A meeting in Singapore. We need an URGENT transfer today:
+        PT Nusantara Capital Advisors | DBS Singapore | Rp 4.75 billion
+        Deadline: 15:00 WIB. DO NOT discuss with anyone. Confirm via email when done.
+        [CEO Name] — President Director, PT Pertamina (Persero)
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_id:
+      text: "Email dari 'Dirut' meminta transfer Rp 4,75 miliar hari ini. Apa respons pertama Anda?"
+    content_en:
+      text: "Email from 'CEO' requesting Rp 4.75 billion transfer today. Your first response?"
+    options:
+      - text: "Proses transfer — perintah langsung dari Dirut, tidak boleh ditunda"
+        text_id: "Proses transfer — perintah langsung dari Dirut, tidak boleh ditunda"
+        next: processed_transfer
+        score_impact: -40
+        cialdini_trigger: authority
+      - text: "Periksa domain email pengirim dengan cermat"
+        text_id: "Periksa domain email pengirim dengan cermat"
+        next: check_domain
+        score_impact: +20
+      - text: "Hubungi Dirut langsung via telepon kantornya untuk konfirmasi"
+        text_id: "Hubungi Dirut langsung via telepon kantornya untuk konfirmasi"
+        next: called_ceo
+        score_impact: +30
+      - text: "Balas email dan minta otorisasi tambahan sesuai prosedur"
+        text_id: "Balas email dan minta otorisasi tambahan sesuai prosedur"
+        next: replied_email
+        score_impact: -10
+        cialdini_trigger: commitment
+
+  - id: check_domain
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "Temuan Analisis Domain"
+      from: "system@pretexta.lab"
+      body: |
+        Anda memeriksa domain pengirim dengan seksama.
+
+        ✗ Email yang diterima: @ptpertamina-CORP.com
+        ✓ Domain resmi Pertamina: @pertamina.com
+
+        Detail mencurigakan:
+        • "ptpertamina-corp.com" terdaftar 3 minggu lalu di registrar luar negeri
+        • Nama display menampilkan nama Dirut yang benar — domain saja yang palsu
+        • Email header menunjukkan dikirim dari server di Ukraina
+
+        Ini adalah serangan BEC (Business Email Compromise) tingkat lanjut.
+        Penyerang melakukan riset mendalam: mereka tahu nama Dirut, jabatan Anda,
+        dan detail operasional perusahaan.
+    content_en:
+      subject: "Domain Analysis Findings"
+      from: "system@pretexta.lab"
+      body: |
+        The sender domain is @ptpertamina-CORP.com — fake.
+        The real Pertamina domain is @pertamina.com
+        This is a sophisticated BEC attack with deep research on the organization.
+    next: choice_2
+
+  - id: choice_2
+    type: question
+    content_id:
+      text: "Domain palsu terkonfirmasi. Ini jelas serangan BEC. Apa tindakan Anda?"
+    content_en:
+      text: "Confirmed fake domain — clear BEC attack. What do you do?"
+    options:
+      - text: "Laporkan ke tim keamanan siber dan atasan langsung"
+        text_id: "Laporkan ke tim keamanan siber dan atasan langsung"
+        next: good_outcome
+        score_impact: +25
+      - text: "Hubungi Dirut via saluran resmi untuk konfirmasi sebelum melaporkan"
+        text_id: "Hubungi Dirut via saluran resmi untuk konfirmasi sebelum melaporkan"
+        next: called_ceo
+        score_impact: +20
+      - text: "Tetap proses transfer karena mungkin Dirut menggunakan email personal"
+        text_id: "Tetap proses transfer karena mungkin Dirut menggunakan email personal"
+        next: processed_transfer
+        score_impact: -35
+        cialdini_trigger: authority
+
+  - id: called_ceo
+    type: message
+    channel: phone
+    content_id:
+      from: "Sekretaris Direksi"
+      body: |
+        *Telepon ke nomor resmi kantor Dirut*
+
+        Sekretaris: "Terima kasih sudah menghubungi. Pak [Dirut] sedang dalam rapat
+        internal sejak pagi dan tidak berangkat ke Singapura minggu ini.
+        Beliau tidak mengirim email apapun mengenai transfer hari ini.
+
+        Bisa Anda forward email tersebut ke saya dan bagian keamanan siber?
+        Ini tampaknya percobaan penipuan terhadap perusahaan."
+    content_en:
+      from: "CEO's Secretary"
+      body: |
+        *Calling the official office number*
+        Secretary: "Sir is in an internal meeting today and has NOT traveled to Singapore.
+        He sent no email about any transfer. Please forward the email to our cybersecurity team."
+    next: good_outcome
+
+  - id: replied_email
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "Re: [RAHASIA] Transfer Dana Segera"
+      from: "direktur.utama@ptpertamina-corp.com"
+      body: |
+        Prosedur normal TIDAK BERLAKU untuk transaksi M&A rahasia ini.
+        Saya sudah memberikan otorisasi penuh via email ini — tidak perlu approval tambahan.
+
+        Ini MENDESAK dan RAHASIA. Jika bocor ke siapapun sebelum selesai,
+        akuisisi ini akan gagal dan perusahaan akan kehilangan kesempatan strategis besar.
+        Saya minta Anda bertanggung jawab penuh jika terjadi keterlambatan.
+
+        Transfer SEKARANG dan konfirmasi kepada saya.
+    content_en:
+      from: "direktur.utama@ptpertamina-corp.com"
+      body: |
+        Normal procedures do NOT apply for this confidential M&A deal.
+        My email authorization is sufficient. This is URGENT and CONFIDENTIAL.
+        Transfer NOW and confirm to me.
+    next: choice_3
+
+  - id: choice_3
+    type: question
+    content_id:
+      text: "Dirut 'menolak' prosedur normal dan menekan Anda. Apa yang Anda lakukan sekarang?"
+    content_en:
+      text: "The 'CEO' is bypassing procedures and pressuring you. What do you do?"
+    options:
+      - text: "Tetap proses — Dirut sudah berikan otorisasi tertulis via email"
+        text_id: "Tetap proses — Dirut sudah berikan otorisasi tertulis via email"
+        next: processed_transfer
+        score_impact: -35
+        cialdini_trigger: authority
+      - text: "Tolak dan telepon nomor resmi Dirut untuk konfirmasi langsung"
+        text_id: "Tolak dan telepon nomor resmi Dirut untuk konfirmasi langsung"
+        next: called_ceo
+        score_impact: +30
+      - text: "Eskalasi ke atasan langsung dan tim keamanan siber"
+        text_id: "Eskalasi ke atasan langsung dan tim keamanan siber"
+        next: good_outcome
+        score_impact: +25
+
+  - id: processed_transfer
+    type: message
+    channel: email_inbox
+    content_id:
+      subject: "SIMULASI: Transfer Rp 4,75 Miliar Telah Dilakukan"
+      from: "system@pretexta.lab"
+      body: |
+        ⚠️ PERINGATAN SIMULASI
+
+        Dalam serangan nyata, Rp 4.750.000.000 baru saja ditransfer ke rekening penipu.
+        Dana TIDAK BISA DIPULIHKAN setelah ditransfer ke rekening internasional.
+
+        Realitas BEC Attack:
+        • FBI IC3 melaporkan BEC merugikan USD 2,9 miliar secara global (2023)
+        • Di Indonesia, beberapa BUMN dan perusahaan swasta telah kehilangan
+          miliaran rupiah dari serangan jenis ini
+        • Pelaku biasanya sudah memantau email perusahaan selama berminggu-minggu
+          sebelum mengirim permintaan transfer
+
+        Tanda bahaya yang terlewatkan:
+        ✗ Domain email berbeda dari domain resmi perusahaan
+        ✗ Instruksi "jangan beritahu siapapun" (red flag utama BEC)
+        ✗ Menghindari prosedur approval internal
+        ✗ Urgency deadline yang tidak wajar
+        ✗ Rekening tujuan di luar negeri tanpa kontrak yang terdokumentasi
+    content_en:
+      from: "system@pretexta.lab"
+      body: |
+        SIMULATION: Rp 4.75 billion transferred. In a real attack, this money is UNRECOVERABLE.
+        BEC is the most financially damaging cybercrime globally.
+    next: bad_outcome
+
+  - id: good_outcome
+    type: end
+    result: success
+    content_id:
+      title: "Serangan BEC Berhasil Digagalkan!"
+      explanation: |
+        Anda berhasil mendeteksi dan menghentikan serangan Business Email Compromise (BEC)
+        yang menarget perusahaan Anda.
+
+        Indikator BEC yang wajib diwaspadai:
+        1. Domain email berbeda dari domain resmi (meski nama display sama)
+        2. Instruksi "rahasia — jangan beritahu siapapun" → RED FLAG UTAMA
+        3. Permintaan bypass prosedur keuangan normal
+        4. Urgency deadline yang tidak wajar
+        5. Rekening tujuan baru/luar negeri tanpa kontrak terdokumentasi
+
+        Protokol yang benar untuk permintaan transfer besar:
+        • SELALU verifikasi via saluran komunikasi TERPISAH (telepon resmi)
+        • Ikuti prosedur dual approval tanpa pengecualian
+        • Laporkan segera ke tim keamanan siber dan atasan
+        • Jangan balas email yang mencurigakan (memberi sinyal email aktif)
+
+        Laporkan ke: BSSN | OJK | Bareskrim Polri
+    content_en:
+      title: "BEC Attack Defeated!"
+      explanation: |
+        You stopped a Business Email Compromise attack targeting your BUMN.
+        Key indicators: different email domain, "keep secret" instruction, bypass procedures, foreign bank account.
+
+  - id: bad_outcome
+    type: end
+    result: failure
+    content_id:
+      title: "Dana Perusahaan Hilang — Simulasi Selesai"
+      explanation: |
+        Anda menjadi korban serangan BEC (Business Email Compromise) — serangan
+        paling merugikan secara finansial di dunia korporat.
+
+        Pelajaran kritis:
+        1. VERIFIKASI TERPISAH adalah wajib untuk setiap transfer besar
+           — telepon nomor resmi yang sudah dikenal, BUKAN nomor yang ada di email
+        2. "Jangan beritahu siapapun" adalah tanda bahaya terbesar dalam BEC
+        3. Domain lookalike tidak terdeteksi jika hanya lihat nama display
+        4. Tekanan waktu dan ancaman dirancang untuk bypass logika dan prosedur
+        5. Tidak ada pemimpin sah yang meminta bypass prosedur keuangan via email
+
+        Taktik yang digunakan:
+        • Authority: menyamar sebagai Direktur Utama dengan nama asli
+        • Scarcity: deadline transfer yang sangat mendesak
+        • Commitment: eskalasi komitmen melalui email balasan
+    content_en:
+      title: "Company Funds Lost — Simulation Complete"
+      explanation: |
+        You fell for a BEC attack — the most financially damaging cybercrime.
+        Critical lesson: ALWAYS verify large transfers via a separate, known communication channel.

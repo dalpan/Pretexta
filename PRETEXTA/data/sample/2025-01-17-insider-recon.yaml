@@ -1,0 +1,174 @@
+type: challenge
+title: "The Conference Contact"
+description: "Someone from a recent conference reaches out to connect. But they're gathering intelligence on your company."
+difficulty: medium
+cialdini_categories:
+  - liking
+  - reciprocity
+  - social_proof
+estimated_time: 12
+metadata:
+  author: "Pretexta"
+  tags: [reconnaissance, pretexting, osint, linkedin, social-engineering]
+
+nodes:
+  - id: start
+    type: message
+    channel: linkedin
+    content_en:
+      sender: "Jordan Mitchell — Senior Analyst, CyberDefend Corp"
+      message: "Hey! We met briefly at the CyberSec Summit last week — you were at the Zero Trust panel, right? I loved your question about micro-segmentation. Small world! I'd love to connect and maybe pick your brain about how your team handles identity governance. We're revamping our approach and your org always comes up as a reference."
+    content_id:
+      sender: "Jordan Mitchell — Analis Senior, CyberDefend Corp"
+      message: "Hei! Kita bertemu singkat di CyberSec Summit minggu lalu — kamu di panel Zero Trust, kan? Saya suka pertanyaan kamu tentang micro-segmentation. Dunia kecil! Saya ingin terhubung dan mungkin diskusi tentang bagaimana tim kamu menangani identity governance."
+    next: choice_1
+
+  - id: choice_1
+    type: question
+    content_en:
+      text: "A LinkedIn connection request from someone who claims to have met you at a conference. They're flattering and want to discuss your team's security practices. What do you do?"
+    content_id:
+      text: "Permintaan koneksi LinkedIn dari seseorang yang mengaku bertemu di konferensi. Mereka memuji dan ingin mendiskusikan praktik keamanan timmu. Apa yang kamu lakukan?"
+    options:
+      - text: "Accept and share details about your security stack — networking is important"
+        text_id: "Terima dan bagikan detail tentang stack keamanan — networking itu penting"
+        next: bad_outcome_overshare
+        score_impact: -30
+      - text: "Accept the connection but keep responses vague and professional"
+        text_id: "Terima koneksi tapi jaga respons tetap samar dan profesional"
+        next: vague_response
+        score_impact: 10
+      - text: "Check their profile thoroughly before responding"
+        text_id: "Cek profil mereka dengan teliti sebelum merespons"
+        next: check_profile
+        score_impact: 20
+      - text: "Decline — you don't remember meeting them"
+        text_id: "Tolak — kamu tidak ingat bertemu mereka"
+        next: good_outcome_decline
+        score_impact: 15
+
+  - id: vague_response
+    type: message
+    channel: linkedin
+    content_en:
+      sender: "Jordan Mitchell"
+      message: "Totally understand keeping things high-level! Hey, completely unrelated — are you guys still using CrowdStrike or did you migrate to SentinelOne? A buddy at your company mentioned something about a migration but I wasn't sure. Also, is your CISO still that ex-NSA person? They gave a great talk at BlackHat. Would love an intro if possible!"
+    content_id:
+      sender: "Jordan Mitchell"
+      message: "Sangat mengerti menjaga hal-hal tetap umum! Hei, sama sekali tidak terkait — kalian masih pakai CrowdStrike atau sudah migrasi ke SentinelOne? Teman di perusahaan kamu menyebutkan sesuatu tentang migrasi. Juga, CISO kamu masih orang ex-NSA itu? Mereka memberikan talk hebat di BlackHat."
+    next: choice_escalation
+
+  - id: choice_escalation
+    type: question
+    content_en:
+      text: "Jordan is now asking specific questions about your security tools, organizational structure, and wants introductions to executives. This is escalating from networking to intelligence gathering. What do you do?"
+    content_id:
+      text: "Jordan sekarang menanyakan pertanyaan spesifik tentang alat keamanan, struktur organisasi, dan ingin diperkenalkan ke eksekutif. Ini meningkat dari networking ke pengumpulan intelijen. Apa yang kamu lakukan?"
+    options:
+      - text: "Answer their questions — they seem well-connected in the industry"
+        text_id: "Jawab pertanyaan mereka — mereka tampak memiliki koneksi baik di industri"
+        next: bad_outcome_intel
+        score_impact: -40
+      - text: "Recognize this as social engineering reconnaissance and report to your security team"
+        text_id: "Kenali ini sebagai pengintaian social engineering dan laporkan ke tim keamanan"
+        next: good_outcome_reported
+        score_impact: 35
+      - text: "Stop engaging and block the contact"
+        text_id: "Berhenti berinteraksi dan blokir kontak"
+        next: good_outcome_block
+        score_impact: 20
+
+  - id: check_profile
+    type: message
+    channel: narrator
+    content_en:
+      text: "You examine Jordan's LinkedIn profile. 347 connections, but only 12 mutual. Their profile was created 2 months ago. Job history shows 3 companies in the last year. No posts or articles. Their profile photo appears in a reverse image search on a stock photo website. 'CyberDefend Corp' has no website or other employees on LinkedIn."
+    content_id:
+      text: "Kamu memeriksa profil LinkedIn Jordan. 347 koneksi, tapi hanya 12 mutual. Profil dibuat 2 bulan lalu. Riwayat pekerjaan menunjukkan 3 perusahaan dalam setahun terakhir. Tidak ada postingan. Foto profil muncul di pencarian gambar terbalik di website foto stok. 'CyberDefend Corp' tidak punya website."
+    next: choice_profile
+
+  - id: choice_profile
+    type: question
+    content_en:
+      text: "The profile has multiple red flags: new account, stock photo, fake company. This appears to be a social engineering front. What do you do?"
+    content_id:
+      text: "Profil memiliki beberapa tanda bahaya: akun baru, foto stok, perusahaan palsu. Ini tampaknya front social engineering. Apa yang kamu lakukan?"
+    options:
+      - text: "Report the fake profile and alert your security team"
+        text_id: "Laporkan profil palsu dan peringatkan tim keamanan"
+        next: good_outcome_osint
+        score_impact: 40
+      - text: "Ignore and move on"
+        text_id: "Abaikan dan lanjutkan"
+        next: ignore_outcome
+        score_impact: 10
+
+  - id: bad_outcome_overshare
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Intelligence Gathered"
+      explanation: "You shared details about your security tools, team structure, and processes with a social engineering operative. This information will be used to craft targeted attacks against your organization — knowing your security stack helps attackers design evasion techniques. Never share specific security tool names, team structures, or processes with unverified contacts."
+    content_id:
+      title: "Terkompromi — Intelijen Terkumpul"
+      explanation: "Kamu membagikan detail tentang alat keamanan, struktur tim, dan proses dengan operatif social engineering. Informasi ini akan digunakan untuk membuat serangan terarah."
+
+  - id: bad_outcome_intel
+    type: end
+    result: failure
+    content_en:
+      title: "Compromised — Full Reconnaissance Complete"
+      explanation: "The attacker now has your security vendor names, CISO identity, and organizational structure. This is a textbook pre-attack reconnaissance operation. The information gathered will be used for: spear-phishing your CISO, crafting payloads that evade your specific security tools, and social engineering other employees using your name as a reference."
+    content_id:
+      title: "Terkompromi — Pengintaian Penuh Selesai"
+      explanation: "Penyerang sekarang memiliki nama vendor keamanan, identitas CISO, dan struktur organisasi. Ini adalah operasi pengintaian pra-serangan."
+
+  - id: ignore_outcome
+    type: end
+    result: success
+    content_en:
+      title: "Safe — But Report Would Help"
+      explanation: "You avoided the trap, but reporting the fake profile to LinkedIn and your security team would help protect other colleagues who might receive similar requests."
+    content_id:
+      title: "Aman — Tapi Melaporkan Akan Membantu"
+      explanation: "Kamu menghindari jebakan, tapi melaporkan profil palsu ke LinkedIn dan tim keamanan akan membantu melindungi rekan lain."
+
+  - id: good_outcome_decline
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Trusted Your Instinct"
+      explanation: "Not remembering someone who claims to have met you is a valid reason to decline. Social engineers count on politeness overriding caution. It's perfectly acceptable to not accept connection requests from people you can't verify."
+    content_id:
+      title: "Berhasil Bertahan — Percaya Insting"
+      explanation: "Tidak mengingat seseorang yang mengaku bertemu adalah alasan valid untuk menolak. Social engineer mengandalkan kesopanan mengatasi kewaspadaan."
+
+  - id: good_outcome_reported
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Pattern Recognition"
+      explanation: "You recognized the escalation pattern: flattery → rapport → specific technical questions → executive introductions. This is a classic social engineering kill chain for reconnaissance. Your report helped the security team identify a broader campaign targeting multiple employees."
+    content_id:
+      title: "Berhasil Bertahan — Pengenalan Pola"
+      explanation: "Kamu mengenali pola eskalasi: pujian → rapport → pertanyaan teknis spesifik → perkenalan eksekutif. Ini adalah kill chain social engineering klasik untuk pengintaian."
+
+  - id: good_outcome_block
+    type: end
+    result: success
+    content_en:
+      title: "Defended — Disengaged"
+      explanation: "Good decision to stop engaging once the questions became too specific. Blocking prevents further contact attempts. Consider also reporting to your security team so they can check if other employees received similar requests."
+    content_id:
+      title: "Berhasil Bertahan — Pemutusan Kontak"
+      explanation: "Keputusan bagus untuk berhenti berinteraksi setelah pertanyaan menjadi terlalu spesifik."
+
+  - id: good_outcome_osint
+    type: end
+    result: success
+    content_en:
+      title: "Defended — OSINT Investigation"
+      explanation: "Outstanding investigative skills. You used open-source intelligence techniques to uncover a fake persona: stock photo, new account, fictitious company. Your report to both LinkedIn and your security team helped take down the fake profile and alerted the security community about the campaign."
+    content_id:
+      title: "Berhasil Bertahan — Investigasi OSINT"
+      explanation: "Keterampilan investigatif luar biasa. Kamu menggunakan teknik open-source intelligence untuk mengungkap persona palsu: foto stok, akun baru, perusahaan fiktif."

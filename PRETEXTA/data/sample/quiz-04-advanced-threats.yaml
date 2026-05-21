@@ -1,0 +1,188 @@
+type: quiz
+title: "Advanced Social Engineering Threats"
+description: "Test your knowledge of modern AI-powered attacks, deepfakes, and sophisticated social engineering techniques."
+difficulty: hard
+cialdini_categories:
+  - authority
+  - urgency
+  - social_proof
+metadata:
+  author: "Pretexta"
+  tags: [deepfake, ai-attack, mfa, quishing, advanced]
+
+questions:
+  - id: q1
+    content_en:
+      text: "What is 'MFA fatigue' attack?"
+      explanation: "MFA fatigue involves bombarding a user with repeated push notifications until they approve one out of frustration or to make the notifications stop. This has been used in high-profile breaches at companies like Uber and Cisco."
+    content_id:
+      text: "Apa itu serangan 'MFA fatigue'?"
+      explanation: "MFA fatigue melibatkan pemboman pengguna dengan notifikasi push berulang sampai mereka menyetujui satu karena frustrasi."
+    options:
+      - text: "Flooding a target with MFA push notifications until they approve one"
+        text_id: "Membanjiri target dengan notifikasi push MFA sampai mereka menyetujui satu"
+        correct: true
+      - text: "Brute-forcing MFA codes"
+        text_id: "Brute-force kode MFA"
+        correct: false
+      - text: "Disabling MFA through an admin panel"
+        text_id: "Menonaktifkan MFA melalui panel admin"
+        correct: false
+      - text: "Intercepting MFA tokens via man-in-the-middle"
+        text_id: "Mencegat token MFA via man-in-the-middle"
+        correct: false
+    points: 15
+
+  - id: q2
+    content_en:
+      text: "How much audio does an AI voice cloning system typically need to create a convincing clone?"
+      explanation: "Modern AI voice cloning (tools like ElevenLabs, Resemble.AI) can create convincing voice clones from as little as 3-10 seconds of audio, often sourced from social media videos, voicemails, or podcast appearances."
+    content_id:
+      text: "Berapa banyak audio yang biasanya dibutuhkan sistem kloning suara AI untuk membuat klon yang meyakinkan?"
+      explanation: "Kloning suara AI modern dapat membuat klon suara meyakinkan dari audio sesingkat 3-10 detik."
+    options:
+      - text: "At least 1 hour of recordings"
+        text_id: "Minimal 1 jam rekaman"
+        correct: false
+      - text: "30 minutes of clean audio"
+        text_id: "30 menit audio bersih"
+        correct: false
+      - text: "As little as 3-10 seconds"
+        text_id: "Sesingkat 3-10 detik"
+        correct: true
+      - text: "At least 5 minutes"
+        text_id: "Minimal 5 menit"
+        correct: false
+    points: 20
+
+  - id: q3
+    content_en:
+      text: "What is 'quishing'?"
+      explanation: "Quishing (QR phishing) uses malicious QR codes to redirect victims to credential-harvesting or malware-downloading websites. It's growing because QR codes bypass email security filters and are difficult to inspect before scanning."
+    content_id:
+      text: "Apa itu 'quishing'?"
+      explanation: "Quishing (QR phishing) menggunakan kode QR berbahaya untuk mengarahkan korban ke website pencurian kredensial atau pengunduhan malware."
+    options:
+      - text: "Phishing through quiz websites"
+        text_id: "Phishing melalui website kuis"
+        correct: false
+      - text: "Phishing using malicious QR codes"
+        text_id: "Phishing menggunakan kode QR berbahaya"
+        correct: true
+      - text: "Quick phishing campaigns that last under an hour"
+        text_id: "Kampanye phishing cepat yang berlangsung kurang dari satu jam"
+        correct: false
+      - text: "Phishing that targets executives (queens/kings of the company)"
+        text_id: "Phishing yang menargetkan eksekutif"
+        correct: false
+    points: 10
+
+  - id: q4
+    content_en:
+      text: "In a deepfake video call, which is the MOST reliable way to verify the caller's identity?"
+      explanation: "Out-of-band verification — contacting the person through a completely different, trusted channel that YOU initiate — is the gold standard. Deepfakes can replicate visual appearance, voice, and even mannerisms, but they cannot simultaneously compromise a separate communication channel."
+    content_id:
+      text: "Dalam video call deepfake, mana cara PALING andal untuk memverifikasi identitas penelepon?"
+      explanation: "Verifikasi out-of-band — menghubungi orang melalui channel berbeda dan terpercaya yang KAMU inisiasi — adalah standar emas."
+    options:
+      - text: "Ask them to show their employee badge on camera"
+        text_id: "Minta mereka menunjukkan badge karyawan di kamera"
+        correct: false
+      - text: "Verify through a separate, trusted communication channel you initiate"
+        text_id: "Verifikasi melalui channel komunikasi terpisah dan terpercaya yang kamu inisiasi"
+        correct: true
+      - text: "Ask them personal questions about recent meetings"
+        text_id: "Ajukan pertanyaan pribadi tentang rapat terbaru"
+        correct: false
+      - text: "Check if their background matches their usual office"
+        text_id: "Cek apakah background mereka cocok dengan kantor biasanya"
+        correct: false
+    points: 20
+
+  - id: q5
+    content_en:
+      text: "What is the 'pretexting reconnaissance' kill chain?"
+      explanation: "Social engineering reconnaissance follows a predictable pattern: build rapport through flattery and shared interests, then gradually escalate to specific questions about tools, people, and processes. Each step feels natural but collectively maps the organization's attack surface."
+    content_id:
+      text: "Apa itu kill chain 'pengintaian pretexting'?"
+      explanation: "Pengintaian social engineering mengikuti pola yang dapat diprediksi: membangun rapport melalui pujian, lalu bertahap meningkat ke pertanyaan spesifik."
+    options:
+      - text: "Malware → Exploitation → Exfiltration → Cover tracks"
+        text_id: "Malware → Eksploitasi → Eksfiltrasi → Tutup jejak"
+        correct: false
+      - text: "Scan → Enumerate → Exploit → Privilege escalation"
+        text_id: "Scan → Enumerasi → Eksploitasi → Eskalasi privilege"
+        correct: false
+      - text: "Flattery → Rapport → Specific questions → Executive access"
+        text_id: "Pujian → Rapport → Pertanyaan spesifik → Akses eksekutif"
+        correct: true
+      - text: "Phishing → Credential theft → Lateral movement → Data exfiltration"
+        text_id: "Phishing → Pencurian kredensial → Pergerakan lateral → Eksfiltrasi data"
+        correct: false
+    points: 15
+
+  - id: q6
+    content_en:
+      text: "If someone claiming to be from IT calls you during an MFA bombing attack, what should you do?"
+      explanation: "Legitimate IT security will never call you and ask you to approve MFA pushes. Always hang up and contact IT through official channels you find independently. The caller may be the attacker coordinating the social engineering component of the MFA fatigue attack."
+    content_id:
+      text: "Jika seseorang yang mengaku dari IT meneleponmu selama serangan MFA bombing, apa yang harus kamu lakukan?"
+      explanation: "Keamanan IT yang sah tidak akan pernah menelepon dan meminta kamu menyetujui push MFA. Selalu tutup telepon dan hubungi IT melalui channel resmi."
+    options:
+      - text: "Follow their instructions to secure your account"
+        text_id: "Ikuti instruksi mereka untuk mengamankan akun"
+        correct: false
+      - text: "Approve the next push as they suggest"
+        text_id: "Setujui push berikutnya seperti yang mereka sarankan"
+        correct: false
+      - text: "Hang up and call IT through official channels you find independently"
+        text_id: "Tutup telepon dan hubungi IT melalui channel resmi yang kamu temukan sendiri"
+        correct: true
+      - text: "Ask for their employee ID to verify"
+        text_id: "Minta ID karyawan mereka untuk verifikasi"
+        correct: false
+    points: 20
+
+  - id: q7
+    content_en:
+      text: "What is the best defense against AI voice cloning scams targeting family members?"
+      explanation: "A pre-established family code word that only real family members know is the most reliable defense. AI can clone voice and emotional patterns, but cannot know a secret word that was agreed upon in person. This is a simple, effective countermeasure recommended by security experts."
+    content_id:
+      text: "Apa pertahanan terbaik terhadap penipuan kloning suara AI yang menargetkan anggota keluarga?"
+      explanation: "Kata sandi keluarga yang telah ditetapkan sebelumnya yang hanya diketahui anggota keluarga asli adalah pertahanan paling andal."
+    options:
+      - text: "Never answer calls from unknown numbers"
+        text_id: "Jangan pernah menjawab panggilan dari nomor tidak dikenal"
+        correct: false
+      - text: "Establish a family code word for emergencies"
+        text_id: "Tetapkan kata sandi keluarga untuk keadaan darurat"
+        correct: true
+      - text: "Ask them to video call instead"
+        text_id: "Minta mereka video call"
+        correct: false
+      - text: "Install a voice verification app"
+        text_id: "Instal aplikasi verifikasi suara"
+        correct: false
+    points: 15
+
+  - id: q8
+    content_en:
+      text: "Which red flag is MOST indicative of a fake LinkedIn profile used for reconnaissance?"
+      explanation: "A reverse image search revealing the profile photo is a stock photo is the most definitive indicator of a fake profile. Other red flags (new accounts, few posts) could apply to real people, but a stock photo proves intentional deception."
+    content_id:
+      text: "Tanda bahaya mana yang PALING menunjukkan profil LinkedIn palsu yang digunakan untuk pengintaian?"
+      explanation: "Pencarian gambar terbalik yang mengungkap foto profil adalah foto stok adalah indikator paling definitif dari profil palsu."
+    options:
+      - text: "Profile created recently with few connections"
+        text_id: "Profil dibuat baru-baru ini dengan sedikit koneksi"
+        correct: false
+      - text: "No posts or articles shared"
+        text_id: "Tidak ada postingan atau artikel yang dibagikan"
+        correct: false
+      - text: "Profile photo found on stock photo websites via reverse image search"
+        text_id: "Foto profil ditemukan di website foto stok via pencarian gambar terbalik"
+        correct: true
+      - text: "Multiple job changes in a short period"
+        text_id: "Beberapa pergantian pekerjaan dalam waktu singkat"
+        correct: false
+    points: 15
