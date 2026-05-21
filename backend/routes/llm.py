@@ -234,74 +234,61 @@ async def generate_pretext(request: dict[str, Any], current_user: User = Depends
 
 @router.post("/chat")
 async def chat_interaction(request: dict[str, Any], current_user: User = Depends(get_current_user)):
-    """Real-time Chat Interaction for Roleplay."""
+    """
+    Real-time persona chat for roleplay simulations.
+    Routes through AIGateway for centralized prompt construction.
+    """
+    from services.ai_gateway import AIGateway
+
     history = request.get("history", [])
     persona = request.get("persona", {})
     user_message = request.get("message", "")
+    language = request.get("language", "en")
+    persona_state = request.get("persona_state")
 
-    config = await db.llm_configs.find_one({"enabled": True}, {"_id": 0})
-    if not config:
+    gateway = await AIGateway.from_db()
+    if not gateway:
         raise HTTPException(
             status_code=400,
             detail="LLM config missing. Configure a provider in Settings.",
         )
 
-    system_prompt = f"""You are a roleplay actor in a cybersecurity simulation.
-    Role: {persona.get("name", "Attacker")}
-    Goal: {persona.get("goal", "Trick the user")}
-    Personality: {persona.get("style", "Manipulative")}
-    Context: {persona.get("context", "Corporate Environment")}
-
-    INSTRUCTIONS:
-    1. Respond naturally as your character. Short, realistic messages (whatsapp/email style).
-    2. Do NOT break character.
-    3. If the user successfully spots the attack or refuses securely,
-    react accordingly (e.g. get angry, give up, or try a different angle).
-    4. If the user FAILS (gives password, clicks link),
-    output a special marker in your text: [SUCCESS_ATTACK].
-    5. If the user permanently BLOCKS the attack, output: [ATTACK_FAILED].
-    """
-
-    messages = [SystemMessage(content=system_prompt)]
-
-    for msg in history:
-        if msg["role"] == "user":
-            messages.append(HumanMessage(content=msg["content"]))
-        elif msg["role"] == "assistant":
-            messages.append(AIMessage(content=msg["content"]))
-
-    messages.append(HumanMessage(content=user_message))
-
     try:
-        response = await get_llm_chat_model(config, messages)
-        content = response.content
+        result = await gateway.persona_chat(
+            persona=persona,
+            history=history,
+            user_message=user_message,
+            language=language,
+            persona_state=persona_state,
+        )
 
-        status = "ongoing"
-        if "[SUCCESS_ATTACK]" in content:
-            status = "failed"
-            content = content.replace("[SUCCESS_ATTACK]", "")
-        elif "[ATTACK_FAILED]" in content:
-            status = "completed"
-            content = content.replace("[ATTACK_FAILED]", "")
+        # Map gateway status to legacy API format for frontend compatibility
+        # Legacy: "ongoing" | "failed" (attack succeeded) | "completed" (attack blocked)
+        legacy_status = {
+            "ongoing":       "ongoing",
+            "success_attack": "failed",
+            "attack_failed":  "completed",
+        }.get(result.status, "ongoing")
 
         return {
             "role": "assistant",
-            "content": content,
-            "status": status,
-            "provider": config["provider"],
-            "model": config.get("model_name"),
+            "content": result.content,
+            "status": legacy_status,
+            "provider": result.provider,
+            "model": result.model,
+            "persona_state_updates": result.persona_state_updates,
         }
 
     except Exception as e:
         logger.error(f"Chat error: {e}")
         error_msg = str(e)
-        provider = config["provider"]
+        provider = (await db.llm_configs.find_one({"enabled": True}, {"_id": 0}) or {}).get("provider", "unknown")
         if "401" in error_msg:
             error_msg = f"Unauthorized. Please check your API Key for {provider}."
         elif "404" in error_msg:
             error_msg = f"Model Not Found. Provider: {provider}."
         elif "429" in error_msg:
-            error_msg = f"Rate Limit Exceeded. Please try again later. Provider: {provider}."
-        elif "Connection" in error_msg or "connect" in error_msg.lower():
+            error_msg = f"Rate Limit Exceeded. Please try again later."
+        elif "connect" in error_msg.lower():
             error_msg = f"Connection failed for {provider}. Is the server running?"
         raise HTTPException(status_code=500, detail=error_msg)

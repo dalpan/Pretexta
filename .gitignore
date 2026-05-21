@@ -43,3 +43,6 @@ MANIFEST
 # IDEs
 .vscode/
 .idea/
+PRETEXTA/
+backend/__pycache__/
+frontend/.env

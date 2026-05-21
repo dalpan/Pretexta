@@ -59,7 +59,7 @@ async def get_my_organization(current_user: User = Depends(get_current_user)):
             "id": m["id"],
             "username": m.get("username"),
             "display_name": m.get("display_name"),
-            "role": m.get("role", "trainee"),
+            "role": m.get("role", "user"),
             "level": m.get("level", 1),
             "xp": m.get("xp", 0),
         }

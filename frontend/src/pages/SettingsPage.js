@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import { toast } from 'sonner';
+import api from '../services/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -9,13 +9,77 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch';
 import {
   Settings as SettingsIcon, Globe, Zap, Key, RefreshCw, ExternalLink,
-  Server, Wifi, WifiOff, Check, ChevronDown, Search
+  Server, Wifi, WifiOff, Check, ChevronDown, Search, Shield, UserCog
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import SectionCard from '../components/SectionCard';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+function AdminPanel() {
+  const { t } = useTranslation();
+  const [promoteUsername, setPromoteUsername] = useState('');
+  const [promoteRole, setPromoteRole] = useState('trainer');
+  const [promoting, setPromoting] = useState(false);
+
+  const handlePromote = async (e) => {
+    e.preventDefault();
+    if (!promoteUsername) return;
+    setPromoting(true);
+    try {
+      const res = await api.post('/auth/promote', { username: promoteUsername, role: promoteRole });
+      toast.success(res.data.message);
+      setPromoteUsername('');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || t('errors.generic'));
+    } finally {
+      setPromoting(false);
+    }
+  };
+
+  return (
+    <SectionCard title="User Management" icon={UserCog}>
+      <p className="text-[10px] text-muted-foreground font-mono mb-4 leading-relaxed">
+        Promote users to Trainer role. Trainers can manage training groups, assign exercises to users, and view assessment reports.
+      </p>
+      <form onSubmit={handlePromote} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="font-mono uppercase text-xs">Username</Label>
+            <Input
+              value={promoteUsername}
+              onChange={e => setPromoteUsername(e.target.value)}
+              className="font-mono text-xs mt-1"
+              placeholder="username_to_promote"
+              required
+            />
+          </div>
+          <div>
+            <Label className="font-mono uppercase text-xs">New Role</Label>
+            <Select value={promoteRole} onValueChange={setPromoteRole}>
+              <SelectTrigger className="font-mono text-xs mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="trainer">Trainer</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <Button type="submit" disabled={promoting} variant="outline" className="text-xs uppercase tracking-widest">
+          <Shield className="w-3.5 h-3.5 mr-2" />
+          {promoting ? t('common.loading') : 'Promote User'}
+        </Button>
+      </form>
+    </SectionCard>
+  );
+}
+
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [settings, setSettings] = useState({
     language: 'en',
     theme: 'dark',
@@ -46,10 +110,7 @@ export default function SettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/settings`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/settings');
       setSettings(response.data);
     } catch (error) {
       console.error('Failed to load settings');
@@ -58,10 +119,7 @@ export default function SettingsPage() {
 
   const loadProviders = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/llm/providers`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/llm/providers');
       setProviders(response.data);
     } catch (error) {
       console.error('Failed to load providers');
@@ -70,10 +128,7 @@ export default function SettingsPage() {
 
   const loadLLMConfigs = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/llm/config`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/llm/config');
       setLlmConfigs(response.data);
     } catch (error) {
       console.error('Failed to load LLM configs', error);
@@ -84,22 +139,15 @@ export default function SettingsPage() {
     setModelsLoading(true);
     setModelSearch('');
     try {
-      const token = localStorage.getItem('soceng_token');
       const endpoint = forceRefresh
-        ? `${API}/llm/models/${provider}/refresh${baseUrl ? `?base_url=${encodeURIComponent(baseUrl)}` : ''}`
-        : `${API}/llm/models/${provider}`;
-      const response = await axios.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+        ? `/llm/models/${provider}/refresh${baseUrl ? `?base_url=${encodeURIComponent(baseUrl)}` : ''}`
+        : `/llm/models/${provider}`;
+      const response = await api.get(endpoint);
       const data = response.data;
       setModels(data.models || []);
-
-      // Auto-select first model if none selected
       if (data.models?.length > 0 && !selectedModel) {
         setSelectedModel(data.models[0].id);
       }
-
-      // Check local connection status
       if (provider === 'local') {
         setLocalStatus(data.models?.length > 0 ? 'connected' : 'disconnected');
       } else {
@@ -116,48 +164,40 @@ export default function SettingsPage() {
 
   const updateSettings = async (updates) => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      await axios.put(`${API}/settings`, updates, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put('/settings', updates);
       setSettings({ ...settings, ...updates });
-      toast.success('Settings updated');
+      toast.success(t('settings.settings_updated'));
     } catch (error) {
-      toast.error('Failed to update settings');
+      toast.error(t('errors.generic'));
     }
   };
 
   const saveLLMConfig = async () => {
-    // Validate based on provider type
     if (selectedProvider !== 'local' && !apiKey) {
       toast.error('Please enter an API key');
       return;
     }
-
     const finalModel = customModel || selectedModel;
     if (!finalModel) {
       toast.error('Please select a model');
       return;
     }
-
     try {
-      const token = localStorage.getItem('soceng_token');
-      await axios.post(`${API}/llm/config`, {
+      await api.post('/llm/config', {
         provider: selectedProvider,
         api_key: apiKey || '',
         model_name: finalModel,
-        base_url: selectedProvider === 'local' ? (baseUrl || 'http://localhost:11434/v1') : (selectedProvider === 'openrouter' ? 'https://openrouter.ai/api/v1' : ''),
-        enabled: true
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        base_url: selectedProvider === 'local'
+          ? (baseUrl || 'http://localhost:11434/v1')
+          : (selectedProvider === 'openrouter' ? 'https://openrouter.ai/api/v1' : ''),
+        enabled: true,
       });
-
       setApiKey('');
       setCustomModel('');
       loadLLMConfigs();
       toast.success(`${providers[selectedProvider]?.name || selectedProvider} configured with ${finalModel}`);
     } catch (error) {
-      toast.error('Failed to save LLM configuration');
+      toast.error(t('errors.generic'));
     }
   };
 
@@ -178,6 +218,9 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold font-mono uppercase tracking-widest text-primary">{t('settings.title')}</h1>
         <p className="text-muted-foreground font-mono">Configure your Pretexta preferences</p>
       </div>
+
+      {/* Admin Panel — only for admin users */}
+      {isAdmin && <AdminPanel />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEFT COLUMN */}
@@ -449,13 +492,10 @@ export default function SettingsPage() {
                         variant="destructive"
                         onClick={async () => {
                           try {
-                            const token = localStorage.getItem('soceng_token');
-                            await axios.post(`${API}/llm/config`, {
+                            await api.post('/llm/config', {
                               provider: config.provider,
                               api_key: '',
-                              enabled: false
-                            }, {
-                              headers: { Authorization: `Bearer ${token}` }
+                              enabled: false,
                             });
                             loadLLMConfigs();
                             toast.success(`${config.provider} removed`);

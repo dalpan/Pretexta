@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-import { Mail, MessageSquare, Phone, Globe, ArrowRight, Check, X, Zap } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { Mail, MessageSquare, Phone, Globe, ArrowRight, Check, X, Zap, Flag } from 'lucide-react';
+import api from '../services/api';
 
 export default function SimulationPlayerPage() {
   const { simulationId } = useParams();
@@ -32,29 +30,24 @@ export default function SimulationPlayerPage() {
 
   const loadSimulation = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const headers = { Authorization: `Bearer ${token}` };
-
-      // Load simulation
-      const simRes = await axios.get(`${API}/simulations/${simulationId}`, { headers });
+      const simRes = await api.get(`/simulations/${simulationId}`);
       setSimulation(simRes.data);
       setScore(simRes.data.score || 100);
       setEvents(simRes.data.events || []);
 
-      // Load challenge
       if (simRes.data.challenge_id) {
-        const challengeRes = await axios.get(`${API}/challenges/${simRes.data.challenge_id}`, { headers });
-        setChallenge(challengeRes.data);
-
-        // Find current node or start
+        const challengeRes = await api.get(`/challenges/${simRes.data.challenge_id}`);
+        const challengeData = challengeRes.data;
+        setChallenge(challengeData);
+        const nodes = Array.isArray(challengeData.nodes) ? challengeData.nodes : [];
         const lastEvent = simRes.data.events?.[simRes.data.events.length - 1];
         const nodeId = lastEvent?.next_node || 'start';
-        const node = challengeRes.data.nodes.find(n => n.id === nodeId);
+        const node = nodes.find((n) => n.id === nodeId) || nodes[0] || null;
         setCurrentNode(node);
       }
     } catch (error) {
-      toast.error('Failed to load simulation');
-      navigate('/simulations');
+      console.error('Failed to load simulation:', error);
+      toast.error('Gagal memuat simulasi — ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -79,13 +72,7 @@ export default function SimulationPlayerPage() {
 
     // Save to backend
     try {
-      const token = localStorage.getItem('soceng_token');
-      await axios.put(`${API}/simulations/${simulationId}`, {
-        events: [...events, event],
-        score: newScore
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put(`/simulations/${simulationId}`, { events: [...events, event], score: newScore });
     } catch (error) {
       console.error('Failed to save event', error);
     }
@@ -112,9 +99,6 @@ export default function SimulationPlayerPage() {
     setAiThinking(true);
 
     try {
-      const token = localStorage.getItem('soceng_token');
-
-      // Build context for AI
       const context = {
         scenario_title: challenge.title,
         current_node: currentNode.id,
@@ -143,12 +127,9 @@ Format your response as JSON:
   "tactics_used": ["tactic1", "tactic2"]
 }`;
 
-      const response = await axios.post(`${API}/llm/generate`, {
-        provider: 'openai', // Will use configured provider
-        prompt: prompt,
-        context: context
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await api.post('/llm/generate', {
+        prompt,
+        context,
       });
 
       // Parse AI response
@@ -190,21 +171,30 @@ Format your response as JSON:
 
   const completeSimulation = async (finalScore, result) => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      await axios.put(`${API}/simulations/${simulationId}`, {
+      await api.put(`/simulations/${simulationId}`, {
         status: 'completed',
         score: finalScore,
-        completed_at: new Date().toISOString()
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        completed_at: new Date().toISOString(),
       });
 
-      toast.success(result === 'success' ? '✅ Simulation completed!' : '⚠️ Simulation completed');
-
-      // Removed auto-redirect
-      // setTimeout(() => {
-      //   navigate('/simulations');
-      // }, 3000);
+      // If this simulation was started as part of a campaign stage, auto-complete the stage
+      if (simulation?.campaign_id !== undefined && simulation?.stage_index !== undefined) {
+        try {
+          const stageRes = await api.post(
+            `/campaigns/${simulation.campaign_id}/stage/${simulation.stage_index}/complete`,
+            { score: finalScore }
+          );
+          if (stageRes.data.is_complete) {
+            toast.success('🏆 Kampanye Selesai! Semua tahap berhasil diselesaikan.');
+          } else {
+            toast.success(`Tahap ${simulation.stage_index + 1} selesai — Tahap ${simulation.stage_index + 2} dibuka!`);
+          }
+        } catch (campErr) {
+          console.warn('Could not auto-complete campaign stage:', campErr.message);
+        }
+      } else {
+        toast.success(result === 'success' ? '✅ Simulasi selesai!' : '⚠️ Simulasi selesai');
+      }
     } catch (error) {
       console.error('Failed to complete simulation', error);
     }
@@ -212,19 +202,25 @@ Format your response as JSON:
 
   const getChannelIcon = (channel) => {
     switch (channel) {
-      case 'email_inbox': return <Mail className="w-5 h-5" />;
+      case 'email_inbox':
+      case 'email':
+        return <Mail className="w-5 h-5" />;
       case 'chat_ui':
+      case 'chat':
+      case 'whatsapp':
       case 'sms':
       case 'social_media':
       case 'linkedin':
         return <MessageSquare className="w-5 h-5" />;
       case 'phone_sim':
       case 'phone_call':
+      case 'telephone':
+      case 'phone':
         return <Phone className="w-5 h-5" />;
       case 'web_sim':
       case 'browser':
         return <Globe className="w-5 h-5" />;
-      default: return <Mail className="w-5 h-5" />;
+      default: return <MessageSquare className="w-5 h-5" />;
     }
   };
 
@@ -241,13 +237,24 @@ Format your response as JSON:
     );
   }
 
-  if (!currentNode) {
+  if (!currentNode && !loading) {
     return (
-      <div className="text-center p-12">
-        <p className="text-muted-foreground">Node not found</p>
-        <Button onClick={() => navigate('/simulations')} className="mt-4">
-          Back to Simulations
-        </Button>
+      <div className="max-w-xl mx-auto text-center p-12 space-y-4">
+        <div className="p-4 border border-yellow-500/30 bg-yellow-500/5">
+          <p className="font-mono text-yellow-400 text-sm font-bold uppercase tracking-widest mb-2">Skenario Tidak Dapat Dimuat</p>
+          <p className="text-xs text-muted-foreground font-mono">
+            Data skenario tidak ditemukan atau memiliki format yang tidak valid.
+            Silakan coba skenario lain atau hubungi instruktur Anda.
+          </p>
+        </div>
+        <div className="flex gap-3 justify-center">
+          <Button onClick={() => navigate('/scenarios')} className="text-xs uppercase tracking-widest">
+            Kembali ke Skenario
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/simulations')} className="text-xs uppercase tracking-widest">
+            Riwayat Simulasi
+          </Button>
+        </div>
       </div>
     );
   }
@@ -431,12 +438,18 @@ Format your response as JSON:
             {getContent(currentNode, 'explanation')}
           </p>
 
-          <div className="flex items-center justify-center space-x-4">
-            <Button onClick={() => navigate('/simulations')}>
-              View All Simulations
-            </Button>
+          <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
+            {simulation?.campaign_id ? (
+              <Button onClick={() => navigate('/campaigns')}>
+                <Flag className="w-4 h-4 mr-2" /> Kembali ke Kampanye
+              </Button>
+            ) : (
+              <Button onClick={() => navigate('/simulations')}>
+                Lihat Semua Riwayat
+              </Button>
+            )}
             <Button variant="outline" onClick={() => navigate('/scenarios')}>
-              Try Another Challenge
+              Coba Skenario Lain
             </Button>
 
             {/* RETRY BUTTON FOR PROFESSIONAL LEARNING */}

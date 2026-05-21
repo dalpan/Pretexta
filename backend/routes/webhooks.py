@@ -17,7 +17,7 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 @router.get("")
 async def get_webhooks(current_user: User = Depends(get_current_user)):
     """List configured webhooks."""
-    if current_user.role not in ("admin", "instructor"):
+    if current_user.role not in ("admin", "trainer"):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     query = {}
@@ -35,7 +35,7 @@ async def get_webhooks(current_user: User = Depends(get_current_user)):
 @router.post("")
 async def create_webhook(data: dict[str, Any], current_user: User = Depends(get_current_user)):
     """Create a webhook configuration."""
-    if current_user.role not in ("admin", "instructor"):
+    if current_user.role not in ("admin", "trainer"):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     url = data.get("url", "")
@@ -59,7 +59,7 @@ async def create_webhook(data: dict[str, Any], current_user: User = Depends(get_
 @router.delete("/{webhook_id}")
 async def delete_webhook(webhook_id: str, current_user: User = Depends(get_current_user)):
     """Delete a webhook."""
-    if current_user.role not in ("admin", "instructor"):
+    if current_user.role not in ("admin", "trainer"):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     result = await db.webhooks.delete_one({"id": webhook_id})

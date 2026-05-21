@@ -1,19 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-
-import { FileCode, Clock, Target, Play, Search, Filter, Info, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2
+import { FileCode, Clock, Target, Play, Search, Filter, CheckCircle2, Info } from 'lucide-react';
 import { toast } from 'sonner';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
-
 import Pagination from '../components/Pagination';
-import { Input } from '../components/ui/input'; // Import Input untuk form pencarian
+import api from '../services/api';
+import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover'; // Import Popover untuk filter
-import { Checkbox } from '../components/ui/checkbox'; // Import Checkbox untuk filter
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { Checkbox } from '../components/ui/checkbox';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
 
 export default function ScenariosPage() {
   const { t } = useTranslation();
@@ -23,23 +21,16 @@ export default function ScenariosPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // State baru untuk fitur pencarian dan filtering
-  const [activeTab, setActiveTab] = useState('training'); // 'training' | 'professional'
+  const [activeTab, setActiveTab] = useState('training');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState([]);
   const [filterCategory, setFilterCategory] = useState([]);
 
-  // Daftar unik kategori dan kesulitan yang tersedia
   const allDifficulties = useMemo(() => ['easy', 'medium', 'hard'], []);
   const allCategories = useMemo(() => {
     const cats = new Set();
     challenges.forEach(c => c.cialdini_categories?.forEach(cat => cats.add(cat)));
     return Array.from(cats).sort();
-  }, [challenges]);
-
-  // Statistik Tambahan
-  const totalNodes = useMemo(() => {
-    return challenges.reduce((sum, challenge) => sum + (challenge.nodes?.length || 0), 0);
   }, [challenges]);
 
 
@@ -49,23 +40,17 @@ export default function ScenariosPage() {
 
   const loadChallenges = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/challenges`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setChallenges(response.data);
-
-      // Fetch history to mark completed
-      const historyRes = await axios.get(`${API}/simulations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const [challengesRes, historyRes] = await Promise.all([
+        api.get('/challenges/all'),  // returns flat array, no pagination
+        api.get('/simulations'),
+      ]);
+      setChallenges(Array.isArray(challengesRes.data) ? challengesRes.data : []);
       const completed = new Set(
         historyRes.data
-          .filter(s => s.status === 'completed' && s.challenge_id)
-          .map(s => s.challenge_id)
+          .filter((s) => s.status === 'completed' && s.challenge_id)
+          .map((s) => s.challenge_id)
       );
       setCompletedIds(completed);
-
     } catch (error) {
       toast.error('Failed to load challenges');
     } finally {
@@ -75,17 +60,12 @@ export default function ScenariosPage() {
 
   const startChallenge = async (challengeId) => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.post(`${API}/simulations`, {
+      const response = await api.post('/simulations', {
         challenge_id: challengeId,
-        title: challenges.find(c => c.id === challengeId)?.title, // Pass title for logs
+        title: challenges.find((c) => c.id === challengeId)?.title,
         simulation_type: 'simulation',
-        status: 'running'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        status: 'running',
       });
-
-      // Navigate to simulation player
       window.location.href = `/simulations/${response.data.id}/play`;
     } catch (error) {
       toast.error('Failed to start challenge');
@@ -140,7 +120,7 @@ export default function ScenariosPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-primary font-mono animate-pulse">LOADING CHALLENGES...</div>
+        <div className="text-primary font-mono animate-pulse">{t('common.loading')}</div>
       </div>
     );
   }
@@ -151,126 +131,98 @@ export default function ScenariosPage() {
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold font-mono uppercase tracking-widest text-primary">{t('scenarios.title')}</h1>
-          <p className="text-muted-foreground mb-4">
-            {t('scenarios.page_description')}
-          </p>
-          {/* Tambahkan Badge Statistik */}
-          <div className="flex space-x-3">
-            <Badge variant="secondary" className="text-sm font-mono tracking-wider px-3 py-1">
-              Scenario Total: {challenges.length}
-            </Badge>
-          </div>
-        </div>
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <PageHeader
+        icon={FileCode}
+        title={t('scenarios.title')}
+        description={t('scenarios.page_description')}
+      >
+        <Badge variant="secondary" className="font-mono text-xs tracking-wider">
+          {challenges.length} {t('scenarios.title').toLowerCase()}
+        </Badge>
+      </PageHeader>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-primary/10 pb-1">
+        {[['training', 'Training Modules'], ['professional', 'Professional']].map(([key, label]) => (
+          <button
+            key={key}
+            className={`px-4 py-2 text-xs font-mono font-semibold uppercase tracking-widest transition-colors border-b-2 -mb-px ${
+              activeTab === key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setActiveTab(key)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* --- TABS NAVIGATION --- */}
-      <div className="flex space-x-4 border-b border-border mb-6">
-        <button
-          className={`pb-2 px-4 font-medium transition-colors border-b-2 ${activeTab === 'training'
-            ? 'border-primary text-primary'
-            : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          onClick={() => setActiveTab('training')}
-        >
-          Training Modules
-        </button>
-        <button
-          className={`pb-2 px-4 font-medium transition-colors border-b-2 ${activeTab === 'professional'
-            ? 'border-primary text-primary'
-            : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          onClick={() => setActiveTab('professional')}
-        >
-          Professional Scenarios 🛡️
-        </button>
-      </div>
-
-      {/* --- PENCARIAN & FILTER --- */}
-      <div className="flex space-x-4">
-        {/* Form Pencarian */}
+      {/* Search & Filter */}
+      <div className="flex gap-3">
         <div className="relative flex-1">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search by title or description..."
+            placeholder={t('scenarios.search_placeholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 font-mono"
+            className="w-full pl-9 font-mono text-sm"
             data-testid="search-input"
           />
         </div>
-
-        {/* Filter Popover */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="flex items-center space-x-2">
-              <Filter className="w-4 h-4" />
-              <span>Filter ({filterDifficulty.length + filterCategory.length})</span>
+            <Button variant="outline" size="sm" className="gap-2 font-mono text-xs uppercase tracking-widest">
+              <Filter className="w-3 h-3" />
+              {t('common.filter')}
+              {(filterDifficulty.length + filterCategory.length) > 0 && (
+                <span className="bg-primary text-primary-foreground text-[10px] px-1 rounded-full">
+                  {filterDifficulty.length + filterCategory.length}
+                </span>
+              )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-4 space-y-4">
-            <h4 className="font-bold text-sm uppercase text-primary">Filter Scenario</h4>
-
-            {/* Filter Kesulitan */}
+          <PopoverContent className="w-72 p-4 space-y-4">
+            <h4 className="font-mono font-bold text-xs uppercase tracking-widest text-primary">{t('common.filter')}</h4>
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Kesulitan</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{t('scenarios.difficulty')}</p>
               {allDifficulties.map((d) => (
-                <div key={d} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`difficulty-${d}`}
-                    checked={filterDifficulty.includes(d)}
-                    onCheckedChange={(checked) => handleDifficultyFilterChange(d, checked)}
-                  />
-                  <Label htmlFor={`difficulty-${d}`} className="text-sm capitalize">{d}</Label>
+                <div key={d} className="flex items-center gap-2">
+                  <Checkbox id={`diff-${d}`} checked={filterDifficulty.includes(d)} onCheckedChange={(c) => handleDifficultyFilterChange(d, c)} />
+                  <Label htmlFor={`diff-${d}`} className="text-sm capitalize font-mono">{t(`scenarios.${d}`, d)}</Label>
                 </div>
               ))}
             </div>
-
-            {/* Filter Kategori Cialdini */}
-            <div className="space-y-2 pt-2 border-t border-border">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Category Cialdini</p>
-              <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
-                {allCategories.map((cat) => (
-                  <div key={cat} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`category-${cat}`}
-                      checked={filterCategory.includes(cat)}
-                      onCheckedChange={(checked) => handleCategoryFilterChange(cat, checked)}
-                    />
-                    <Label htmlFor={`category-${cat}`} className="text-sm">{cat}</Label>
-                  </div>
-                ))}
+            {allCategories.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{t('scenarios.cialdini_principle')}</p>
+                <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
+                  {allCategories.map((cat) => (
+                    <div key={cat} className="flex items-center gap-2">
+                      <Checkbox id={`cat-${cat}`} checked={filterCategory.includes(cat)} onCheckedChange={(c) => handleCategoryFilterChange(cat, c)} />
+                      <Label htmlFor={`cat-${cat}`} className="text-xs font-mono">{cat}</Label>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-
+            )}
             {(filterDifficulty.length > 0 || filterCategory.length > 0) && (
-              <Button
-                variant="ghost"
-                onClick={() => { setFilterDifficulty([]); setFilterCategory([]); }}
-                className="w-full text-xs text-destructive hover:text-destructive"
-              >
-                Delete Filter
+              <Button variant="ghost" size="sm" onClick={() => { setFilterDifficulty([]); setFilterCategory([]); }} className="w-full text-xs text-destructive hover:text-destructive">
+                {t('common.cancel')} {t('common.filter')}
               </Button>
             )}
           </PopoverContent>
         </Popover>
       </div>
-      {/* --------------------------- */}
-
 
       {filteredChallenges.length === 0 ? (
-        <div className="glass-panel p-12 text-center">
-          <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground font-mono">
-            {searchTerm || filterDifficulty.length > 0 || filterCategory.length > 0
-              ? t('scenarios.no_results') // Tampilkan pesan 'Tidak ada hasil' jika ada filter
-              : t('scenarios.no_challenges')}
-          </p>
-        </div>
+        <EmptyState
+          icon={FileCode}
+          title={searchTerm || filterDifficulty.length > 0 || filterCategory.length > 0 ? t('scenarios.no_results') : t('scenarios.no_challenges')}
+          description={t('scenarios.no_challenges')}
+        />
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -285,8 +237,8 @@ export default function ScenariosPage() {
                     <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors flex items-center">
                       {challenge.title}
                       {completedIds.has(challenge.id) && (
-                        <span className="ml-2 text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full border border-green-500/20 flex items-center">
-                          <CheckCircle2 className="w-3 h-3 mr-1" /> Done
+                        <span className="ml-2 text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 border border-emerald-500/20 flex items-center font-mono">
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> {t('simulation.status_completed')}
                         </span>
                       )}
                     </h3>
@@ -316,16 +268,17 @@ export default function ScenariosPage() {
                     </div>
                     <div className="flex items-center space-x-1">
                       <Target className="w-4 h-4" />
-                      <span>{challenge.nodes?.length || 0} nodes</span>
+                      <span>{challenge.node_count ?? challenge.nodes?.length ?? 0} {t('scenarios.nodes')}</span>
                     </div>
                   </div>
                   <Button
                     size="sm"
                     onClick={() => startChallenge(challenge.id)}
                     data-testid={`start-challenge-${challenge.id}`}
+                    className="text-xs uppercase tracking-widest"
                   >
-                    <Play className="w-4 h-4 mr-2" />
-                    START
+                    <Play className="w-3 h-3 mr-2" />
+                    {t('scenarios.start')}
                   </Button>
                 </div>
               </div>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { Button } from '../components/ui/button';
+import api from '../services/api';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -13,7 +13,6 @@ import {
   ChevronLeft, ChevronRight, RotateCcw, Download, RefreshCw
 } from 'lucide-react';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export default function AIChallengePage() {
   const { t } = useTranslation();
@@ -113,10 +112,7 @@ export default function AIChallengePage() {
 
   const checkLLMConfig = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/llm/config`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/llm/config');
       const hasEnabled = response.data.some(config => config.enabled);
       setLlmConfigured(hasEnabled);
       if (!hasEnabled) {
@@ -146,27 +142,20 @@ export default function AIChallengePage() {
     setEvaluationResults({});
 
     try {
-      const token = localStorage.getItem('soceng_token');
       const challengeTypeConfig = challengeTypes[selectedChallengeType];
       const prompt = buildPrompt(selectedChallengeType, challengeTypeConfig);
 
-      const response = await axios.post(
-        `${API}/llm/generate`,
-        {
-          prompt: prompt,
-          context: {
-            category: selectedCategory,
-            challenge_type: selectedChallengeType,
-            num_questions: numQuestions,
-            difficulty: difficulty,
-            language: language,
-          },
-          provider: selectedProvider
+      const response = await api.post('/llm/generate', {
+        prompt,
+        context: {
+          category: selectedCategory,
+          challenge_type: selectedChallengeType,
+          num_questions: numQuestions,
+          difficulty,
+          language,
         },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+        provider: selectedProvider,
+      });
 
       // Backend should handle JSON repair, but we double check here
       let challengeData;
@@ -280,9 +269,6 @@ export default function AIChallengePage() {
     setCurrentAnswer(''); // Clear input
 
     try {
-      const token = localStorage.getItem('soceng_token');
-
-      // Use AI to evaluate the answer (works for both MCQ and Open Text)
       const evalPrompt = `
         Evaluate this answer for a security training scenario.
         Question: ${currentQuestion.question}
@@ -300,11 +286,7 @@ export default function AIChallengePage() {
         Lang: ${language}
         `;
 
-      const response = await axios.post(
-        `${API}/llm/generate`,
-        { prompt: evalPrompt, provider: selectedProvider },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await api.post('/llm/generate', { prompt: evalPrompt, provider: selectedProvider });
 
       let evalData = { isCorrect: false, feedback: "Could not evaluate.", insight: "", score: 0 };
       try {
@@ -370,20 +352,19 @@ export default function AIChallengePage() {
 
     // Save History
     try {
-      const token = localStorage.getItem('soceng_token');
-      await axios.post(`${API}/simulations`, {
+      await api.post('/simulations', {
         simulation_type: 'ai_challenge',
         challenge_type: selectedChallengeType,
         category: selectedCategory,
-        difficulty: difficulty,
-        score: score,
+        difficulty,
+        score,
         total_questions: generatedChallenge.questions.length,
         correct_answers: correctCount,
         answers: userAnswers,
         title: generatedChallenge.challenge_title,
         status: 'completed',
-        completed_at: new Date().toISOString()
-      }, { headers: { Authorization: `Bearer ${token}` } });
+        completed_at: new Date().toISOString(),
+      });
     } catch (e) {
       console.error("Failed to save history", e);
     }

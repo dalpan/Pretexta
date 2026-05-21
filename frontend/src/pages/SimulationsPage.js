@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import { Activity, TrendingUp, Calendar, Download, Eye, Filter, BarChart3, Trash2, Shield, AlertTriangle, CheckCircle2, Clock, Search, FolderOpen, FileText } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function SimulationsPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [simulations, setSimulations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all');
@@ -23,10 +24,7 @@ export default function SimulationsPage() {
 
   const loadSimulations = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/simulations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/simulations');
       setSimulations(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to load logs', error);
@@ -260,21 +258,21 @@ export default function SimulationsPage() {
                 )}
               </div>
 
-              <div className="p-4 bg-black/60 border-t border-primary/20 flex justify-end">
-                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs uppercase" onClick={async () => {
-                  if (!window.confirm("CONFIRM_DELETION: This action cannot be undone.")) return;
-                  try {
-                    await axios.delete(`${API}/simulations/${selectedSimulation.id}`, {
-                      headers: { Authorization: `Bearer ${localStorage.getItem('soceng_token')}` }
-                    });
-                    setSimulations(prev => prev.filter(s => s.id !== selectedSimulation.id));
-                    setSelectedSimulation(null);
-                    toast.success("LOG_PURGED");
-                  } catch (e) { toast.error("PURGE_FAILED"); }
-                }}>
-                  <Trash2 className="w-3 h-3 mr-2" /> PURGE_RECORD
-                </Button>
-              </div>
+              {isAdmin && (
+                <div className="p-4 bg-black/60 border-t border-primary/20 flex justify-end">
+                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs uppercase" onClick={async () => {
+                    if (!window.confirm("CONFIRM_DELETION: This action cannot be undone.")) return;
+                    try {
+                      await api.delete(`/simulations/${selectedSimulation.id}`);
+                      setSimulations(prev => prev.filter(s => s.id !== selectedSimulation.id));
+                      setSelectedSimulation(null);
+                      toast.success("LOG_PURGED");
+                    } catch (e) { toast.error("PURGE_FAILED"); }
+                  }}>
+                    <Trash2 className="w-3 h-3 mr-2" /> PURGE_RECORD
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="h-64 flex items-center justify-center text-primary/30 border border-dashed border-primary/30 bg-primary/5">

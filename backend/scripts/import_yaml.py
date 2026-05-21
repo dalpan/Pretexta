@@ -48,6 +48,20 @@ async def import_yaml_file(file_path: Path, db):
             print(f"✅ Quiz: {data.get('title', 'Unknown')}")
             return True
 
+        elif yaml_type == "campaign":
+            # Normalize stages to ensure stage_ids
+            stages = data.get("stages", [])
+            for i, stage in enumerate(stages):
+                if not stage.get("stage_id"):
+                    stage["stage_id"] = str(uuid.uuid4())
+                if "order" not in stage:
+                    stage["order"] = i
+            data["stages"] = stages
+            data["is_published"] = data.get("is_published", True)
+            await db.campaigns.insert_one(data)
+            print(f"✅ Campaign: {data.get('title', 'Unknown')} ({len(stages)} stages)")
+            return True
+
         else:
             print(f"❌ {file_path.name}: Unknown type '{yaml_type}'")
             return False

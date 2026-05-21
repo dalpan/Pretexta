@@ -1,3 +1,4 @@
+import uuid as uuid_lib
 from datetime import UTC, datetime
 from typing import Any
 
@@ -20,10 +21,31 @@ async def get_campaigns(current_user: User = Depends(get_current_user)):
 
 @router.get("/{campaign_id}")
 async def get_campaign(campaign_id: str, current_user: User = Depends(get_current_user)):
-    """Get campaign details with user progress."""
+    """Get campaign details with user progress. Resolves challenge/quiz titles to IDs."""
     campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
+
+    # Resolve challenge_title → challenge_id for stages that lack a direct ID
+    stages = campaign.get("stages", [])
+    for stage in stages:
+        if not stage.get("challenge_id") and stage.get("challenge_title"):
+            ch = await db.challenges.find_one(
+                {"title": {"$regex": f"^{stage['challenge_title']}$", "$options": "i"}},
+                {"_id": 0, "id": 1, "title": 1},
+            )
+            if ch:
+                stage["challenge_id"] = ch["id"]
+                stage["challenge_title"] = ch["title"]
+        if not stage.get("quiz_id") and stage.get("quiz_title"):
+            qz = await db.quizzes.find_one(
+                {"title": {"$regex": f"^{stage['quiz_title']}$", "$options": "i"}},
+                {"_id": 0, "id": 1, "title": 1},
+            )
+            if qz:
+                stage["quiz_id"] = qz["id"]
+                stage["quiz_title"] = qz["title"]
+    campaign["stages"] = stages
 
     progress = await db.campaign_progress.find_one(
         {"campaign_id": campaign_id, "user_id": current_user.id}, {"_id": 0}
@@ -35,7 +57,7 @@ async def get_campaign(campaign_id: str, current_user: User = Depends(get_curren
 @router.post("")
 async def create_campaign(data: dict[str, Any], current_user: User = Depends(get_current_user)):
     """Create a new campaign (admin/instructor only)."""
-    if current_user.role not in ("admin", "instructor"):
+    if current_user.role not in ("admin", "trainer"):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     campaign = Campaign(
@@ -77,6 +99,75 @@ async def start_campaign(campaign_id: str, current_user: User = Depends(get_curr
     await db.campaign_progress.insert_one(doc)
 
     return {"progress_id": progress.id, "message": "Campaign started", "first_stage": 0}
+
+
+@router.post("/{campaign_id}/stage/{stage_index}/start")
+async def start_stage(
+    campaign_id: str,
+    stage_index: int,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Start a specific campaign stage.
+    - If stage has challenge_id → creates a simulation and returns sim_id
+    - If stage has quiz_id → returns quiz_id for frontend redirect
+    - Otherwise → marks stage as started with no linked content
+    """
+    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    progress = await db.campaign_progress.find_one(
+        {"campaign_id": campaign_id, "user_id": current_user.id, "status": "in_progress"},
+        {"_id": 0},
+    )
+    if not progress:
+        raise HTTPException(status_code=400, detail="Start the campaign first")
+
+    stages = campaign.get("stages", [])
+    if stage_index >= len(stages):
+        raise HTTPException(status_code=400, detail="Invalid stage index")
+
+    current_stage_idx = progress.get("current_stage", 0)
+    if stage_index != current_stage_idx:
+        raise HTTPException(status_code=400, detail=f"Stage {stage_index} is not the active stage")
+
+    stage = stages[stage_index]
+    # Resolve title if needed
+    if not stage.get("challenge_id") and stage.get("challenge_title"):
+        ch = await db.challenges.find_one(
+            {"title": {"$regex": f"^{stage['challenge_title']}$", "$options": "i"}},
+            {"_id": 0, "id": 1},
+        )
+        if ch:
+            stage["challenge_id"] = ch["id"]
+
+    challenge_id = stage.get("challenge_id")
+    quiz_id = stage.get("quiz_id")
+
+    if challenge_id:
+        # Create a simulation for this stage
+        sim_doc = {
+            "id": str(uuid_lib.uuid4()),
+            "user_id": current_user.id,
+            "challenge_id": challenge_id,
+            "title": f"[Kampanye] {campaign.get('title', '')} — Tahap {stage_index + 1}: {stage.get('title', '')}",
+            "simulation_type": "simulation",
+            "status": "running",
+            "campaign_id": campaign_id,
+            "stage_index": stage_index,
+            "started_at": datetime.now(UTC).isoformat(),
+            "score": 100,
+            "events": [],
+        }
+        await db.simulations.insert_one(sim_doc)
+        return {"type": "challenge", "simulation_id": sim_doc["id"], "challenge_id": challenge_id}
+
+    if quiz_id:
+        return {"type": "quiz", "quiz_id": quiz_id}
+
+    # No linked content — mark as directly completable
+    return {"type": "manual", "stage": stage}
 
 
 @router.post("/{campaign_id}/stage/{stage_index}/complete")

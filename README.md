@@ -5,7 +5,7 @@
 ### The Psychology Behind Successful Attacks
 #### An Open Source Lab for Simulating Human Exploitation via Social Engineering
 
-[![Version](https://img.shields.io/badge/Version-2.1.0-blue?style=flat-square)](https://github.com/fdciabdul/Pretexta/releases)
+[![Version](https://img.shields.io/badge/Version-3.0.0-blue?style=flat-square)](https://github.com/fdciabdul/Pretexta/releases)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/fdciabdul/Pretexta/ci.yml?style=flat-square&label=CI)](https://github.com/fdciabdul/Pretexta/actions)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
@@ -73,14 +73,37 @@ Built on **Cialdini's 6 Principles of Influence**: Reciprocity, Scarcity, Author
 ```bash
 git clone https://github.com/dalpan/Pretexta.git
 cd Pretexta
-cp .env.example .env        # Configure secrets
-make build && make up        # Start all services
-make seed                    # Load sample scenarios
+cp .env.example .env        # Configure environment
+make build && make up       # Build images and start services
 ```
 
-Open [http://localhost:9443](http://localhost:9443) and login with `soceng` / `Cialdini@2025!`
+Open [http://localhost:9443](http://localhost:9443) — login with `soceng` / `Cialdini@2025!`
 
-> Requires Docker and Docker Compose.
+> **Requires:** Docker + Docker Compose (or Docker Desktop)
+
+### Troubleshooting: WSL2 Docker Network Error
+
+If you see `connect: network is unreachable` or `failed to fetch anonymous token`, this is a WSL2 IPv6 issue:
+
+```bash
+# Option 1: Automated fix
+bash scripts/fix-wsl2-network.sh
+
+# Option 2: Manual fix
+sudo bash -c 'echo "{\"dns\":[\"8.8.8.8\",\"8.8.4.4\"],\"ipv6\":false}" > /etc/docker/daemon.json'
+sudo bash -c 'echo "nameserver 8.8.8.8" > /etc/resolv.conf'
+sudo service docker restart
+make build
+```
+
+### Local Development (without Docker)
+
+```bash
+make install      # Install frontend + backend dependencies
+make dev          # Start MongoDB in Docker, run app locally
+```
+
+Backend runs at `localhost:8001` with hot-reload. Frontend runs at `localhost:3000`.
 
 ## Features
 

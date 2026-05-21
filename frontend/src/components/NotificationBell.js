@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { Bell, Trophy, Info, AlertTriangle, Clock } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function NotificationBell() {
+  const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -17,27 +19,21 @@ export default function NotificationBell() {
 
   const loadNotifications = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      if (!token) return;
-      const response = await axios.get(`${API}/notifications?limit=20`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (!isAuthenticated) return;
+      const response = await api.get('/notifications?limit=20');
       setNotifications(response.data.notifications || []);
       setUnreadCount(response.data.unread_count || 0);
-    } catch (error) {
-      // Silent fail
+    } catch {
+      // Silent fail — notification errors should not disrupt the user
     }
   };
 
   const markAllRead = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      await axios.put(`${API}/notifications/read-all`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put('/notifications/read-all', {});
       setUnreadCount(0);
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    } catch (error) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch {
       // Silent fail
     }
   };
@@ -70,16 +66,16 @@ export default function NotificationBell() {
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 top-10 z-50 w-80 glass-panel border border-primary/30 shadow-2xl max-h-96 overflow-hidden">
             <div className="p-3 border-b border-primary/20 flex items-center justify-between">
-              <span className="font-mono text-xs uppercase tracking-widest text-primary">NOTIFICATIONS</span>
+              <span className="font-mono text-xs uppercase tracking-widest text-primary">{t('notifications.title')}</span>
               {unreadCount > 0 && (
                 <button onClick={markAllRead} className="text-[10px] text-muted-foreground hover:text-primary font-mono">
-                  MARK ALL READ
+                  {t('notifications.mark_all_read')}
                 </button>
               )}
             </div>
             <div className="overflow-y-auto max-h-72">
               {notifications.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground font-mono text-xs">NO NOTIFICATIONS</div>
+                <div className="p-6 text-center text-muted-foreground font-mono text-xs">{t('notifications.no_notifications')}</div>
               ) : (
                 notifications.map((notif) => (
                   <div

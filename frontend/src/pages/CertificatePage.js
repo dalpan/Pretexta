@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { Award, Shield, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from '../services/api';
 
 export default function CertificatePage() {
+  const { t } = useTranslation();
   const { simulationId } = useParams();
   const [cert, setCert] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,10 +15,7 @@ export default function CertificatePage() {
 
   const loadCertificate = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/certificates/${simulationId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get(`/certificates/${simulationId}`);
       setCert(response.data);
     } catch (error) {
       console.error('Failed to load certificate', error);

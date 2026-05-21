@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Clock, Award } from 'lucide-react';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from '../services/api';
 
 export default function QuizPlayerPage() {
   const { quizId } = useParams();
@@ -53,10 +51,7 @@ export default function QuizPlayerPage() {
 
   const loadQuiz = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/quizzes/${quizId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get(`/quizzes/${quizId}`);
       setQuiz(response.data);
     } catch (error) {
       toast.error('Failed to load quiz');
@@ -116,8 +111,7 @@ export default function QuizPlayerPage() {
 
     // Save simulation
     try {
-      const token = localStorage.getItem('soceng_token');
-      await axios.post(`${API}/simulations`, {
+      await api.post('/simulations', {
         quiz_id: quizId,
         simulation_type: 'quiz',
         status: 'completed',
@@ -125,16 +119,11 @@ export default function QuizPlayerPage() {
         events: Object.entries(selectedAnswers).map(([qId, ansIdx]) => ({
           question_id: qId,
           answer_index: ansIdx,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         })),
         title: quiz.title,
         challenge_Title: quiz.title,
-        metadata: {
-          correct_count: correctCount,
-          total_questions: quiz.questions.length
-        }
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+        metadata: { correct_count: correctCount, total_questions: quiz.questions.length },
       });
     } catch (error) {
       console.error('Failed to save quiz results', error);

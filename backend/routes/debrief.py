@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from models.schemas import User
 from services.auth import get_current_user
 from services.database import db
-from services.llm import get_llm_generate_model
 
 logger = logging.getLogger(__name__)
 
@@ -163,34 +162,42 @@ def _get_tip_for_action(action: str) -> str:
 
 @router.post("/{simulation_id}/ai-analysis")
 async def get_ai_debrief(simulation_id: str, current_user: User = Depends(get_current_user)):
-    """Generate AI-powered deep analysis of a simulation (requires LLM config)."""
+    """Generate AI-powered deep behavioral analysis (requires LLM config)."""
+    from services.ai_gateway import AIGateway
+
     sim = await db.simulations.find_one({"id": simulation_id}, {"_id": 0})
     if not sim:
         raise HTTPException(status_code=404, detail="Simulation not found")
 
-    config = await db.llm_configs.find_one({"enabled": True}, {"_id": 0})
-    if not config:
-        raise HTTPException(status_code=400, detail="LLM not configured")
+    gateway = await AIGateway.from_db()
+    if not gateway:
+        raise HTTPException(status_code=400, detail="LLM not configured. Add an API key in Settings.")
 
-    prompt = f"""Analyze this social engineering simulation result and provide educational feedback.
-
-Simulation: {sim.get("title", "Unknown")}
-Score: {sim.get("score", 0)}
-Type: {sim.get("simulation_type", "unknown")}
-Events: {sim.get("events", [])}
-
-Provide:
-1. What manipulation techniques were used
-2. Where the user was most vulnerable
-3. Specific, actionable tips for improvement
-4. A psychological explanation of why these techniques work
-
-Keep it educational. Format as JSON with keys:
-techniques, vulnerabilities, tips, psychology."""
+    # Build a minimal persona dict from simulation data
+    persona = {
+        "name": sim.get("title", "Unknown Attacker"),
+        "category": sim.get("challenge_data", {}).get("cialdini_categories", ["general"])[0] if sim.get("challenge_data") else "general",
+    }
 
     try:
-        response = await get_llm_generate_model(config, prompt, {})
-        return {"ai_analysis": response.content, "simulation_id": simulation_id}
+        result = await gateway.analyze_simulation(
+            event_log=sim.get("events", []),
+            persona=persona,
+            final_score=sim.get("score", 0),
+        )
+        analysis_text = (
+            f"**Summary:** {result.summary}\n\n"
+            f"**Cialdini Analysis:**\n"
+            + "\n".join(f"- **{k}:** {v}" for k, v in result.cialdini_breakdown.items())
+            + f"\n\n**Recommendations:**\n"
+            + "\n".join(f"- {r}" for r in result.recommendations)
+        ) if not isinstance(result.summary, dict) else result.summary
+
+        return {
+            "ai_analysis": analysis_text,
+            "simulation_id": simulation_id,
+            "provider": result.provider,
+        }
     except Exception as e:
         logger.error(f"AI debrief failed: {e}")
-        raise HTTPException(status_code=500, detail="AI analysis failed")
+        raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)[:100]}")

@@ -1,59 +1,121 @@
-from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from models.schemas import Simulation, User
+from models.schemas import Simulation, SimulationEvent, User
 from services.auth import get_current_user
 from services.database import db
+from services.simulation import (
+    create_simulation,
+    delete_simulation,
+    get_simulation,
+    list_simulations,
+    update_simulation,
+)
 
 router = APIRouter(prefix="/simulations", tags=["simulations"])
 
 
 @router.post("")
-async def create_simulation(simulation: Simulation, current_user: User = Depends(get_current_user)):
+async def create_simulation_route(
+    simulation: Simulation, current_user: User = Depends(get_current_user)
+):
     doc = simulation.model_dump()
-    doc["started_at"] = doc["started_at"].isoformat()
+    # Serialize datetimes before handing to service
+    doc["started_at"] = doc["started_at"].isoformat() if doc.get("started_at") else None
     if doc.get("completed_at"):
         doc["completed_at"] = doc["completed_at"].isoformat()
-    await db.simulations.insert_one(doc)
-    return {"id": simulation.id, "status": "created"}
+    return await create_simulation(doc, current_user.id)
 
 
-@router.get("", response_model=list[Simulation])
-async def get_simulations(current_user: User = Depends(get_current_user)):
-    sims = await db.simulations.find({}, {"_id": 0}).sort("started_at", -1).to_list(100)
-    return sims
+@router.get("")
+async def list_simulations_route(current_user: User = Depends(get_current_user)):
+    return await list_simulations(current_user.id)
 
 
-@router.get("/{simulation_id}", response_model=Simulation)
-async def get_simulation(simulation_id: str, current_user: User = Depends(get_current_user)):
-    sim = await db.simulations.find_one({"id": simulation_id}, {"_id": 0})
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulation not found")
-    return sim
+@router.get("/{simulation_id}")
+async def get_simulation_route(
+    simulation_id: str, current_user: User = Depends(get_current_user)
+):
+    return await get_simulation(simulation_id, current_user.id)
 
 
 @router.put("/{simulation_id}")
-async def update_simulation(
-    simulation_id: str, updates: dict[str, Any], current_user: User = Depends(get_current_user)
+async def update_simulation_route(
+    simulation_id: str,
+    updates: dict[str, Any],
+    current_user: User = Depends(get_current_user),
 ):
-    if updates.get("completed_at"):
-        updates["completed_at"] = datetime.now(UTC).isoformat()
-
-    result = await db.simulations.update_one({"id": simulation_id}, {"$set": updates})
-
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Simulation not found")
-
-    return {"message": "Simulation updated"}
+    return await update_simulation(simulation_id, updates, current_user.id)
 
 
 @router.delete("/{simulation_id}")
-async def delete_simulation(simulation_id: str, current_user: User = Depends(get_current_user)):
-    result = await db.simulations.delete_one({"id": simulation_id})
+async def delete_simulation_route(
+    simulation_id: str, current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete mission logs")
+    return await delete_simulation(simulation_id, current_user.id)
 
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Simulation not found")
 
-    return {"message": "Simulation deleted successfully"}
+@router.get("/{simulation_id}/events")
+async def get_simulation_events(
+    simulation_id: str,
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(default=200, le=1000),
+):
+    """
+    Return the typed event log for a simulation.
+    Used for replay and detailed analytics.
+    Falls back to extracting events from the simulation document if
+    the typed event log is not yet populated.
+    """
+    sim = await get_simulation(simulation_id, current_user.id)
+
+    # Try dedicated event collection first (future state)
+    typed_events = await db.simulation_events.find(
+        {"simulation_id": simulation_id}, {"_id": 0}
+    ).sort("sequence", 1).to_list(limit)
+
+    if typed_events:
+        return {"simulation_id": simulation_id, "events": typed_events, "source": "typed"}
+
+    # Fall back to events embedded in the simulation document
+    # These are legacy untyped events — still useful for display
+    embedded_events = sim.get("events", []) if isinstance(sim, dict) else []
+    return {
+        "simulation_id": simulation_id,
+        "events": embedded_events[:limit],
+        "source": "embedded",
+        "note": "Legacy event format. Typed events available for new simulations.",
+    }
+
+
+@router.post("/{simulation_id}/events")
+async def append_simulation_event(
+    simulation_id: str,
+    event: SimulationEvent,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Append a typed event to a simulation's event log.
+    Used by the simulation runtime to record interactions.
+    """
+    # Verify ownership
+    await get_simulation(simulation_id, current_user.id)
+
+    # Get current sequence number
+    last_event = await db.simulation_events.find_one(
+        {"simulation_id": simulation_id},
+        {"sequence": 1},
+        sort=[("sequence", -1)],
+    )
+    next_sequence = (last_event["sequence"] + 1) if last_event else 0
+
+    doc = event.model_dump()
+    doc["simulation_id"] = simulation_id
+    doc["sequence"] = next_sequence
+
+    await db.simulation_events.insert_one(doc)
+
+    return {"id": event.id, "sequence": next_sequence}

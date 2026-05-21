@@ -146,6 +146,35 @@ async def update_profile(
     return {"message": "Profile updated"}
 
 
+@router.post("/promote")
+async def promote_user(
+    data: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Admin promotes a user to instructor role.
+    Only admin can call this endpoint.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+    target_username = data.get("username")
+    new_role = data.get("role", "trainer")
+
+    if new_role not in ("trainer", "user", "admin"):
+        raise HTTPException(status_code=400, detail="Invalid role. Use: trainer, user, admin")
+
+    target = await db.users.find_one({"username": target_username}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail=f"User '{target_username}' not found")
+
+    if target.get("role") == "admin" and current_user.id != target["id"]:
+        raise HTTPException(status_code=403, detail="Cannot change role of another admin")
+
+    await db.users.update_one({"username": target_username}, {"$set": {"role": new_role}})
+    return {"message": f"User '{target_username}' role changed to '{new_role}'", "user_id": target["id"]}
+
+
 @router.post("/change-password")
 async def change_password(
     request: PasswordChangeRequest, current_user: User = Depends(get_current_user)
@@ -161,3 +190,65 @@ async def change_password(
     new_hash = hash_password(request.new_password)
     await db.users.update_one({"id": current_user.id}, {"$set": {"password_hash": new_hash}})
     return {"message": "Password changed successfully"}
+
+
+@router.post("/create-user")
+async def create_user_by_admin(
+    data: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Admin atau trainer membuat akun user baru langsung.
+    - Admin: bisa buat user dengan role apapun (user/trainer)
+    - Trainer: hanya bisa buat user dengan role=user
+    """
+    if current_user.role not in ("admin", "trainer"):
+        raise HTTPException(status_code=403, detail="Admin or trainer role required")
+
+    username = data.get("username", "").strip()
+    password = data.get("password", "").strip()
+    display_name = data.get("display_name", "").strip()
+    email = data.get("email", "").strip() or None
+    role = data.get("role", "user")
+
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Username and password are required")
+
+    # Trainer can only create user-role accounts
+    if current_user.role == "trainer" and role != "user":
+        raise HTTPException(status_code=403, detail="Trainers can only create user-role accounts")
+
+    # Validate role
+    if role not in ("user", "trainer", "admin"):
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    # Admin cannot create other admins unless they are admin
+    if role == "admin" and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create admin accounts")
+
+    # Check if username taken
+    existing = await db.users.find_one({"username": username})
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Username '{username}' is already taken")
+
+    pw_error = validate_password(password)
+    if pw_error:
+        raise HTTPException(status_code=400, detail=pw_error)
+
+    user = User(
+        username=username,
+        password_hash=hash_password(password),
+        email=email,
+        display_name=display_name or username,
+        role=role,
+    )
+    doc = user.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.users.insert_one(doc)
+
+    return {
+        "message": f"User '{username}' created successfully with role '{role}'",
+        "user_id": user.id,
+        "username": user.username,
+        "role": user.role,
+    }

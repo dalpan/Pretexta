@@ -1,20 +1,15 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { ListChecks, Play, HelpCircle, Search, Filter, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2
+import { ListChecks, Play, HelpCircle, Search, Filter, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
-
 import Pagination from '../components/Pagination';
-
-// Import komponen UI yang diperlukan untuk filter dan pencarian
 import { Input } from '../components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Checkbox } from '../components/ui/checkbox';
-import { Label } from '../components/ui/label'; // Label, penting agar tidak blank lagi
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { Label } from '../components/ui/label';
+import api from '../services/api';
 
 export default function QuizzesPage() {
   const { t } = useTranslation();
@@ -43,20 +38,15 @@ export default function QuizzesPage() {
 
   const loadQuizzes = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/quizzes`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setQuizzes(response.data);
-
-      // Fetch history for completion status
-      const historyRes = await axios.get(`${API}/simulations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const [quizzesRes, historyRes] = await Promise.all([
+        api.get('/quizzes/all'),  // flat array for full listing
+        api.get('/simulations'),
+      ]);
+      setQuizzes(Array.isArray(quizzesRes.data) ? quizzesRes.data : []);
       const completed = new Set(
         historyRes.data
-          .filter(s => s.status === 'completed' && s.quiz_id)
-          .map(s => s.quiz_id)
+          .filter((s) => s.status === 'completed' && s.quiz_id)
+          .map((s) => s.quiz_id)
       );
       setCompletedIds(completed);
 
@@ -264,7 +254,7 @@ export default function QuizzesPage() {
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <HelpCircle className="w-4 h-4" />
-                    <span>{quiz.questions?.length || 0} questions</span>
+                    <span>{quiz.question_count ?? quiz.questions?.length ?? 0} pertanyaan</span>
                   </div>
                   <Button
                     size="sm"

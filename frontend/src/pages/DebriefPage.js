@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { FileSearch, Brain, AlertTriangle, CheckCircle2, ArrowLeft, Sparkles, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from '../services/api';
 
 export default function DebriefPage() {
+  const { t } = useTranslation();
   const { simulationId } = useParams();
   const [debrief, setDebrief] = useState(null);
   const [aiAnalysis, setAiAnalysis] = useState(null);
@@ -18,10 +18,7 @@ export default function DebriefPage() {
 
   const loadDebrief = async () => {
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.get(`${API}/debrief/${simulationId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get(`/debrief/${simulationId}`);
       setDebrief(response.data);
     } catch (error) {
       console.error('Failed to load debrief', error);
@@ -33,10 +30,7 @@ export default function DebriefPage() {
   const requestAiAnalysis = async () => {
     setAiLoading(true);
     try {
-      const token = localStorage.getItem('soceng_token');
-      const response = await axios.post(`${API}/debrief/${simulationId}/ai-analysis`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.post(`/debrief/${simulationId}/ai-analysis`, {});
       setAiAnalysis(response.data.ai_analysis);
     } catch (error) {
       console.error('AI analysis failed', error);
