@@ -3,7 +3,7 @@
 <img height="50px" alt="Pretexta" src="https://github.com/user-attachments/assets/fc119f85-9703-4ae6-ba2d-f71460f10c7c" />
 
 ### The Psychology Behind Successful Attacks
-#### An Open Source Lab for Simulating Human Exploitation via Social Engineering
+#### An Open Framework for Social Engineering Assessments
 
 [![Version](https://img.shields.io/badge/Version-3.0.0-blue?style=flat-square)](https://github.com/fdciabdul/Pretexta/releases)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
