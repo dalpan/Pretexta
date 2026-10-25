@@ -274,3 +274,30 @@ async def test_audit_chain_detects_deletion(api):
     await db.audit_log.delete_one({"seq": 2})
     result = await audit.verify_chain()
     assert result["ok"] is False
+
+
+# ---------- content filter evasion (defense in depth) ----------
+
+
+@pytest.mark.parametrize(
+    "over",
+    [
+        {"subject": "PayP<b></b>al alert"},  # tag-split brand
+        {"subject": "Your &#112;aypal account"},  # HTML-entity brand
+        {"body_html": "year-end b&#111;nus {{.URL}}"},  # entity-encoded theme
+    ],
+)
+async def test_content_filter_resists_simple_evasion(api, over):
+    _, h = await make_user("trainer")
+    await _add_sandbox_domain(api, h)
+    r = await api.post("/api/live/campaigns", json=_campaign(**over), headers=h)
+    assert any(f["level"] == "error" for f in r.json()["preflight"]), r.json()["preflight"]
+
+
+async def test_list_campaigns_omits_recipients(api):
+    _, h = await make_user("trainer")
+    await _add_sandbox_domain(api, h)
+    await api.post("/api/live/campaigns", json=_campaign(), headers=h)
+    rows = (await api.get("/api/live/campaigns", headers=h)).json()
+    assert rows and "recipients" not in rows[0] and "body_html" not in rows[0]
+    assert rows[0]["recipient_count"] == 2

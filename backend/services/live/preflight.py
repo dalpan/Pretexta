@@ -5,6 +5,7 @@ Pre-flight checks for live campaigns.
 submission, approval and launch. Each finding names the guardrail it enforces.
 """
 
+import html
 import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -122,12 +123,22 @@ def _finding(rule: str, level: str, message: str) -> dict[str, str]:
     return {"rule": rule, "level": level, "message": message}
 
 
-def _words(text: str) -> str:
-    return re.sub(r"<[^>]+>", " ", text).lower()
+def _normalize(text: str) -> tuple[str, str]:
+    """Two lowercased views of the text with HTML entities decoded.
+
+    `spaced` turns tags into spaces so word boundaries survive; `tight` drops
+    them so intra-word splitting (``PayP<b></b>al``) cannot hide a keyword.
+    A phrase blocks if it matches in either view.
+    """
+    decoded = html.unescape(text)
+    spaced = re.sub(r"<[^>]+>", " ", decoded).lower()
+    tight = re.sub(r"<[^>]+>", "", decoded).lower()
+    return spaced, tight
 
 
-def _matches(text: str, phrase: str) -> bool:
-    return re.search(rf"\b{re.escape(phrase)}\b", text) is not None
+def _matches(views: tuple[str, str], phrase: str) -> bool:
+    pattern = rf"\b{re.escape(phrase)}\b"
+    return any(re.search(pattern, view) for view in views)
 
 
 def _covered(domain: str, verified: set[str]) -> bool:
@@ -141,17 +152,21 @@ def _as_utc(value: datetime) -> datetime:
 
 def check_content(campaign: dict[str, Any]) -> list[dict[str, str]]:
     findings = []
-    text = _words(f"{campaign['subject']} {campaign['body_html']} {campaign['sender_name']}")
+    views = _normalize(f"{campaign['subject']} {campaign['body_html']} {campaign['sender_name']}")
 
     for theme, phrases in BLOCKED_THEMES.items():
-        hits = [p for p in phrases if _matches(text, p)]
+        hits = [p for p in phrases if _matches(views, p)]
         if hits:
             findings.append(
                 _finding("G9", "error", f"Blocked theme '{theme}': {', '.join(sorted(hits))}")
             )
 
-    gov = [label for label, pattern in GOVERNMENT_PATTERNS.items() if re.search(pattern, text)]
-    brands = [b for b in BRAND_KEYWORDS if _matches(text, b)]
+    gov = [
+        label
+        for label, pattern in GOVERNMENT_PATTERNS.items()
+        if any(re.search(pattern, view) for view in views)
+    ]
+    brands = [b for b in BRAND_KEYWORDS if _matches(views, b)]
     if gov or brands:
         named = ", ".join(sorted({*gov, *brands}))
         if campaign.get("brand_override_reason"):

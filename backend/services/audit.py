@@ -66,7 +66,12 @@ async def record(
 
 
 async def verify_chain() -> dict[str, Any]:
-    """Recompute every hash. Returns {"ok": bool, "entries": n, "broken_at": seq|None}."""
+    """Recompute every hash. Returns {"ok": bool, "entries": n, "broken_at": seq|None}.
+
+    The head/tail comparison can see a false mismatch if a write is in flight
+    (head advanced, its entry not yet inserted). Writes are rare and operator
+    triggered, so re-run if a verify races a concurrent write.
+    """
     prev_hash = GENESIS_HASH
     expected_seq = 1
     async for entry in db.audit_log.find({}, {"_id": 0}).sort("seq", 1):

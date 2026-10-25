@@ -163,12 +163,15 @@ def _public(doc: dict) -> dict:
 
 @router.get("/campaigns")
 async def list_campaigns(current_user: User = Depends(require_trainer)):
-    docs = (
-        await db.live_campaigns.find(_scope(current_user), {"_id": 0, "body_html": 0})
-        .sort("created_at", -1)
-        .to_list(200)
-    )
-    return [_public(d) for d in docs]
+    # List view omits the heavy fields (body, full recipient list) and keeps a count.
+    pipeline = [
+        {"$match": _scope(current_user)},
+        {"$sort": {"created_at": -1}},
+        {"$limit": 200},
+        {"$addFields": {"recipient_count": {"$size": {"$ifNull": ["$recipients", []]}}}},
+        {"$project": {"_id": 0, "body_html": 0, "recipients": 0}},
+    ]
+    return await db.live_campaigns.aggregate(pipeline).to_list(200)
 
 
 @router.get("/campaigns/{campaign_id}")
