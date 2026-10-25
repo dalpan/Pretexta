@@ -291,6 +291,15 @@ class Settings(BaseModel):
     reduce_motion: bool = False
 
 
+class SettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    language: str | None = None
+    theme: str | None = None
+    first_run_completed: bool | None = None
+    llm_enabled: bool | None = None
+    reduce_motion: bool | None = None
+
+
 # ==================== INSTRUCTOR / TRAINING ====================
 
 

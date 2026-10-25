@@ -10,7 +10,7 @@ router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 
 @router.get("")
 async def get_leaderboard(
-    scope: str = Query("global", regex="^(global|organization)$"),
+    scope: str = Query("global", pattern="^(global|organization)$"),
     limit: int = Query(50, le=100),
     current_user: User = Depends(get_current_user),
 ):

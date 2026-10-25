@@ -12,7 +12,10 @@ router = APIRouter(prefix="/certificates", tags=["certificates"])
 @router.get("/{simulation_id}")
 async def get_certificate_data(simulation_id: str, current_user: User = Depends(get_current_user)):
     """Generate certificate data for a completed simulation."""
-    sim = await db.simulations.find_one({"id": simulation_id, "status": "completed"}, {"_id": 0})
+    # Certificates carry the caller's name, so only the owner may issue one
+    sim = await db.simulations.find_one(
+        {"id": simulation_id, "status": "completed", "user_id": current_user.id}, {"_id": 0}
+    )
     if not sim:
         raise HTTPException(status_code=404, detail="Completed simulation not found")
 

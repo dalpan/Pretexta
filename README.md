@@ -5,9 +5,9 @@
 ### The Psychology Behind Successful Attacks
 #### An Open Framework for Social Engineering Assessments
 
-[![Version](https://img.shields.io/badge/Version-3.0.0-blue?style=flat-square)](https://github.com/fdciabdul/Pretexta/releases)
+[![Version](https://img.shields.io/badge/Version-3.0.0-blue?style=flat-square)](https://github.com/dalpan/Pretexta/releases)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/fdciabdul/Pretexta/ci.yml?style=flat-square&label=CI)](https://github.com/fdciabdul/Pretexta/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/dalpan/Pretexta/ci.yml?style=flat-square&label=CI)](https://github.com/dalpan/Pretexta/actions)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
 
 [Quick Start](#quick-start) · [Features](#features) · [LLM Providers](#llm-providers) · [Contributing](#contributing)
@@ -73,11 +73,14 @@ Built on **Cialdini's 6 Principles of Influence**: Reciprocity, Scarcity, Author
 ```bash
 git clone https://github.com/dalpan/Pretexta.git
 cd Pretexta
-cp .env.example .env        # Configure environment
-make build && make up       # Build images and start services
+make build && make up       # Creates .env with random secrets, builds and starts services
 ```
 
-Open [http://localhost:9443](http://localhost:9443) — login with `soceng` / `Cialdini@2025!`
+Open [http://localhost:9443](http://localhost:9443) and log in as `soceng` with the admin password
+printed by `make build` (also stored in `.env` as `SEED_ADMIN_PASSWORD`).
+
+> Pretexta never ships default credentials. If you write `.env` yourself and leave
+> `SEED_ADMIN_PASSWORD` empty, the backend generates one and prints it once in `make logs-backend`.
 
 > **Requires:** Docker + Docker Compose (or Docker Desktop)
 
@@ -142,7 +145,7 @@ Each stage unlocks progressively. Track progress, get per-stage scoring, and rec
 - Team analytics dashboard with aggregate scores
 - Identify weakest Cialdini categories across your team
 - Per-member performance tracking
-- Webhook/Slack integration for training completion events
+- Webhook configuration (event delivery is not wired up yet)
 
 ### Content Tools
 

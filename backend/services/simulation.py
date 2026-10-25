@@ -9,15 +9,20 @@ Centralizes all simulation business logic so route handlers stay thin.
 """
 
 import logging
+import uuid
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
 
-from models.schemas import AssignmentResult
+from models.schemas import AssignmentResult, Simulation, User
 from services.database import db
 from services.gamification import award_xp, check_simulation_badges
 
 logger = logging.getLogger(__name__)
+
+# Fields the client may never set directly: identity, ownership, server-computed results
+PROTECTED_FIELDS = {"id", "user_id", "debrief"}
+UPDATABLE_FIELDS = set(Simulation.model_fields) - PROTECTED_FIELDS
 
 
 async def create_simulation(data: dict, user_id: str) -> dict:
@@ -25,6 +30,8 @@ async def create_simulation(data: dict, user_id: str) -> dict:
     Persist a new simulation owned by user_id.
     Awards XP and checks badge conditions on completion.
     """
+    data = {k: v for k, v in data.items() if k not in PROTECTED_FIELDS}
+    data["id"] = str(uuid.uuid4())
     data["user_id"] = user_id
 
     # Normalize timestamps
@@ -59,9 +66,19 @@ async def get_simulation(simulation_id: str, user_id: str) -> dict:
     sim = await db.simulations.find_one({"id": simulation_id}, {"_id": 0})
     if not sim:
         raise HTTPException(status_code=404, detail="Simulation not found")
-    if sim.get("user_id") and sim["user_id"] != user_id:
+    if sim.get("user_id") != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to access this simulation")
     return sim
+
+
+async def get_simulation_for_viewer(simulation_id: str, viewer: User) -> dict:
+    """Fetch a simulation for reading: the owner, or a trainer/admin reviewing trainees."""
+    if viewer.role in ("admin", "trainer"):
+        sim = await db.simulations.find_one({"id": simulation_id}, {"_id": 0})
+        if not sim:
+            raise HTTPException(status_code=404, detail="Simulation not found")
+        return sim
+    return await get_simulation(simulation_id, viewer.id)
 
 
 async def update_simulation(simulation_id: str, updates: dict, user_id: str) -> dict:
@@ -69,19 +86,16 @@ async def update_simulation(simulation_id: str, updates: dict, user_id: str) -> 
     Update a simulation, verifying ownership.
     On status → completed: awards XP, updates risk profile, records assignment result.
     """
-    sim = await db.simulations.find_one({"id": simulation_id}, {"_id": 0})
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulation not found")
-    if sim.get("user_id") and sim["user_id"] != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this simulation")
+    sim = await get_simulation(simulation_id, user_id)
+    updates = {k: v for k, v in updates.items() if k in UPDATABLE_FIELDS}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No updatable fields provided")
 
     # Auto-timestamp completion
     if updates.get("status") == "completed" and not updates.get("completed_at"):
         updates["completed_at"] = datetime.now(UTC).isoformat()
 
-    result = await db.simulations.update_one({"id": simulation_id}, {"$set": updates})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Simulation not found")
+    await db.simulations.update_one({"id": simulation_id}, {"$set": updates})
 
     # Completion transition — fire all side effects
     if updates.get("status") == "completed" and sim.get("status") != "completed":
@@ -92,12 +106,10 @@ async def update_simulation(simulation_id: str, updates: dict, user_id: str) -> 
 
 
 async def delete_simulation(simulation_id: str, user_id: str) -> dict:
-    """Delete a simulation, verifying ownership."""
+    """Delete any simulation. Callers must enforce the admin-only rule."""
     sim = await db.simulations.find_one({"id": simulation_id}, {"_id": 0})
     if not sim:
         raise HTTPException(status_code=404, detail="Simulation not found")
-    if sim.get("user_id") and sim["user_id"] != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this simulation")
 
     await db.simulations.delete_one({"id": simulation_id})
     return {"message": "Simulation deleted"}
@@ -191,6 +203,11 @@ async def _record_assignment_result(sim: dict, user_id: str, score: float) -> No
     assignment_id = assignment["id"]
     passing_score = assignment.get("passing_score", 70)
     passed = score >= passing_score
+
+    if await db.assignment_results.find_one(
+        {"assignment_id": assignment_id, "simulation_id": sim.get("id")}
+    ):
+        return
 
     # Check existing attempts
     existing_attempts = await db.assignment_results.count_documents(

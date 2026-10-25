@@ -4,11 +4,23 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from models.schemas import Challenge, ScenarioTemplate, User
-from services.auth import get_current_user
+from services.auth import get_current_user, is_staff, require_trainer
 from services.database import db
 from services.gamification import award_xp
 
 router = APIRouter(prefix="/scenario-builder", tags=["scenario-builder"])
+
+EDITABLE_TEMPLATE_FIELDS = {
+    "title",
+    "description",
+    "difficulty",
+    "cialdini_categories",
+    "channel",
+    "nodes",
+    "metadata",
+    "content_en",
+    "content_id",
+}
 
 
 @router.get("/templates")
@@ -26,7 +38,9 @@ async def get_my_templates(current_user: User = Depends(get_current_user)):
 async def get_template(template_id: str, current_user: User = Depends(get_current_user)):
     """Get a specific template."""
     template = await db.scenario_templates.find_one({"id": template_id}, {"_id": 0})
-    if not template:
+    if not template or (
+        template.get("created_by") != current_user.id and not is_staff(current_user)
+    ):
         raise HTTPException(status_code=404, detail="Template not found")
     return template
 
@@ -64,8 +78,9 @@ async def update_template(
     if not existing:
         raise HTTPException(status_code=404, detail="Template not found")
 
-    data["updated_at"] = datetime.now(UTC).isoformat()
-    await db.scenario_templates.update_one({"id": template_id}, {"$set": data})
+    updates = {k: v for k, v in data.items() if k in EDITABLE_TEMPLATE_FIELDS}
+    updates["updated_at"] = datetime.now(UTC).isoformat()
+    await db.scenario_templates.update_one({"id": template_id}, {"$set": updates})
     return {"message": "Template updated"}
 
 
@@ -81,8 +96,8 @@ async def delete_template(template_id: str, current_user: User = Depends(get_cur
 
 
 @router.post("/templates/{template_id}/publish")
-async def publish_template(template_id: str, current_user: User = Depends(get_current_user)):
-    """Publish a template as a playable challenge."""
+async def publish_template(template_id: str, current_user: User = Depends(require_trainer)):
+    """Publish a template as a playable challenge in the shared catalog (trainer/admin)."""
     template = await db.scenario_templates.find_one(
         {"id": template_id, "created_by": current_user.id}, {"_id": 0}
     )

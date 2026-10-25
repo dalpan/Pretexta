@@ -1,9 +1,7 @@
-from typing import Any
-
 from fastapi import APIRouter, Depends
 
-from models.schemas import Settings, User
-from services.auth import get_current_user
+from models.schemas import Settings, SettingsUpdate, User
+from services.auth import get_current_user, require_admin
 from services.database import db
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -19,10 +17,10 @@ async def get_settings(current_user: User = Depends(get_current_user)):
 
 
 @router.put("")
-async def update_settings(updates: dict[str, Any], current_user: User = Depends(get_current_user)):
+async def update_settings(updates: SettingsUpdate, current_user: User = Depends(require_admin)):
     await db.settings.update_one(
         {"id": "settings"},
-        {"$set": updates},
+        {"$set": updates.model_dump(exclude_unset=True)},
         upsert=True,
     )
     return {"message": "Settings updated"}

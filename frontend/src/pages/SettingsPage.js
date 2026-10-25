@@ -163,6 +163,11 @@ export default function SettingsPage() {
   };
 
   const updateSettings = async (updates) => {
+    // Platform settings are global; non-admins only change their local view
+    if (!isAdmin) {
+      setSettings({ ...settings, ...updates });
+      return;
+    }
     try {
       await api.put('/settings', updates);
       setSettings({ ...settings, ...updates });
@@ -262,6 +267,7 @@ export default function SettingsPage() {
           </div>
 
           {/* LLM Configuration */}
+          {isAdmin ? (
           <div className="glass-panel p-6 space-y-6">
             <div className="flex items-center space-x-3 mb-4">
               <Zap className="w-6 h-6 text-yellow-500" />
@@ -512,6 +518,11 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
+          ) : (
+            <div className="glass-panel p-6 text-sm text-muted-foreground">
+              {t('settings.llm_admin_only')}
+            </div>
+          )}
         </div>
 
         {/* RIGHT SIDEBAR */}

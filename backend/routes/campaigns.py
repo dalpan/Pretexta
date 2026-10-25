@@ -1,3 +1,4 @@
+import re
 import uuid as uuid_lib
 from datetime import UTC, datetime
 from typing import Any
@@ -31,7 +32,7 @@ async def get_campaign(campaign_id: str, current_user: User = Depends(get_curren
     for stage in stages:
         if not stage.get("challenge_id") and stage.get("challenge_title"):
             ch = await db.challenges.find_one(
-                {"title": {"$regex": f"^{stage['challenge_title']}$", "$options": "i"}},
+                {"title": {"$regex": f"^{re.escape(stage['challenge_title'])}$", "$options": "i"}},
                 {"_id": 0, "id": 1, "title": 1},
             )
             if ch:
@@ -39,7 +40,7 @@ async def get_campaign(campaign_id: str, current_user: User = Depends(get_curren
                 stage["challenge_title"] = ch["title"]
         if not stage.get("quiz_id") and stage.get("quiz_title"):
             qz = await db.quizzes.find_one(
-                {"title": {"$regex": f"^{stage['quiz_title']}$", "$options": "i"}},
+                {"title": {"$regex": f"^{re.escape(stage['quiz_title'])}$", "$options": "i"}},
                 {"_id": 0, "id": 1, "title": 1},
             )
             if qz:
@@ -136,7 +137,7 @@ async def start_stage(
     # Resolve title if needed
     if not stage.get("challenge_id") and stage.get("challenge_title"):
         ch = await db.challenges.find_one(
-            {"title": {"$regex": f"^{stage['challenge_title']}$", "$options": "i"}},
+            {"title": {"$regex": f"^{re.escape(stage['challenge_title'])}$", "$options": "i"}},
             {"_id": 0, "id": 1},
         )
         if ch:

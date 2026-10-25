@@ -259,6 +259,7 @@
     "light_mode": "Mode Terang",
     "reduce_motion": "Kurangi Animasi",
     "llm_config": "Konfigurasi LLM",
+    "llm_admin_only": "Provider LLM dikelola oleh administrator.",
     "enable_llm": "Aktifkan LLM",
     "api_key": "Kunci API",
     "provider": "Penyedia",

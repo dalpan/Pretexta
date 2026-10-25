@@ -1,4 +1,6 @@
+import logging
 import os
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
@@ -9,7 +11,24 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from models.schemas import User
 from services.database import db
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "change-this-secret-key-in-production")
+logger = logging.getLogger(__name__)
+
+# Secrets that ship in this public repo and must never sign real tokens
+_PUBLIC_DEFAULT_SECRETS = {"", "change-this-secret-key-in-production"}
+
+
+def _resolve_jwt_secret() -> str:
+    secret = os.environ.get("JWT_SECRET", "")
+    if secret in _PUBLIC_DEFAULT_SECRETS:
+        logger.warning(
+            "JWT_SECRET is unset or uses the public default. Using a random per-process "
+            "secret: sessions will not survive a restart. Set JWT_SECRET in .env."
+        )
+        return secrets.token_hex(32)
+    return secret
+
+
+JWT_SECRET = _resolve_jwt_secret()
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
@@ -49,3 +68,22 @@ async def get_current_user(
         raise
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def require_role(*roles: str):
+    """Dependency factory: allow only users whose role is in `roles`."""
+
+    async def checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in roles:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return current_user
+
+    return checker
+
+
+require_admin = require_role("admin")
+require_trainer = require_role("admin", "trainer")
+
+
+def is_staff(user: User) -> bool:
+    return user.role in ("admin", "trainer")

@@ -259,6 +259,7 @@
     "light_mode": "Light Mode",
     "reduce_motion": "Reduce Motion",
     "llm_config": "LLM Configuration",
+    "llm_admin_only": "LLM providers are managed by an administrator.",
     "enable_llm": "Enable LLM",
     "api_key": "API Key",
     "provider": "Provider",

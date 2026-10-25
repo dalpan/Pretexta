@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -300,10 +301,16 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Startup: seed default admin user from env vars
     seed_username = os.environ.get("SEED_ADMIN_USERNAME", "soceng")
-    seed_password = os.environ.get("SEED_ADMIN_PASSWORD", "Cialdini@2025!")
+    seed_password = os.environ.get("SEED_ADMIN_PASSWORD") or ""
     seed_display = os.environ.get("SEED_ADMIN_DISPLAY_NAME", "Admin")
     existing_user = await db.users.find_one({"username": seed_username})
     if not existing_user:
+        if not seed_password:
+            seed_password = secrets.token_urlsafe(12)
+            logger.warning(
+                f"SEED_ADMIN_PASSWORD not set. Generated admin password for "
+                f"'{seed_username}': {seed_password}  (shown once, change it after login)"
+            )
         seed_user = User(
             username=seed_username,
             password_hash=hash_password(seed_password),
@@ -341,11 +348,6 @@ async def lifespan(app: FastAPI):
     # Seed glossary terms if empty
     if await db.glossary.count_documents({}) == 0:
         await _seed_glossary()
-
-    # Warn about default JWT secret
-    jwt_secret = os.environ.get("JWT_SECRET", "")
-    if not jwt_secret or jwt_secret == "change-this-secret-key-in-production":
-        logger.warning("WARNING: Using default JWT secret. Set JWT_SECRET env var in production!")
 
     yield
 
@@ -432,4 +434,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(RateLimitMiddleware, max_attempts=10, window_seconds=300)
+app.add_middleware(RateLimitMiddleware)

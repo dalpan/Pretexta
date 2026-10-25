@@ -22,10 +22,10 @@ async def create_organization(data: dict[str, Any], current_user: User = Depends
     doc["created_at"] = doc["created_at"].isoformat()
     await db.organizations.insert_one(doc)
 
-    # Update user's org
+    # Update user's org. Ownership lives in org.owner_id; the global role is untouched.
     await db.users.update_one(
         {"id": current_user.id},
-        {"$set": {"organization_id": org.id, "role": "admin"}},
+        {"$set": {"organization_id": org.id}},
     )
 
     # Award team player badge

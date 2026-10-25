@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.schemas import LLMConfig, User
-from services.auth import get_current_user
+from services.auth import get_current_user, require_admin
 from services.database import db
 from services.llm import (
     LOCAL_DEFAULTS,
@@ -20,6 +20,18 @@ from services.llm import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/llm", tags=["llm"])
+
+# Client-supplied text reaches a paid API with the admin's key; cap its size.
+MAX_MESSAGE_CHARS = 4000
+MAX_PROMPT_CHARS = 8000
+MAX_HISTORY_MESSAGES = 40
+MAX_PERSONA_CHARS = 6000
+
+
+def _check_size(value: Any, limit: int, name: str) -> None:
+    if len(str(value)) > limit:
+        raise HTTPException(status_code=413, detail=f"{name} exceeds {limit} characters")
+
 
 # ==================== PROVIDER & MODEL INFO ====================
 
@@ -131,9 +143,9 @@ async def get_models_for_provider(
 async def refresh_models(
     provider: str,
     base_url: str = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
 ):
-    """Force refresh model list (for local/openrouter)."""
+    """Force refresh model list (for local/openrouter). Admin-only: base_url is fetched."""
     if provider == "local":
         url = base_url or LOCAL_DEFAULTS["ollama"]
         models = await fetch_local_models(url)
@@ -169,7 +181,7 @@ async def get_llm_configs(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/config")
-async def save_llm_config(config: LLMConfig, current_user: User = Depends(get_current_user)):
+async def save_llm_config(config: LLMConfig, current_user: User = Depends(require_admin)):
     doc = config.model_dump()
     doc["updated_at"] = doc["updated_at"].isoformat()
 
@@ -196,6 +208,8 @@ async def generate_pretext(request: dict[str, Any], current_user: User = Depends
     requested_provider = request.get("provider", None)
     prompt = request.get("prompt", "")
     context = request.get("context", {})
+    _check_size(prompt, MAX_PROMPT_CHARS, "prompt")
+    _check_size(context, MAX_PROMPT_CHARS, "context")
 
     if requested_provider:
         config = await db.llm_configs.find_one(
@@ -243,6 +257,17 @@ async def chat_interaction(request: dict[str, Any], current_user: User = Depends
     user_message = request.get("message", "")
     language = request.get("language", "en")
     persona_state = request.get("persona_state")
+
+    if not isinstance(history, list) or len(history) > MAX_HISTORY_MESSAGES:
+        raise HTTPException(status_code=413, detail="Conversation history too long")
+    _check_size(user_message, MAX_MESSAGE_CHARS, "message")
+    _check_size(persona, MAX_PERSONA_CHARS, "persona")
+    for msg in history:
+        _check_size(
+            msg.get("content", "") if isinstance(msg, dict) else msg,
+            MAX_MESSAGE_CHARS,
+            "history message",
+        )
 
     gateway = await AIGateway.from_db()
     if not gateway:

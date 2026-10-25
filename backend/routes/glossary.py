@@ -5,6 +5,7 @@ Admin-managed glossary of social engineering and cybersecurity terms.
 Readable by all authenticated users, writable by admin/trainer only.
 """
 
+import re
 import uuid as uuid_lib
 from datetime import UTC, datetime
 from typing import Any
@@ -44,8 +45,8 @@ async def list_terms(
     query: dict[str, Any] = {}
     if search:
         query["$or"] = [
-            {"term": {"$regex": search, "$options": "i"}},
-            {"definition": {"$regex": search, "$options": "i"}},
+            {"term": {"$regex": re.escape(search), "$options": "i"}},
+            {"definition": {"$regex": re.escape(search), "$options": "i"}},
         ]
     if category and category != "all":
         query["category"] = category
@@ -67,7 +68,7 @@ async def create_term(
 
     # Check for duplicate
     existing = await db.glossary.find_one(
-        {"term": {"$regex": f"^{data['term'].strip()}$", "$options": "i"}}
+        {"term": {"$regex": f"^{re.escape(data['term'].strip())}$", "$options": "i"}}
     )
     if existing:
         raise HTTPException(status_code=409, detail=f"Term '{data['term']}' already exists")

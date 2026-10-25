@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.schemas import Challenge, User
@@ -22,9 +24,10 @@ async def get_challenges(
     if difficulty:
         query["difficulty"] = difficulty.lower()
     if search:
+        pattern = re.escape(search)
         query["$or"] = [
-            {"title": {"$regex": search, "$options": "i"}},
-            {"description": {"$regex": search, "$options": "i"}},
+            {"title": {"$regex": pattern, "$options": "i"}},
+            {"description": {"$regex": pattern, "$options": "i"}},
         ]
 
     skip = (page - 1) * limit

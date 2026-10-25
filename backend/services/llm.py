@@ -284,6 +284,11 @@ async def get_llm_chat_model(config: dict[str, Any], messages: list):
     return await _invoke_provider(config, messages, temperature=0.8)
 
 
+def ollama_root(base_url: str) -> str:
+    """Strip a trailing /v1 (OpenAI-compat path) to reach Ollama's native API root."""
+    return base_url.rstrip("/").removesuffix("/v1")
+
+
 async def fetch_local_models(base_url: str) -> list:
     """Fetch available models from a local Ollama/LM Studio instance."""
     import httpx
@@ -292,7 +297,7 @@ async def fetch_local_models(base_url: str) -> list:
     try:
         async with httpx.AsyncClient(timeout=5) as client:
             # Ollama native API
-            response = await client.get(f"{base_url.rstrip('/v1').rstrip('/')}/api/tags")
+            response = await client.get(f"{ollama_root(base_url)}/api/tags")
             if response.status_code == 200:
                 data = response.json()
                 return [

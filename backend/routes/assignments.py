@@ -106,8 +106,27 @@ async def submit_assignment(
     if assignment.get("status") == "cancelled":
         raise HTTPException(status_code=400, detail="Assignment is cancelled")
 
-    score = data.get("score", 0)
+    # The score always comes from a completed simulation the trainee owns,
+    # never from the request body.
     simulation_id = data.get("simulation_id")
+    sim = await db.simulations.find_one(
+        {"id": simulation_id, "user_id": current_user.id, "status": "completed"}, {"_id": 0}
+    )
+    if not simulation_id or not sim:
+        raise HTTPException(status_code=404, detail="Completed simulation not found")
+
+    content_field = {"challenge": "challenge_id", "quiz": "quiz_id"}.get(
+        assignment.get("content_type")
+    )
+    if content_field and sim.get(content_field) != assignment.get("content_id"):
+        raise HTTPException(status_code=400, detail="Simulation does not match this assignment")
+
+    if await db.assignment_results.find_one(
+        {"assignment_id": assignment_id, "simulation_id": simulation_id}
+    ):
+        raise HTTPException(status_code=409, detail="Simulation already submitted")
+
+    score = sim.get("score") or 0
     passing_score = assignment.get("passing_score", 70)
     passed = score >= passing_score
 

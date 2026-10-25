@@ -45,4 +45,7 @@ MANIFEST
 .idea/
 PRETEXTA/
 backend/__pycache__/
-frontend/.env
+# frontend/.env is tracked on purpose: it only holds the local dev backend URL
+.claude/
+.pytest_cache/
+.ruff_cache/

@@ -6,6 +6,7 @@ Mengelola peserta, kelompok pelatihan, penugasan, dan laporan.
 """
 
 import logging
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -532,9 +533,9 @@ async def list_all_users(
 
     if search:
         query["$or"] = [
-            {"username": {"$regex": search, "$options": "i"}},
-            {"display_name": {"$regex": search, "$options": "i"}},
-            {"email": {"$regex": search, "$options": "i"}},
+            {"username": {"$regex": re.escape(search), "$options": "i"}},
+            {"display_name": {"$regex": re.escape(search), "$options": "i"}},
+            {"email": {"$regex": re.escape(search), "$options": "i"}},
         ]
 
     users = (
