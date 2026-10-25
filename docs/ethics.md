@@ -1,207 +1,107 @@
-# Ethical Guidelines for Pretexta
+# Ethics and Acceptable Use
 
-## 🎯 Purpose
+Pretexta simulates social engineering so people and organizations can get better at
+resisting it. The same techniques can hurt people, so this document sets out what
+Pretexta may be used for, which rules the software enforces, and which rules depend
+on you.
 
-Pretexta is designed exclusively for **authorized security awareness training**. This document outlines ethical requirements and prohibited uses.
+This document only claims safeguards that exist in the code. Planned safeguards are
+marked **planned** and link to their design.
 
-## ✅ Permitted Uses
+## 1. Two modes
 
-### 1. Corporate Security Training
-- Employee awareness programs
-- Onboarding security modules
-- Quarterly refresher courses
-- With explicit management approval
+| | Lab mode (available) | Live mode (**planned**, see [design](design/live-campaigns.md)) |
+|---|---|---|
+| What | Quizzes, branching scenarios and AI roleplay inside Pretexta | Simulated phishing emails in an organization's real mailboxes, with AI follow-up when recipients reply |
+| Participants know | Yes, they open the exercise themselves | That the organization runs simulations, but not when |
+| Measures | Knowledge and decision-making in a controlled setting | Real behavior: reporting, time-to-report, clicks, replies |
 
-### 2. Red Team Assessment Preparation
-- Internal team training
-- Pre-engagement simulation
-- Skill validation
-- With documented authorization
+Lab scores show what someone knows. They do not predict how often that person will
+click in real life. Do not present them as if they do.
 
-### 3. Academic Research
-- IRB-approved studies
-- Informed consent from participants
-- Anonymous data collection
-- Published findings
+## 2. Acceptable use
 
-### 4. Security Conferences & Workshops
-- Hands-on training sessions
-- Capture-the-flag style events
-- Professional development
-- With participant consent
+- Security awareness programs run by, or on behalf of, the organization whose staff
+  take part.
+- Classroom, conference and workshop exercises with participants who opted in.
+- Research approved by an ethics board, with informed consent.
 
-## ❌ Prohibited Uses
+## 3. Prohibited use
 
-### Absolutely Forbidden
+- Targeting people or organizations without the organization's authorization.
+- Collecting real credentials, one-time codes, payment data or personal data beyond
+  what the simulation needs.
+- Using Pretexta's personas or generated pretexts in real attacks.
+- Impersonating real government agencies or third-party brands outside lab mode
+  without written authorization from that brand or agency.
+- Using results to discipline, shame or rank individuals.
 
-1. **Unauthorized Testing**
-   - Testing on individuals without consent
-   - Testing on organizations without permission
-   - "Practice" on family/friends without disclosure
+## 4. What the software enforces today
 
-2. **Malicious Purposes**
-   - Actual credential harvesting
-   - Real financial fraud
-   - Identity theft
-   - Harassment or coercion
+- **Role-based access.** Only admins configure LLM providers, platform settings and
+  outbound URLs. Only trainers and admins import or publish content to the shared
+  catalog. Creating an organization grants no platform role.
+- **Data ownership.** Simulations, debriefs, reports and certificates are visible
+  only to their owner and to trainers or admins. Certificates can only be issued to
+  the person who completed the simulation.
+- **Server-side scoring of assignments.** An assignment result is taken from a
+  completed simulation the trainee owns, never from the request body.
+- **No default credentials.** Setup generates random JWT, database and admin
+  secrets. A JWT secret left at the public default is never used for signing.
+- **Outbound URL guard.** Webhook targets must resolve to public addresses. They are
+  checked again at send time.
+- **Rate limits** on login, registration and LLM endpoints, per user or per IP.
+- **Input size limits** on text sent to LLM providers.
 
-3. **Real-World Exploitation**
-   - Using generated pretexts for actual attacks
-   - Targeting real organizations
-   - Collecting real PII or credentials
+Every item above has a regression test in `backend/tests/`.
 
-## 📝 Consent Requirements
+## 5. Known limits of lab mode
 
-### Before ANY Simulation
+Write these down before you rely on lab results:
 
-1. **Participant Consent**
-   - Clear explanation of training purpose
-   - Voluntary participation
-   - Right to withdraw at any time
-   - Written or recorded consent
+- **Lab outcomes are reported by the client.** Simulation scores and the AI chat's
+  win/loss signal come from the participant's browser or from the model's own
+  output, so a determined participant can fake them. Use lab results for learning,
+  not for grading people.
+- **AI chat personas are sent by the client.** Any logged-in user can steer the
+  configured LLM within the size limits. Configure a provider whose usage you can
+  afford to have consumed by your users.
+- **No retention policy yet.** Data stays until an admin deletes it.
+- **No audit log yet** (**planned**, design guardrail G12).
 
-2. **Organizational Authorization**
-   - Management approval
-   - Legal/compliance review
-   - Documented scope
-   - Insurance coverage verification
+## 6. Rules for live mode (**planned**)
 
-3. **Data Handling Agreement**
-   - What data is collected
-   - How data will be used
-   - Retention period
-   - Deletion process
+Live mode will refuse to run unless these conditions hold. Each one maps to a
+guardrail in the [design](design/live-campaigns.md#6-guardrails).
 
-### Consent Modal (Built-in)
+- Recipients are on a domain the organization proved it controls (G1).
+- A second admin approved the campaign (G2). The campaign has a window of at most
+  30 days (G3) and a kill switch (G4).
+- Landing pages never capture passwords (G5). Secrets that people type into replies
+  are redacted before storage, and the conversation ends right away (G6).
+- The AI persona pursues one fixed, approved objective. Its messages are filtered
+  and, by default, reviewed by a human before they are sent (G7, G8).
+- Cruel or coercive themes are blocked: pay, layoffs, health, family emergencies,
+  disasters and legal threats (G9).
+- Individual results go only to the person and their trainer. Management sees
+  aggregates over groups of at least 5. Live results never appear on leaderboards
+  (G13, G15).
 
-Pretexta includes a mandatory consent modal that:
-- Displays before simulations
-- Requires explicit acknowledgment
-- Logs consent timestamp
-- Provides opt-out mechanism
+The software cannot do these for you:
 
-## 🔒 Data Protection
+- Get authorization from the organization, and inform staff through policy that
+  simulations happen, as your local law requires. Examples: Indonesia's UU PDP
+  (No. 27/2022), Saudi Arabia's PDPL, the GDPR.
+- Agree with HR and legal how results will and will not be used.
+- Debrief people kindly. Someone who clicked made the mistake the exercise exists to
+  surface. Treat them accordingly.
 
-### What We Collect
-- Simulation events (choices, timing)
-- Susceptibility scores
-- Participant names (optional)
-- Timestamps
+## 7. Reporting
 
-### What We DON'T Collect
-- Real credentials
-- Personal identifiable information (PII)
-- Financial information
-- Health data
+- **Misuse of Pretexta:** open an issue, or contact the maintainers privately if
+  public disclosure could harm someone.
+- **Vulnerabilities in Pretexta:** do not open a public issue. Use GitHub's private
+  vulnerability reporting on this repository. We aim to respond within 7 days and to
+  coordinate disclosure within 90 days.
 
-### Data Handling
-- **Encryption**: At rest and in transit
-- **Retention**: Configurable, default 90 days
-- **Deletion**: User-initiated or automatic
-- **Export**: JSON format for audits
-
-## 🛡️ Safety Features
-
-### PII Sanitization
-LLM-generated content automatically sanitizes:
-- Email addresses → `[EMAIL_REDACTED]`
-- Phone numbers → `[PHONE_REDACTED]`
-- SSNs → `[SSN_REDACTED]`
-
-### Rate Limiting
-- LLM API calls limited per hour
-- Prevents abuse
-- Configurable per deployment
-
-### Audit Trail
-- All LLM generations logged
-- User actions tracked
-- Admin review available
-
-## 📚 Ethical Framework
-
-### Based on Belmont Report Principles
-
-1. **Respect for Persons**
-   - Informed consent
-   - Voluntary participation
-   - Protection of vulnerable populations
-
-2. **Beneficence**
-   - Maximize training benefits
-   - Minimize psychological harm
-   - Provide debriefing
-
-3. **Justice**
-   - Fair participant selection
-   - No exploitation
-   - Equitable distribution of benefits
-
-## 🚨 Reporting Misuse
-
-If you suspect misuse of Pretexta:
-
-1. Document the incident
-2. Report to your organization's security team
-3. Open a GitHub issue (if public concern)
-4. Contact project maintainers
-
-## 👥 Responsible Disclosure
-
-For security vulnerabilities in Pretexta itself:
-
-1. **Do NOT** open a public issue
-2. Email maintainers with details
-3. Allow 90 days for patching
-4. Coordinate disclosure timing
-
-## ⚖️ Legal Considerations
-
-### Compliance
-- **GDPR**: Right to erasure, data portability
-- **CCPA**: Opt-out mechanisms, data disclosure
-- **Industry-specific**: HIPAA, PCI-DSS, SOC 2
-
-### Liability
-- Users responsible for lawful use
-- No warranty for fitness of purpose
-- Indemnification clauses apply
-
-## 🎯 Training Best Practices
-
-### Before Simulation
-1. Establish training objectives
-2. Obtain all necessary approvals
-3. Brief participants on expectations
-4. Set up safe environment
-
-### During Simulation
-1. Monitor participant stress levels
-2. Provide support resources
-3. Allow pause/quit options
-4. Maintain confidentiality
-
-### After Simulation
-1. Conduct debriefing
-2. Explain techniques used
-3. Provide educational resources
-4. Address concerns
-5. Delete data as agreed
-
-## 📜 References
-
-- [The Belmont Report](https://www.hhs.gov/ohrp/regulations-and-policy/belmont-report/index.html)
-- [ACM Code of Ethics](https://www.acm.org/code-of-ethics)
-- [GDPR](https://gdpr.eu/)
-- [Social Engineering Framework](https://www.social-engineer.org/framework/general-discussion/categories-social-engineers/ethics/)
-
----
-
-**By using Pretexta, you agree to these ethical guidelines.**
-
-Violations may result in:
-- Legal action
-- Project access revocation
-- Reporting to authorities
-
-*Last updated: January 2025*
+*Last updated: October 2026*
