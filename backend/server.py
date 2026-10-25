@@ -16,6 +16,7 @@ from routes import (
     adaptive_router,
     analytics_router,
     assignments_router,
+    audit_router,
     auth_router,
     campaigns_router,
     certificates_router,
@@ -25,6 +26,7 @@ from routes import (
     imports_router,
     instructor_router,
     leaderboard_router,
+    live_router,
     llm_router,
     notifications_router,
     organizations_router,
@@ -340,6 +342,12 @@ async def lifespan(app: FastAPI):
     await db.assignment_results.create_index([("assignment_id", 1), ("trainee_id", 1)])
     await db.glossary.create_index("id", unique=True)
     await db.glossary.create_index("term")
+    # live campaigns
+    await db.audit_log.create_index("seq", unique=True)
+    await db.verified_domains.create_index([("organization_id", 1), ("domain", 1)], unique=True)
+    await db.live_exclusions.create_index([("organization_id", 1), ("email", 1)], unique=True)
+    await db.live_campaigns.create_index("id", unique=True)
+    await db.live_campaigns.create_index([("status", 1), ("recipients", 1)])
 
     # Auto-import sample data on every startup (skips titles that already exist)
     logger.info("Syncing sample data from YAML files...")
@@ -422,6 +430,8 @@ api_router.include_router(risk_profile_router)
 api_router.include_router(instructor_router)
 api_router.include_router(assignments_router)
 api_router.include_router(glossary_router)
+api_router.include_router(live_router)
+api_router.include_router(audit_router)
 
 app.include_router(api_router)
 

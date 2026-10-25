@@ -10,6 +10,8 @@ from routes.glossary import router as glossary_router
 from routes.imports import router as imports_router
 from routes.instructor import router as instructor_router
 from routes.leaderboard import router as leaderboard_router
+from routes.live import audit_router
+from routes.live import router as live_router
 from routes.llm import router as llm_router
 from routes.notifications import router as notifications_router
 from routes.organizations import router as organizations_router
@@ -47,4 +49,6 @@ __all__ = [
     "instructor_router",
     "assignments_router",
     "glossary_router",
+    "live_router",
+    "audit_router",
 ]

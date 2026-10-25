@@ -614,3 +614,67 @@ class TrustEdge(BaseModel):
     channels: list[str] = Field(default_factory=lambda: ["email"])
 
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+# ==================== LIVE CAMPAIGNS ====================
+# See docs/design/live-campaigns.md. Guardrail ids (G1..G15) refer to §6 there.
+
+LIVE_OBJECTIVES = (
+    "click_link",
+    "reply",
+    "agree_to_share_otp",
+    "agree_to_approve_payment",
+    "agree_to_install_tool",
+)
+CIALDINI_PRINCIPLES = (
+    "reciprocity",
+    "scarcity",
+    "authority",
+    "commitment",
+    "liking",
+    "social_proof",
+)
+LIVE_CAMPAIGN_STATUSES = ("draft", "pending_approval", "approved", "running", "closed", "killed")
+
+
+class VerifiedDomain(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str | None = None
+    domain: str
+    token: str
+    sandbox: bool = False  # reserved test TLD: verified without DNS, can never reach real people
+    verified_at: str | None = None
+    last_checked_at: str | None = None
+    created_by: str
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+class LiveCampaignCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=120)
+    objective: str
+    principles: list[str] = Field(min_length=1)
+    sender_name: str = Field(min_length=1, max_length=80)
+    sender_email: str = Field(min_length=3, max_length=254)
+    subject: str = Field(min_length=1, max_length=200)
+    body_html: str = Field(min_length=1, max_length=20000)
+    recipients: list[str] = Field(min_length=1, max_length=5000)
+    starts_at: datetime
+    ends_at: datetime
+    max_turns: int = Field(default=4, ge=0, le=6)
+    language: str = "en"
+    brand_override_reason: str | None = Field(default=None, max_length=1000)
+
+
+class LiveCampaign(LiveCampaignCreate):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str | None = None
+    created_by: str
+    approved_by: str | None = None
+    status: str = "draft"
+    killed: bool = False
+    preflight: list[dict[str, Any]] = Field(default_factory=list)
+    gophish_campaign_id: int | None = None
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
