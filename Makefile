@@ -192,7 +192,7 @@ status:
 	echo "  API Docs:   http://localhost:$$BACKEND_PORT/docs"; \
 	echo "  MongoDB:    mongodb://localhost:47017"; \
 	echo ""; \
-	echo "$(YELLOW)Default credentials:$(RESET) soceng / Cialdini@2025!"
+	echo "$(YELLOW)Admin login:$(RESET) $$(grep '^SEED_ADMIN_USERNAME=' .env | cut -d= -f2) / see SEED_ADMIN_PASSWORD in .env"
 	@echo ""
 
 # ── Logs ───────────────────────────────────────────────────────────────────────
