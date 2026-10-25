@@ -27,9 +27,11 @@ async def get_my_groups(current_user: User = Depends(get_current_user)):
     Return all training groups the current user belongs to.
     Used to show group membership on user dashboard.
     """
-    groups = await db.training_groups.find(
-        {"trainee_ids": current_user.id}, {"_id": 0}
-    ).sort("created_at", -1).to_list(50)
+    groups = (
+        await db.training_groups.find({"trainee_ids": current_user.id}, {"_id": 0})
+        .sort("created_at", -1)
+        .to_list(50)
+    )
 
     # Enrich with trainer name
     result = []
@@ -38,10 +40,14 @@ async def get_my_groups(current_user: User = Depends(get_current_user)):
             {"id": g.get("instructor_id")},
             {"_id": 0, "username": 1, "display_name": 1},
         )
-        result.append({
-            **g,
-            "trainer_name": (trainer or {}).get("display_name") or (trainer or {}).get("username") or "Unknown",
-        })
+        result.append(
+            {
+                **g,
+                "trainer_name": (trainer or {}).get("display_name")
+                or (trainer or {}).get("username")
+                or "Unknown",
+            }
+        )
     return result
 
 

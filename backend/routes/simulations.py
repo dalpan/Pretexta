@@ -34,9 +34,7 @@ async def list_simulations_route(current_user: User = Depends(get_current_user))
 
 
 @router.get("/{simulation_id}")
-async def get_simulation_route(
-    simulation_id: str, current_user: User = Depends(get_current_user)
-):
+async def get_simulation_route(simulation_id: str, current_user: User = Depends(get_current_user)):
     return await get_simulation(simulation_id, current_user.id)
 
 
@@ -73,9 +71,11 @@ async def get_simulation_events(
     sim = await get_simulation(simulation_id, current_user.id)
 
     # Try dedicated event collection first (future state)
-    typed_events = await db.simulation_events.find(
-        {"simulation_id": simulation_id}, {"_id": 0}
-    ).sort("sequence", 1).to_list(limit)
+    typed_events = (
+        await db.simulation_events.find({"simulation_id": simulation_id}, {"_id": 0})
+        .sort("sequence", 1)
+        .to_list(limit)
+    )
 
     if typed_events:
         return {"simulation_id": simulation_id, "events": typed_events, "source": "typed"}

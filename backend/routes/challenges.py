@@ -29,10 +29,7 @@ async def get_challenges(
 
     skip = (page - 1) * limit
     challenges = (
-        await db.challenges.find(query, {"_id": 0})
-        .sort("created_at", -1)
-        .skip(skip)
-        .to_list(limit)
+        await db.challenges.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).to_list(limit)
     )
     total = await db.challenges.count_documents(query)
     return {
@@ -68,9 +65,7 @@ async def get_challenge(challenge_id: str, current_user: User = Depends(get_curr
 
 
 @router.post("", response_model=Challenge)
-async def create_challenge(
-    challenge: Challenge, current_user: User = Depends(get_current_user)
-):
+async def create_challenge(challenge: Challenge, current_user: User = Depends(get_current_user)):
     if current_user.role not in ("admin", "trainer"):
         raise HTTPException(status_code=403, detail="Instructor or admin role required")
     doc = challenge.model_dump()
@@ -80,9 +75,7 @@ async def create_challenge(
 
 
 @router.delete("/{challenge_id}")
-async def delete_challenge(
-    challenge_id: str, current_user: User = Depends(get_current_user)
-):
+async def delete_challenge(challenge_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ("admin", "trainer"):
         raise HTTPException(status_code=403, detail="Instructor or admin role required")
     result = await db.challenges.delete_one({"id": challenge_id})

@@ -322,12 +322,12 @@ class Assignment(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     instructor_id: str
-    group_id: str | None = None   # assigned to whole group
+    group_id: str | None = None  # assigned to whole group
     trainee_id: str | None = None  # or to individual trainee
 
     # What is being assigned
     content_type: str  # "challenge" | "campaign" | "quiz" | "ai_persona"
-    content_id: str    # id of the challenge/campaign/quiz/persona
+    content_id: str  # id of the challenge/campaign/quiz/persona
 
     title: str  # human-readable label for the assignment
     instructions: str | None = None  # instructor notes for trainees

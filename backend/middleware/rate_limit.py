@@ -6,10 +6,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # Per-endpoint rate limit rules: (max_calls, window_seconds)
 RATE_LIMIT_RULES: dict[tuple[str, str], tuple[int, int]] = {
-    ("POST", "/api/auth/login"): (10, 300),      # 10 attempts per 5 min
-    ("POST", "/api/auth/register"): (5, 300),    # 5 registrations per 5 min per IP
-    ("POST", "/api/llm/generate"): (20, 60),     # 20 generations per minute per user
-    ("POST", "/api/llm/chat"): (30, 60),         # 30 chat messages per minute per user
+    ("POST", "/api/auth/login"): (10, 300),  # 10 attempts per 5 min
+    ("POST", "/api/auth/register"): (5, 300),  # 5 registrations per 5 min per IP
+    ("POST", "/api/llm/generate"): (20, 60),  # 20 generations per minute per user
+    ("POST", "/api/llm/chat"): (30, 60),  # 30 chat messages per minute per user
 }
 
 
@@ -49,9 +49,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             now = time.time()
 
             # Evict expired timestamps
-            self.attempts[bucket_key] = [
-                t for t in self.attempts[bucket_key] if now - t < window
-            ]
+            self.attempts[bucket_key] = [t for t in self.attempts[bucket_key] if now - t < window]
 
             if len(self.attempts[bucket_key]) >= max_calls:
                 raise HTTPException(

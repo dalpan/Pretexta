@@ -128,6 +128,7 @@ async def _on_simulation_complete(sim: dict, user_id: str) -> None:
     # 2. Risk profile update
     try:
         from services.risk_engine import update_profile_from_simulation
+
         channel = _extract_channel(sim)
         outcome = _extract_outcome(sim)
         await update_profile_from_simulation(
@@ -246,7 +247,7 @@ def _extract_outcome(sim: dict) -> str | None:
     if score >= 70:
         return "completed"  # successfully defended
     elif score < 40:
-        return "failed"     # compromised
+        return "failed"  # compromised
     return None
 
 

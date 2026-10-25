@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from models.schemas import LLMConfig, User
 from services.auth import get_current_user
@@ -13,7 +12,6 @@ from services.llm import (
     PROVIDER_MODELS,
     fetch_local_models,
     fetch_openrouter_models,
-    get_llm_chat_model,
     get_llm_generate_model,
     get_provider_models,
     repair_json,
@@ -265,9 +263,9 @@ async def chat_interaction(request: dict[str, Any], current_user: User = Depends
         # Map gateway status to legacy API format for frontend compatibility
         # Legacy: "ongoing" | "failed" (attack succeeded) | "completed" (attack blocked)
         legacy_status = {
-            "ongoing":       "ongoing",
+            "ongoing": "ongoing",
             "success_attack": "failed",
-            "attack_failed":  "completed",
+            "attack_failed": "completed",
         }.get(result.status, "ongoing")
 
         return {
@@ -282,13 +280,15 @@ async def chat_interaction(request: dict[str, Any], current_user: User = Depends
     except Exception as e:
         logger.error(f"Chat error: {e}")
         error_msg = str(e)
-        provider = (await db.llm_configs.find_one({"enabled": True}, {"_id": 0}) or {}).get("provider", "unknown")
+        provider = (await db.llm_configs.find_one({"enabled": True}, {"_id": 0}) or {}).get(
+            "provider", "unknown"
+        )
         if "401" in error_msg:
             error_msg = f"Unauthorized. Please check your API Key for {provider}."
         elif "404" in error_msg:
             error_msg = f"Model Not Found. Provider: {provider}."
         elif "429" in error_msg:
-            error_msg = f"Rate Limit Exceeded. Please try again later."
+            error_msg = "Rate Limit Exceeded. Please try again later."
         elif "connect" in error_msg.lower():
             error_msg = f"Connection failed for {provider}. Is the server running?"
         raise HTTPException(status_code=500, detail=error_msg)

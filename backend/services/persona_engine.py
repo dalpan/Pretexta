@@ -20,11 +20,9 @@ separate collection. This keeps simulation snapshots self-contained for replay.
 """
 
 import logging
-from datetime import UTC, datetime
 
 from models.schemas import (
     PersonaMemoryEntry,
-    PersonaProfile,
     PersonaState,
 )
 from services.database import db
@@ -35,27 +33,42 @@ logger = logging.getLogger(__name__)
 # Defense keywords — if the user says these, record it as a demonstrated defense
 DEFENSE_SIGNALS = {
     "authority": [
-        "verify", "call you back", "official number", "confirm identity",
-        "check with IT", "this is suspicious", "how do I know",
+        "verify",
+        "call you back",
+        "official number",
+        "confirm identity",
+        "check with IT",
+        "this is suspicious",
+        "how do I know",
     ],
     "scarcity": [
-        "take my time", "not urgent", "I'll check first", "no rush",
-        "why the deadline", "seems rushed",
+        "take my time",
+        "not urgent",
+        "I'll check first",
+        "no rush",
+        "why the deadline",
+        "seems rushed",
     ],
     "reciprocity": [
-        "I didn't ask for this", "this feels like a setup", "why would you help",
+        "I didn't ask for this",
+        "this feels like a setup",
+        "why would you help",
         "what do you want in return",
     ],
     "liking": [
-        "I don't know you well enough", "this feels too personal",
+        "I don't know you well enough",
+        "this feels too personal",
         "why are you being so friendly",
     ],
     "commitment": [
-        "I'm reconsidering", "I shouldn't have agreed", "I need to cancel",
+        "I'm reconsidering",
+        "I shouldn't have agreed",
+        "I need to cancel",
         "I'm not comfortable continuing",
     ],
     "social_proof": [
-        "just because others did", "I'll decide for myself",
+        "just because others did",
+        "I'll decide for myself",
         "I don't care what others did",
     ],
 }

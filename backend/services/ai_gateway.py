@@ -17,7 +17,6 @@ Legacy routes/llm.py still works for backward compatibility.
 
 import logging
 from dataclasses import dataclass
-from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
@@ -148,7 +147,11 @@ class AIGateway:
         Generate structured scenario content (quiz questions, pretext messages, etc.).
         Always frames output as training material.
         """
-        lang_note = "Respond in Indonesian (Bahasa Indonesia)." if language == "id" else "Respond in English."
+        lang_note = (
+            "Respond in Indonesian (Bahasa Indonesia)."
+            if language == "id"
+            else "Respond in English."
+        )
 
         system = SystemMessage(
             content=(
@@ -169,6 +172,7 @@ class AIGateway:
         parsed = None
         try:
             import json
+
             parsed = json.loads(repaired)
         except Exception:
             pass
@@ -192,7 +196,11 @@ class AIGateway:
         Post-simulation debrief analysis.
         Produces structured behavioral insights, not a raw transcript.
         """
-        lang_note = "Respond in Indonesian (Bahasa Indonesia)." if language == "id" else "Respond in English."
+        lang_note = (
+            "Respond in Indonesian (Bahasa Indonesia)."
+            if language == "id"
+            else "Respond in English."
+        )
 
         system = SystemMessage(
             content=(
@@ -223,6 +231,7 @@ class AIGateway:
 
         try:
             import json
+
             data = json.loads(repaired)
             return AnalysisResult(
                 summary=data.get("summary", "Analysis unavailable."),
@@ -288,27 +297,33 @@ def _build_persona_prompt(persona: dict, language: str, state: dict | None) -> s
 
     # Escalation guidance based on current pressure
     if pressure < 0.3:
-        pressure_note = "Keep the conversation low-pressure. Build rapport. Do not reveal your true goal yet."
+        pressure_note = (
+            "Keep the conversation low-pressure. Build rapport. Do not reveal your true goal yet."
+        )
     elif pressure < 0.7:
-        pressure_note = "Begin applying gentle pressure. Reference your goal indirectly. Show some impatience."
+        pressure_note = (
+            "Begin applying gentle pressure. Reference your goal indirectly. Show some impatience."
+        )
     else:
         pressure_note = "Apply firm pressure. The attack is in its final phase. Be direct but stay in character."
 
-    principles = ", ".join(persona.get("cialdini_principles", persona.get("cialdini_categories", [])))
+    principles = ", ".join(
+        persona.get("cialdini_principles", persona.get("cialdini_categories", []))
+    )
 
     return f"""You are a roleplay actor in a professional cybersecurity awareness simulation.
 
 IDENTITY
-Name: {persona.get('name', 'Unknown')}
-Role: {persona.get('role', persona.get('category', 'Attacker'))}
-Goal: {persona.get('goal', 'Extract sensitive information')}
-Style: {persona.get('style', persona.get('communication_style', 'Professional'))}
-Context: {persona.get('context', persona.get('scenario_context', 'Corporate environment'))}
+Name: {persona.get("name", "Unknown")}
+Role: {persona.get("role", persona.get("category", "Attacker"))}
+Goal: {persona.get("goal", "Extract sensitive information")}
+Style: {persona.get("style", persona.get("communication_style", "Professional"))}
+Context: {persona.get("context", persona.get("scenario_context", "Corporate environment"))}
 
 BEHAVIORAL STATE (Turn {turn_count})
 Current strategy: {current_strategy}
 Pressure guidance: {pressure_note}
-Active Cialdini principles: {principles or 'authority, scarcity'}
+Active Cialdini principles: {principles or "authority, scarcity"}
 
 SIMULATION RULES
 1. Respond naturally as your character. Messages should be realistic and appropriately sized

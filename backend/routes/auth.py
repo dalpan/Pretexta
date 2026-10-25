@@ -172,7 +172,10 @@ async def promote_user(
         raise HTTPException(status_code=403, detail="Cannot change role of another admin")
 
     await db.users.update_one({"username": target_username}, {"$set": {"role": new_role}})
-    return {"message": f"User '{target_username}' role changed to '{new_role}'", "user_id": target["id"]}
+    return {
+        "message": f"User '{target_username}' role changed to '{new_role}'",
+        "user_id": target["id"],
+    }
 
 
 @router.post("/change-password")

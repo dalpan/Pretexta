@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from models.schemas import Quiz, User
+from models.schemas import User
 from services.auth import get_current_user
 from services.database import db
 
@@ -23,10 +23,7 @@ async def get_quizzes(
 
     skip = (page - 1) * limit
     quizzes = (
-        await db.quizzes.find(query, {"_id": 0})
-        .sort("created_at", -1)
-        .skip(skip)
-        .to_list(limit)
+        await db.quizzes.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).to_list(limit)
     )
     total = await db.quizzes.count_documents(query)
     return {

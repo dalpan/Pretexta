@@ -171,12 +171,16 @@ async def get_ai_debrief(simulation_id: str, current_user: User = Depends(get_cu
 
     gateway = await AIGateway.from_db()
     if not gateway:
-        raise HTTPException(status_code=400, detail="LLM not configured. Add an API key in Settings.")
+        raise HTTPException(
+            status_code=400, detail="LLM not configured. Add an API key in Settings."
+        )
 
     # Build a minimal persona dict from simulation data
     persona = {
         "name": sim.get("title", "Unknown Attacker"),
-        "category": sim.get("challenge_data", {}).get("cialdini_categories", ["general"])[0] if sim.get("challenge_data") else "general",
+        "category": sim.get("challenge_data", {}).get("cialdini_categories", ["general"])[0]
+        if sim.get("challenge_data")
+        else "general",
     }
 
     try:
@@ -186,12 +190,16 @@ async def get_ai_debrief(simulation_id: str, current_user: User = Depends(get_cu
             final_score=sim.get("score", 0),
         )
         analysis_text = (
-            f"**Summary:** {result.summary}\n\n"
-            f"**Cialdini Analysis:**\n"
-            + "\n".join(f"- **{k}:** {v}" for k, v in result.cialdini_breakdown.items())
-            + f"\n\n**Recommendations:**\n"
-            + "\n".join(f"- {r}" for r in result.recommendations)
-        ) if not isinstance(result.summary, dict) else result.summary
+            (
+                f"**Summary:** {result.summary}\n\n"
+                f"**Cialdini Analysis:**\n"
+                + "\n".join(f"- **{k}:** {v}" for k, v in result.cialdini_breakdown.items())
+                + "\n\n**Recommendations:**\n"
+                + "\n".join(f"- {r}" for r in result.recommendations)
+            )
+            if not isinstance(result.summary, dict)
+            else result.summary
+        )
 
         return {
             "ai_analysis": analysis_text,

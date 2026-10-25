@@ -12,7 +12,6 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from models.schemas import User
 from services.auth import get_current_user
-from services.database import db
 from services.persona_engine import get_persona_catalog
 
 router = APIRouter(prefix="/personas", tags=["personas"])
