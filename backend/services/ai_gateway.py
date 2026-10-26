@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from services.database import db
-from services.llm import _invoke_provider, repair_json
+from services.llm import _invoke_provider, content_text, repair_json
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class AIGateway:
         user = HumanMessage(content=prompt)
 
         raw = await _invoke_provider(self._config, [system, user], temperature=0.7)
-        raw_text: str = raw.content
+        raw_text: str = content_text(raw)
 
         repaired = repair_json(raw_text)
         parsed = None
@@ -154,7 +154,7 @@ class AIGateway:
         )
 
         raw = await _invoke_provider(self._config, [system, user], temperature=0.4)
-        repaired = repair_json(raw.content)
+        repaired = repair_json(content_text(raw))
 
         try:
             import json
@@ -170,7 +170,7 @@ class AIGateway:
         except Exception as e:
             logger.warning(f"Failed to parse analysis response: {e}")
             return AnalysisResult(
-                summary=raw.content[:500],
+                summary=content_text(raw)[:500],
                 cialdini_breakdown={},
                 recommendations=[],
                 risk_delta={},
@@ -191,7 +191,7 @@ class AIGateway:
             else:
                 messages.append(HumanMessage(content=content))
         raw = await _invoke_provider(self._config, messages, temperature=0.7)
-        return raw.content.strip()
+        return content_text(raw).strip()
 
     async def judge_compliance(self, *, objective: str, message: str) -> bool:
         """Decide whether a recipient's reply AGREES to the campaign objective.
@@ -210,7 +210,7 @@ class AIGateway:
         raw = await _invoke_provider(
             self._config, [system, HumanMessage(content=message)], temperature=0.0
         )
-        return raw.content.strip().upper().startswith("YES")
+        return content_text(raw).strip().upper().startswith("YES")
 
     async def grade_freetext(self, *, scenario: str, response: str, language: str = "en") -> dict:
         """Grade a trainee's free-text reply to a social-engineering message
@@ -238,7 +238,7 @@ class AIGateway:
         )
         raw = await _invoke_provider(self._config, [system, user], temperature=0.0)
         try:
-            data = json.loads(repair_json(raw.content))
+            data = json.loads(repair_json(content_text(raw)))
         except Exception:
             data = {}
         return {

@@ -100,8 +100,10 @@ function LiveConfigCard() {
         reply_local: f.reply_local || '',
         reply_domain: f.reply_domain || '',
         imap_host: f.imap_host || '',
+        imap_ssl: !!f.imap_ssl,
         imap_user: f.imap_user || '',
         imap_password: f.imap_password || '',
+        smtp_starttls: !!f.smtp_starttls,
       });
       toast.success('Live config saved');
     } catch (e) {
@@ -142,6 +144,16 @@ function LiveConfigCard() {
         {field('imap_host', 'IMAP host for replies (host:port)')}
         {field('imap_user', 'IMAP username')}
         {field('imap_password', 'IMAP password', 'password')}
+      </div>
+      <div className="flex flex-wrap gap-6 pt-1">
+        <label className="flex items-center gap-2 text-xs">
+          <Switch checked={!!f.imap_ssl} onCheckedChange={(v) => set('imap_ssl', v)} />
+          IMAP uses SSL (off for plain IMAP, e.g. GreenMail :3143)
+        </label>
+        <label className="flex items-center gap-2 text-xs">
+          <Switch checked={!!f.smtp_starttls} onCheckedChange={(v) => set('smtp_starttls', v)} />
+          SMTP STARTTLS
+        </label>
       </div>
       <div className="flex gap-2">
         <Button onClick={save}>Save</Button>

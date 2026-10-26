@@ -165,9 +165,17 @@ async def poll_once() -> dict:
     gateway = await AIGateway.from_db()
     outcomes: dict[str, int] = {}
     for raw in raws:
-        result = await route_message(raw, gateway=gateway)
-        outcomes[result["status"]] = outcomes.get(result["status"], 0) + 1
+        # One bad message (e.g. the LLM fails to draft a reply) must not abort the
+        # batch or block the watermark — that would re-ingest everything next tick.
+        try:
+            result = await route_message(raw, gateway=gateway)
+            status = result["status"]
+        except Exception as exc:
+            logger.warning(f"routing a reply failed: {exc}")
+            status = "route_error"
+        outcomes[status] = outcomes.get(status, 0) + 1
 
+    # Always advance the watermark to what we fetched, so nothing is processed twice.
     await db.live_state.update_one(
         {"id": "imap_watermark"},
         {"$set": {"last_uid": max_uid, "uidvalidity": uidvalidity}},
