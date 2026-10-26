@@ -25,6 +25,7 @@ export default function AIChatPage() {
   const [activeDifficulty, setActiveDifficulty] = useState('Easy');
   const [sessionId, setSessionId] = useState(null);
   const [finalScore, setFinalScore] = useState(null);
+  const [finalSimId, setFinalSimId] = useState(null);
   const [turn, setTurn] = useState(0);
   const [maxTurns, setMaxTurns] = useState(6);
   const messagesEndRef = useRef(null);
@@ -53,7 +54,7 @@ export default function AIChatPage() {
     setSelectedPersona(persona);
     setGameStatus('active');
     setMessages([{ role: 'assistant', content: persona.openingLine }]);
-    setFinalScore(null); setTurn(0);
+    setFinalScore(null); setFinalSimId(null); setTurn(0);
     try {
       const res = await api.post('/llm/chat/start', {
         persona_id: persona.id, language: i18n.language,
@@ -89,6 +90,7 @@ export default function AIChatPage() {
         const isWin = d.status === 'won';
         setGameStatus(isWin ? 'won' : 'lost');
         setFinalScore(d.score);
+        setFinalSimId(d.simulation_id);
         toast[isWin ? 'success' : 'error'](
           isWin ? `${t('simulation.attack_prevented')} — ${d.score}/100`
                 : `${t('simulation.compromised')} — ${d.score}/100`,
@@ -110,6 +112,7 @@ export default function AIChatPage() {
     setInputValue('');
     setSessionId(null);
     setFinalScore(null);
+    setFinalSimId(null);
     setTurn(0);
   };
 
@@ -286,9 +289,18 @@ export default function AIChatPage() {
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">You resisted the social engineering attempt. Score reflects how well and how long you held out.</p>
           </div>
-          <Button size="sm" onClick={resetGame} variant="outline" className="ml-auto text-xs uppercase tracking-widest">
-            {t('simulation.try_another')}
-          </Button>
+          <div className="ml-auto flex gap-2">
+            {finalSimId && (
+              <Link to={`/simulations/${finalSimId}/debrief`}>
+                <Button size="sm" variant="outline" className="text-xs uppercase tracking-widest">
+                  {t('nav.debrief', 'Debrief')}
+                </Button>
+              </Link>
+            )}
+            <Button size="sm" onClick={resetGame} variant="outline" className="text-xs uppercase tracking-widest">
+              {t('simulation.try_another')}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -301,9 +313,18 @@ export default function AIChatPage() {
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">You gave the attacker what they wanted. Study the debrief to see where.</p>
           </div>
-          <Button size="sm" onClick={resetGame} variant="outline" className="ml-auto text-xs uppercase tracking-widest">
-            {t('simulation.try_another')}
-          </Button>
+          <div className="ml-auto flex gap-2">
+            {finalSimId && (
+              <Link to={`/simulations/${finalSimId}/debrief`}>
+                <Button size="sm" variant="outline" className="text-xs uppercase tracking-widest">
+                  {t('nav.debrief', 'Debrief')}
+                </Button>
+              </Link>
+            )}
+            <Button size="sm" onClick={resetGame} variant="outline" className="text-xs uppercase tracking-widest">
+              {t('simulation.try_another')}
+            </Button>
+          </div>
         </div>
       )}
 
