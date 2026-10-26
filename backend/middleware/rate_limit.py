@@ -11,7 +11,8 @@ RATE_LIMIT_RULES: dict[tuple[str, str], tuple[int, int]] = {
     ("POST", "/api/auth/login"): (10, 300),  # 10 attempts per 5 min per IP
     ("POST", "/api/auth/register"): (5, 300),  # 5 registrations per 5 min per IP
     ("POST", "/api/llm/generate"): (20, 60),  # 20 generations per minute per user
-    ("POST", "/api/llm/chat"): (30, 60),  # 30 chat messages per minute per user
+    ("POST", "/api/llm/chat/turn"): (30, 60),  # 30 chat messages per minute per user
+    ("POST", "/api/llm/chat/start"): (20, 300),  # 20 new chat sessions per 5 min per user
 }
 
 # Keyed by (method, path, identifier) -> timestamps inside the window

@@ -25,12 +25,21 @@ PROTECTED_FIELDS = {"id", "user_id", "debrief"}
 UPDATABLE_FIELDS = set(Simulation.model_fields) - PROTECTED_FIELDS
 
 
-async def create_simulation(data: dict, user_id: str) -> dict:
+async def create_simulation(data: dict, user_id: str, internal: bool = False) -> dict:
     """
     Persist a new simulation owned by user_id.
     Awards XP and checks badge conditions on completion.
+
+    `internal=True` is used by server-side flows (e.g. lab AI chat) that compute
+    the score themselves. Clients cannot create ai_challenge simulations directly,
+    because their score must come from a server-held chat session, not the browser.
     """
     data = {k: v for k, v in data.items() if k not in PROTECTED_FIELDS}
+    if not internal and data.get("simulation_type") == "ai_challenge":
+        raise HTTPException(
+            status_code=409,
+            detail="AI challenge results are recorded by the server. Use the chat session API.",
+        )
     data["id"] = str(uuid.uuid4())
     data["user_id"] = user_id
 

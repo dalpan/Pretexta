@@ -329,6 +329,8 @@ async def lifespan(app: FastAPI):
     await db.organizations.create_index("invite_code", unique=True, sparse=True)
     await db.notifications.create_index([("user_id", 1), ("read", 1)])
     await db.simulations.create_index([("user_id", 1), ("status", 1)])
+    await db.lab_sessions.create_index("id", unique=True)
+    await db.lab_sessions.create_index([("user_id", 1), ("status", 1)])
     await db.campaign_progress.create_index([("campaign_id", 1), ("user_id", 1)])
     # v3 platform indexes
     await db.simulation_events.create_index([("simulation_id", 1), ("sequence", 1)])

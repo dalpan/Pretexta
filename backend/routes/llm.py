@@ -3,8 +3,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from models.schemas import LLMConfig, User
+from services import lab_chat
+from services.ai_gateway import AIGateway
 from services.auth import get_current_user, require_admin
 from services.database import db
 from services.llm import (
@@ -244,76 +247,32 @@ async def generate_pretext(request: dict[str, Any], current_user: User = Depends
         raise HTTPException(status_code=500, detail=f"LLM Generation Error: {error_msg}")
 
 
-@router.post("/chat")
-async def chat_interaction(request: dict[str, Any], current_user: User = Depends(get_current_user)):
+class ChatStartRequest(BaseModel):
+    persona_id: str = Field(min_length=1, max_length=100)
+    language: str = "en"
+
+
+class ChatTurnRequest(BaseModel):
+    session_id: str = Field(min_length=1, max_length=64)
+    message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
+
+
+@router.post("/chat/start")
+async def start_chat(data: ChatStartRequest, current_user: User = Depends(get_current_user)):
     """
-    Real-time persona chat for roleplay simulations.
-    Routes through AIGateway for centralized prompt construction.
+    Begin a server-held lab persona chat. The server owns the conversation and
+    decides the outcome, so the browser can neither forge history nor set a score.
     """
-    from services.ai_gateway import AIGateway
+    return await lab_chat.start_session(current_user.id, data.persona_id, data.language)
 
-    history = request.get("history", [])
-    persona = request.get("persona", {})
-    user_message = request.get("message", "")
-    language = request.get("language", "en")
-    persona_state = request.get("persona_state")
 
-    if not isinstance(history, list) or len(history) > MAX_HISTORY_MESSAGES:
-        raise HTTPException(status_code=413, detail="Conversation history too long")
-    _check_size(user_message, MAX_MESSAGE_CHARS, "message")
-    _check_size(persona, MAX_PERSONA_CHARS, "persona")
-    for msg in history:
-        _check_size(
-            msg.get("content", "") if isinstance(msg, dict) else msg,
-            MAX_MESSAGE_CHARS,
-            "history message",
-        )
-
+@router.post("/chat/turn")
+async def chat_turn(data: ChatTurnRequest, current_user: User = Depends(get_current_user)):
+    """Submit one trainee message. The server appends it, replies in character,
+    and on a terminal outcome records the simulation with a server-computed score."""
     gateway = await AIGateway.from_db()
     if not gateway:
         raise HTTPException(
-            status_code=400,
-            detail="LLM config missing. Configure a provider in Settings.",
+            status_code=400, detail="LLM config missing. Configure a provider in Settings."
         )
-
-    try:
-        result = await gateway.persona_chat(
-            persona=persona,
-            history=history,
-            user_message=user_message,
-            language=language,
-            persona_state=persona_state,
-        )
-
-        # Map gateway status to legacy API format for frontend compatibility
-        # Legacy: "ongoing" | "failed" (attack succeeded) | "completed" (attack blocked)
-        legacy_status = {
-            "ongoing": "ongoing",
-            "success_attack": "failed",
-            "attack_failed": "completed",
-        }.get(result.status, "ongoing")
-
-        return {
-            "role": "assistant",
-            "content": result.content,
-            "status": legacy_status,
-            "provider": result.provider,
-            "model": result.model,
-            "persona_state_updates": result.persona_state_updates,
-        }
-
-    except Exception as e:
-        logger.error(f"Chat error: {e}")
-        error_msg = str(e)
-        provider = (await db.llm_configs.find_one({"enabled": True}, {"_id": 0}) or {}).get(
-            "provider", "unknown"
-        )
-        if "401" in error_msg:
-            error_msg = f"Unauthorized. Please check your API Key for {provider}."
-        elif "404" in error_msg:
-            error_msg = f"Model Not Found. Provider: {provider}."
-        elif "429" in error_msg:
-            error_msg = "Rate Limit Exceeded. Please try again later."
-        elif "connect" in error_msg.lower():
-            error_msg = f"Connection failed for {provider}. Is the server running?"
-        raise HTTPException(status_code=500, detail=error_msg)
+    return await lab_chat.submit_turn(current_user.id, data.session_id, data.message, gateway)

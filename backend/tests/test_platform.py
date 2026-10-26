@@ -29,19 +29,21 @@ def test_ollama_base_url_strips_suffix_not_characters():
 async def test_llm_rate_limit_is_per_user_and_returns_429(api):
     from middleware.rate_limit import RATE_LIMIT_RULES
 
-    max_calls, _ = RATE_LIMIT_RULES[("POST", "/api/llm/chat")]
+    max_calls, _ = RATE_LIMIT_RULES[("POST", "/api/llm/chat/turn")]
     _, h1 = await make_user("user")
     _, h2 = await make_user("user")
 
+    # Bodies are invalid sessions (422), but rate limiting runs in middleware first.
+    body = {"session_id": "nope", "message": "hi"}
     statuses = [
-        (await api.post("/api/llm/chat", json={"message": "hi"}, headers=h1)).status_code
+        (await api.post("/api/llm/chat/turn", json=body, headers=h1)).status_code
         for _ in range(max_calls + 1)
     ]
     assert statuses[-1] == 429
     assert 429 not in statuses[:-1]
 
     # Another user must not share the first user's bucket
-    r = await api.post("/api/llm/chat", json={"message": "hi"}, headers=h2)
+    r = await api.post("/api/llm/chat/turn", json=body, headers=h2)
     assert r.status_code != 429
 
 
@@ -65,12 +67,15 @@ def test_tokens_from_other_secret_rejected():
 
 
 async def test_llm_chat_rejects_oversized_input(api):
+    # The chat turn message is length-capped by the request model (422).
     _, h = await make_user("user")
-    r = await api.post("/api/llm/chat", json={"message": "x" * 5000}, headers=h)
-    assert r.status_code == 413
     r = await api.post(
-        "/api/llm/chat",
-        json={"message": "hi", "history": [{"role": "user", "content": "a"}] * 41},
-        headers=h,
+        "/api/llm/chat/turn", json={"session_id": "s", "message": "x" * 5000}, headers=h
     )
+    assert r.status_code == 422
+
+
+async def test_generate_still_rejects_oversized_prompt(api):
+    _, h = await make_user("user")
+    r = await api.post("/api/llm/generate", json={"prompt": "x" * 9000}, headers=h)
     assert r.status_code == 413
