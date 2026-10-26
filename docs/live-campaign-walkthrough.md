@@ -87,10 +87,10 @@ fill the **Live Campaigns (GoPhish)** panel:
 
 | Field | Value for this local setup |
 |-------|-----------------------------|
-| GoPhish admin URL | `https://gophish:3333` |
+| GoPhish admin URL | `https://gophish:3333` (reached by the Pretexta backend) |
 | GoPhish API key | *(the key from step 3)* |
-| Phishing server URL | `http://gophish` |
-| SMTP relay (host:port) | `greenmail:3025` |
+| Phishing server URL | `http://localhost:8080` — **the address the recipient's browser opens**, not an internal name |
+| SMTP relay (host:port) | `greenmail:3025` (reached by GoPhish) |
 | Reply mailbox local part | `sim-reply` |
 | Reply domain | `acme.test` |
 | IMAP host | `greenmail:3143` (GreenMail plain IMAP; use `:3993` for SSL) |
@@ -117,9 +117,17 @@ ollama pull llama3.1
 Save, then use **Test GoPhish** — it should report success. Secrets are stored
 masked; re-saving with the masked `***` keeps the stored value.
 
-> Hostnames: `gophish` and `greenmail` only resolve **inside** the Docker
-> network, which is where the Pretexta backend runs. From your laptop they are
-> `127.0.0.1:3333` / `127.0.0.1:3025` instead.
+> **Two kinds of address — this trips everyone up:**
+> - `gophish` / `greenmail` are Docker-internal names, used by the **Pretexta
+>   backend** and **GoPhish** to reach each other (admin URL, SMTP, IMAP).
+> - `phish_url` is different: it is the link the **recipient's browser** opens,
+>   so it must be reachable from *outside* the backend. For this local setup that
+>   is `http://localhost:8080` (GoPhish's phishing server, mapped to the host).
+>   If you set it to `http://gophish`, the link looks like `http://gophish?rid=…`
+>   and will not open — `gophish` only resolves inside Docker.
+>
+> `phish_url` is baked into each campaign **at launch**, so after changing it you
+> must **launch a new campaign** — already-launched links keep the old URL.
 
 ---
 
@@ -270,4 +278,5 @@ To run against a real organization instead of the sandbox:
 | My reply never appears at all | IMAP isn't configured (Settings → Live), or the reply went to the sender address instead of the `Reply-To`. Check the campaign **Conversation** panel and run **Poll now** (Settings/API `POST /live/poll`). |
 | Reply shows in Conversation but not in Reply Review | No LLM provider configured — the persona can't draft a reply. Configure one in Settings → LLM (local Ollama works). |
 | Reply read in Thunderbird, poller skipped it | Fixed: the poller tracks UIDs, not the read/\Seen flag, so this no longer happens. |
+| Phishing link won't open (`http://gophish?rid=…`) | `phish_url` is set to an internal Docker name. Set it to a browser-reachable address (`http://localhost:8080` locally, or your public phishing URL), then **launch a new campaign** — the URL is baked in at launch. |
 | Self-signed cert warning at :3333 | Expected for GoPhish's admin UI; accept it, or set `verify_tls: false` (default). |
