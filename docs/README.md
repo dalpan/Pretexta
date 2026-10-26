@@ -24,20 +24,27 @@ Start here, then follow the links:
 
 ## The short version
 
-- **Lab mode** (available): AI chat roleplay, branching scenarios, quizzes. All
-  scored on the server from what the trainee does. The AI chat is the
-  high-signal surface; quizzes and scenarios are remediation and warm-up.
-- **Live mode**: authorized phishing simulations in real mailboxes via GoPhish,
-  with an AI persona that continues the thread when someone replies and stops
-  before any real secret is disclosed. Primary metrics are report rate and
-  time-to-report.
+- **Live mode** (the headline): authorized phishing in real mailboxes via GoPhish.
+  The primary flow is a **click campaign** measured by **report rate** and
+  time-to-report; an AI persona that continues a reply thread (and stops before
+  any real secret) is an optional advanced layer.
+- **Lab mode**: high-signal exercises — **Inbox Triage** (signal-detection d′),
+  **Write Your Reply** (LLM-rubric-graded free text), branching scenarios, AI
+  chat roleplay, quizzes — all scored on the server so results can't be gamed.
+- **The loop**: a failure (live or lab) auto-assigns targeted practice for the
+  Cialdini principle the person fell for, then schedules a retest.
+- **Human Attack Surface Map**: an attacker's-eye graph of people, trust edges
+  and crown-jewel assets, showing the easiest social-engineering path and who to
+  train first.
 
 ## Status and roadmap
 
-The security foundation (authorization, server-side scoring, no default
-credentials) and the live-campaign module (P1–P3: guardrails, GoPhish adapter,
-review-mode conversation engine, IMAP poller, UI) are implemented and tested.
+Implemented and tested: the security foundation (authorization, server-side
+scoring, no default credentials); the full live-campaign module (guardrails,
+GoPhish adapter, review-mode conversation engine, IMAP poller, UI) with report
+rate as the headline metric; the high-signal lab exercises (triage, free-text);
+the remediation loop; and the Human Attack Surface Map (with G13/G15 enforced).
 
-Next, per [concept.md](concept.md): raise the *content* signal of the lab —
-inbox triage (signal-detection metrics) and free-text responses graded by an LLM
-rubric — and enforce the analytics-side guardrails G13/G15.
+What remains is deferred infrastructure — see [roadmap.md](roadmap.md): public
+TLS deployment, management reporting/export, scheduled campaigns, supervised
+auto-send, and prompt-quality evaluation.
