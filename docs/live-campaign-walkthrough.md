@@ -213,6 +213,12 @@ When a recipient replies, Pretexta's AI persona drafts a follow-up — and in
 **review mode (the default)** it is **held for a human**, never sent
 automatically.
 
+Recipients often click **Reply** to the sender address (`helpdesk@…`) rather
+than the `Reply-To`, so point Pretexta's **IMAP at the mailbox that actually
+receives replies** — usually the sender mailbox. Pretexta matches a reply to its
+campaign by the `Reply-To` token when present, and otherwise by the sender's
+address (a recipient is in only one running campaign), so either path works.
+
 Two things must be set up for replies to reach the queue:
 1. **IMAP configured** (step 4) so Pretexta can fetch the reply — or use the
    **Simulate a recipient reply** box on the running campaign to inject one

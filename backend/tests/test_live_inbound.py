@@ -137,7 +137,8 @@ async def test_route_message_redacts_secret_from_real_email(api, monkeypatch):
 
 async def test_route_message_unknown_token(api):
     await _running_campaign()
-    raw = _raw_reply("nosuchtoken", "bob@acme.test", "hi")
+    # A stranger (not a recipient) with a bad token matches nothing.
+    raw = _raw_reply("nosuchtoken", "stranger@elsewhere.test", "hi")
     assert (await inbound.route_message(raw))["status"] == "unknown_campaign"
 
 
@@ -146,7 +147,21 @@ async def test_route_message_no_token(api):
     msg["From"] = "bob@acme.test"
     msg["To"] = "plain@acme.test"
     msg.set_content("hi")
-    assert (await inbound.route_message(msg.as_bytes()))["status"] == "no_token"
+    # No token and no matching recipient -> unknown campaign
+    assert (await inbound.route_message(msg.as_bytes()))["status"] == "unknown_campaign"
+
+
+async def test_route_message_matches_by_sender_without_token(api):
+    from email.message import EmailMessage
+
+    await _running_campaign()
+    msg = EmailMessage()
+    msg["From"] = "Bob <bob@acme.test>"
+    msg["To"] = "helpdesk@acme.test"  # replied to the sender address, no token
+    msg["Subject"] = "Re: Reset"
+    msg.set_content("who is this?")
+    result = await inbound.route_message(msg.as_bytes(), gateway=FakeGateway())
+    assert result["status"] == "draft_pending"
 
 
 async def test_poll_once_without_config(api):

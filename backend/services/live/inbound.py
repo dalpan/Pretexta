@@ -85,17 +85,36 @@ def extract_body(msg: Message) -> str:
 async def route_message(raw: bytes, gateway=None) -> dict:
     """Parse one raw RFC822 message and dispatch it to the conversation engine."""
     msg = message_from_bytes(raw)
-    token = parse_token(
-        msg.get("To"), msg.get("Delivered-To"), msg.get("Envelope-To"), msg.get("X-Original-To")
-    )
-    if not token:
-        return {"status": "no_token"}
-    campaign = await db.live_campaigns.find_one({"reply_token": token}, {"_id": 0})
-    if not campaign:
-        return {"status": "unknown_campaign"}
     sender = sender_address(msg.get("From"))
     if not sender:
         return {"status": "no_sender"}
+
+    # Preferred: the campaign token in the plus-addressed Reply-To.
+    token = parse_token(
+        msg.get("To"), msg.get("Delivered-To"), msg.get("Envelope-To"), msg.get("X-Original-To")
+    )
+    campaign = None
+    if token:
+        campaign = await db.live_campaigns.find_one({"reply_token": token}, {"_id": 0})
+
+    # Fallback: many recipients reply to the sender (From) address, not Reply-To,
+    # so there is no token. A recipient is in at most one active campaign
+    # (enforced at pre-flight), so match by their address.
+    if not campaign:
+        running = await db.live_campaigns.find({"status": "running"}, {"id": 1, "_id": 0}).to_list(
+            1000
+        )
+        running_ids = [c["id"] for c in running]
+        if running_ids:
+            recipient = await db.live_recipients.find_one(
+                {"email": sender, "campaign_id": {"$in": running_ids}}, {"_id": 0}
+            )
+            if recipient:
+                campaign = await db.live_campaigns.find_one(
+                    {"id": recipient["campaign_id"]}, {"_id": 0}
+                )
+    if not campaign:
+        return {"status": "unknown_campaign"}
 
     body = strip_quoted(extract_body(msg))
     if not body:
