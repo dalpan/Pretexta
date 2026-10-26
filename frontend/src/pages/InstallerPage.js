@@ -188,8 +188,9 @@ export default function InstallerPage({ onComplete }) {
               </div>
               <h2 className="text-3xl font-bold">Setup Complete</h2>
               <p className="text-muted-foreground">
-                Pretexta is ready to use. Default credentials:<br />
-                <code className="text-primary">soceng / Cialdini@2025!</code>
+                Pretexta is ready to use. Log in as <code className="text-primary">soceng</code> with
+                the admin password from <code className="text-primary">.env</code>
+                (<code className="text-primary">SEED_ADMIN_PASSWORD</code>).
               </p>
             </div>
 

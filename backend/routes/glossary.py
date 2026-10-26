@@ -5,10 +5,11 @@ Admin-managed glossary of social engineering and cybersecurity terms.
 Readable by all authenticated users, writable by admin/trainer only.
 """
 
+import re
+import uuid as uuid_lib
 from datetime import UTC, datetime
 from typing import Any
 
-import uuid as uuid_lib
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.schemas import User
@@ -44,8 +45,8 @@ async def list_terms(
     query: dict[str, Any] = {}
     if search:
         query["$or"] = [
-            {"term": {"$regex": search, "$options": "i"}},
-            {"definition": {"$regex": search, "$options": "i"}},
+            {"term": {"$regex": re.escape(search), "$options": "i"}},
+            {"definition": {"$regex": re.escape(search), "$options": "i"}},
         ]
     if category and category != "all":
         query["category"] = category
@@ -67,7 +68,7 @@ async def create_term(
 
     # Check for duplicate
     existing = await db.glossary.find_one(
-        {"term": {"$regex": f"^{data['term'].strip()}$", "$options": "i"}}
+        {"term": {"$regex": f"^{re.escape(data['term'].strip())}$", "$options": "i"}}
     )
     if existing:
         raise HTTPException(status_code=409, detail=f"Term '{data['term']}' already exists")
@@ -92,8 +93,18 @@ async def update_term(
         raise HTTPException(status_code=404, detail="Term not found")
 
     update_data = {
-        k: v for k, v in data.items()
-        if k in ("term", "definition", "category", "cialdini_principle", "example", "related_terms", "tags")
+        k: v
+        for k, v in data.items()
+        if k
+        in (
+            "term",
+            "definition",
+            "category",
+            "cialdini_principle",
+            "example",
+            "related_terms",
+            "tags",
+        )
     }
     update_data["updated_at"] = datetime.now(UTC).isoformat()
 

@@ -1,31 +1,39 @@
 from routes.adaptive import router as adaptive_router
-from routes.glossary import router as glossary_router
 from routes.analytics import router as analytics_router
+from routes.assignments import router as assignments_router
 from routes.auth import router as auth_router
 from routes.campaigns import router as campaigns_router
 from routes.certificates import router as certificates_router
 from routes.challenges import router as challenges_router
 from routes.debrief import router as debrief_router
+from routes.freetext import router as freetext_router
+from routes.glossary import router as glossary_router
 from routes.imports import router as imports_router
+from routes.instructor import router as instructor_router
 from routes.leaderboard import router as leaderboard_router
+from routes.live import audit_router
+from routes.live import router as live_router
 from routes.llm import router as llm_router
 from routes.notifications import router as notifications_router
 from routes.organizations import router as organizations_router
-from routes.assignments import router as assignments_router
-from routes.instructor import router as instructor_router
 from routes.personas import router as personas_router
 from routes.quizzes import router as quizzes_router
 from routes.reports import router as reports_router
 from routes.risk_profile import router as risk_profile_router
 from routes.scenario_builder import router as scenario_builder_router
+from routes.scenarios import router as scenarios_router
 from routes.settings import router as settings_router
 from routes.simulations import router as simulations_router
+from routes.triage import router as triage_router
 from routes.webhooks import router as webhooks_router
 
 __all__ = [
     "auth_router",
     "challenges_router",
     "quizzes_router",
+    "scenarios_router",
+    "triage_router",
+    "freetext_router",
     "simulations_router",
     "llm_router",
     "settings_router",
@@ -47,4 +55,6 @@ __all__ = [
     "instructor_router",
     "assignments_router",
     "glossary_router",
+    "live_router",
+    "audit_router",
 ]

@@ -24,6 +24,8 @@ export default function QuizPlayerPage() {
 
   const [endTime, setEndTime] = useState(null);
   const [timeLeft, setTimeLeft] = useState(30); // 30 seconds per question
+  const [gradedResults, setGradedResults] = useState({}); // server grading, by question id
+  const [simulationId, setSimulationId] = useState(null);
 
   useEffect(() => {
     loadQuiz();
@@ -95,38 +97,20 @@ export default function QuizPlayerPage() {
 
   const handleSubmit = async () => {
     setEndTime(Date.now());
-
-    // Calculate score
-    let correctCount = 0;
-    quiz.questions.forEach(q => {
-      const selectedIndex = selectedAnswers[q.id];
-      if (selectedIndex !== undefined && q.options[selectedIndex]?.correct) {
-        correctCount++;
-      }
-    });
-
-    const finalScore = Math.round((correctCount / quiz.questions.length) * 100);
-    setScore(finalScore);
-    setShowResults(true);
-
-    // Save simulation
+    // The server grades the quiz and records the result; the browser no longer
+    // sees the answer key or computes the score.
     try {
-      await api.post('/simulations', {
-        quiz_id: quizId,
-        simulation_type: 'quiz',
-        status: 'completed',
-        score: finalScore,
-        events: Object.entries(selectedAnswers).map(([qId, ansIdx]) => ({
-          question_id: qId,
-          answer_index: ansIdx,
-          timestamp: new Date().toISOString(),
-        })),
-        title: quiz.title,
-        challenge_Title: quiz.title,
-        metadata: { correct_count: correctCount, total_questions: quiz.questions.length },
-      });
+      const res = await api.post(`/quizzes/${quizId}/submit`, { answers: selectedAnswers });
+      const d = res.data;
+      setScore(d.score);
+      // Map results by question id for the review screen (correct index + explanation).
+      const byId = {};
+      (d.results || []).forEach((r) => { byId[r.question_id] = r; });
+      setGradedResults(byId);
+      setSimulationId(d.simulation_id);
+      setShowResults(true);
     } catch (error) {
-      console.error('Failed to save quiz results', error);
+      console.error('Failed to submit quiz', error);
     }
   };
 
@@ -156,10 +140,7 @@ export default function QuizPlayerPage() {
 
   if (showResults) {
     const timeTaken = Math.round((endTime - startTime) / 1000);
-    const correctCount = quiz.questions.filter(q => {
-      const selectedIndex = selectedAnswers[q.id];
-      return selectedIndex !== undefined && q.options[selectedIndex]?.correct;
-    }).length;
+    const correctCount = quiz.questions.filter(q => gradedResults[q.id]?.is_correct).length;
 
     return (
       <div className="max-w-4xl mx-auto space-y-6">
@@ -208,8 +189,12 @@ export default function QuizPlayerPage() {
         <div className="space-y-4">
           <h3 className="text-2xl font-bold">Answer Review</h3>
           {quiz.questions.map((question, qIdx) => {
+            const graded = gradedResults[question.id] || {};
             const selectedIndex = selectedAnswers[question.id];
-            const isCorrect = selectedIndex !== undefined && question.options[selectedIndex]?.correct;
+            const isCorrect = graded.is_correct;
+            const correctIndex = graded.correct_index;
+            const explanation = language === 'id' && graded.explanation_id
+              ? graded.explanation_id : graded.explanation;
 
             return (
               <Card key={question.id} className={`glass-panel p-6 ${isCorrect ? 'border-tertiary/30' : 'border-destructive/30'
@@ -229,7 +214,7 @@ export default function QuizPlayerPage() {
                     <div className="space-y-2 mb-4">
                       {question.options.map((option, optIdx) => {
                         const isSelected = selectedIndex === optIdx;
-                        const isCorrectOption = option.correct;
+                        const isCorrectOption = optIdx === correctIndex;
 
                         return (
                           <div
@@ -251,10 +236,10 @@ export default function QuizPlayerPage() {
                       })}
                     </div>
 
-                    {getContent(question, 'explanation') && (
+                    {explanation && (
                       <div className="p-4 bg-muted/20 rounded border border-muted/30">
                         <div className="text-sm font-bold mb-1">💡 Explanation:</div>
-                        <p className="text-sm text-muted-foreground">{getContent(question, 'explanation')}</p>
+                        <p className="text-sm text-muted-foreground">{explanation}</p>
                       </div>
                     )}
                   </div>

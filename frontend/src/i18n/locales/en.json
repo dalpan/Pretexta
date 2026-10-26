@@ -27,7 +27,7 @@
     "scenarios": "Scenarios",
     "quizzes": "Quizzes",
     "ai_challenge": "AI Challenge",
-    "campaigns": "Campaigns",
+    "campaigns": "Training Campaigns",
     "history": "History",
     "leaderboard": "Leaderboard",
     "analytics": "Analytics",
@@ -35,7 +35,11 @@
     "glossary": "Glossary",
     "settings": "Settings",
     "profile": "Profile",
-    "about": "About"
+    "about": "About",
+    "live_campaigns": "Live Campaigns",
+    "reply_review": "Reply Review",
+    "triage": "Inbox Triage",
+    "write_reply": "Write Your Reply"
   },
   "dashboard": {
     "welcome": "Welcome to Pretexta",
@@ -131,7 +135,7 @@
     "retake": "Retake Quiz"
   },
   "campaigns": {
-    "title": "Campaigns",
+    "title": "Training Campaigns",
     "page_description": "Multi-stage social engineering attack chain simulations.",
     "no_campaigns": "No campaigns available.",
     "stages": "Stages",
@@ -259,6 +263,7 @@
     "light_mode": "Light Mode",
     "reduce_motion": "Reduce Motion",
     "llm_config": "LLM Configuration",
+    "llm_admin_only": "LLM providers are managed by an administrator.",
     "enable_llm": "Enable LLM",
     "api_key": "API Key",
     "provider": "Provider",

@@ -5,9 +5,9 @@
 ### The Psychology Behind Successful Attacks
 #### An Open Framework for Social Engineering Assessments
 
-[![Version](https://img.shields.io/badge/Version-3.0.0-blue?style=flat-square)](https://github.com/fdciabdul/Pretexta/releases)
+[![Version](https://img.shields.io/badge/Version-3.0.0-blue?style=flat-square)](https://github.com/dalpan/Pretexta/releases)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/fdciabdul/Pretexta/ci.yml?style=flat-square&label=CI)](https://github.com/fdciabdul/Pretexta/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/dalpan/Pretexta/ci.yml?style=flat-square&label=CI)](https://github.com/dalpan/Pretexta/actions)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
 
 [Quick Start](#quick-start) · [Features](#features) · [LLM Providers](#llm-providers) · [Contributing](#contributing)
@@ -23,6 +23,14 @@ Most security tools protect systems. Pretexta protects **people**.
 Social engineering is the #1 attack vector — and it doesn't exploit software. It exploits **trust, urgency, authority, and cognitive bias**. Pretexta is an open-source simulation lab where your team practices defending against these attacks in a safe, controlled environment.
 
 Built on **Cialdini's 6 Principles of Influence**: Reciprocity, Scarcity, Authority, Commitment, Liking, and Social Proof.
+
+Pretexta measures **what people do** under pressure, not just what they know. Two
+modes: a **lab** (open-ended AI roleplay, scenarios, quizzes — all scored on the
+server so results can't be gamed) and **live campaigns** (authorized phishing in
+real mailboxes via GoPhish, with an AI persona that continues the thread and
+stops before any real secret is disclosed). The primary live metrics are
+**report rate** and **time-to-report**, not click rate alone. See
+[docs/concept.md](docs/concept.md).
 
 ## Screenshots
 
@@ -41,7 +49,7 @@ Built on **Cialdini's 6 Principles of Influence**: Reciprocity, Scarcity, Author
 </details>
 
 <details>
-<summary><strong>AI Challenge Selection</strong> — 8 built-in social engineering personas</summary>
+<summary><strong>AI Challenge Selection</strong> — 22 built-in social engineering personas</summary>
 
 ![AI Challenge](screenshots/04-ai-challenge.png)
 
@@ -73,11 +81,14 @@ Built on **Cialdini's 6 Principles of Influence**: Reciprocity, Scarcity, Author
 ```bash
 git clone https://github.com/dalpan/Pretexta.git
 cd Pretexta
-cp .env.example .env        # Configure environment
-make build && make up       # Build images and start services
+make build && make up       # Creates .env with random secrets, builds and starts services
 ```
 
-Open [http://localhost:9443](http://localhost:9443) — login with `soceng` / `Cialdini@2025!`
+Open [http://localhost:9443](http://localhost:9443) and log in as `soceng` with the admin password
+printed by `make build` (also stored in `.env` as `SEED_ADMIN_PASSWORD`).
+
+> Pretexta never ships default credentials. If you write `.env` yourself and leave
+> `SEED_ADMIN_PASSWORD` empty, the backend generates one and prints it once in `make logs-backend`.
 
 > **Requires:** Docker + Docker Compose (or Docker Desktop)
 
@@ -142,7 +153,7 @@ Each stage unlocks progressively. Track progress, get per-stage scoring, and rec
 - Team analytics dashboard with aggregate scores
 - Identify weakest Cialdini categories across your team
 - Per-member performance tracking
-- Webhook/Slack integration for training completion events
+- Webhook configuration (event delivery is not wired up yet)
 
 ### Content Tools
 
@@ -232,9 +243,11 @@ Also supports **LM Studio** (port 1234) and **llama.cpp** (port 8080).
 |-------|-----------|
 | **Auth** | `POST /register`, `POST /login`, `GET /me`, `PUT /profile`, `POST /change-password` |
 | **Challenges** | `GET /challenges`, `GET /challenges/:id`, `POST /challenges` |
-| **Quizzes** | `GET /quizzes`, `GET /quizzes/:id` |
+| **Quizzes** | `GET /quizzes`, `GET /quizzes/:id` (answer key stripped), `POST /quizzes/:id/submit` |
+| **Scenarios** | `POST /scenarios/start`, `POST /scenarios/choose`, `POST /scenarios/resume` |
+| **Live Campaigns** | `CRUD /live/campaigns`, `/submit`, `/approve`, `/launch`, `/kill`, `/sync`, `/review`, `/audit` |
 | **Simulations** | `CRUD /simulations` |
-| **LLM** | `GET /providers`, `GET /models/:provider`, `POST /config`, `POST /generate`, `POST /chat` |
+| **LLM / AI chat** | `GET /providers`, `GET /models/:provider`, `POST /config`, `POST /generate`, `POST /chat/start`, `POST /chat/turn` |
 | **Campaigns** | `GET /campaigns`, `POST /start`, `POST /stage/:idx/complete` |
 | **Leaderboard** | `GET /leaderboard`, `GET /me`, `GET /badges` |
 | **Analytics** | `GET /personal`, `GET /team` |
@@ -314,6 +327,15 @@ Run `make seed` to import.
 
 Or use the **Scenario Builder** in the UI for a visual editor.
 
+## Documentation
+
+Full documentation lives in [`docs/`](docs/):
+
+- [User Guide / Rule Book](docs/user-guide.md) — install, usage (admin & trainee), every menu with screenshots
+- [Concept](docs/concept.md) — why Pretexta measures behavior, not knowledge
+- [Architecture](docs/architecture.md) · [Scoring & anti-cheat](docs/scoring.md) · [Guardrails](docs/guardrails.md)
+- [Live campaigns design](docs/design/live-campaigns.md) · [API](docs/api.md) · [Deployment](docs/deployment.md)
+
 ## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
@@ -327,14 +349,20 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Ethics
 
-Pretexta is strictly for **defensive education and research**.
+Pretexta is for **authorized defensive training and research**. It has two modes
+with different footprints:
 
-- All simulations are fictional and self-contained
-- No real-world targeting or phishing infrastructure
-- No data harvesting or live attack automation
-- No offensive tooling
+- **Lab mode** — fictional, self-contained simulations. No real targeting, no
+  live infrastructure.
+- **Live mode** — authorized phishing simulations in an organization's own
+  mailboxes. Gated by enforced guardrails: recipients must be on a verified
+  domain, campaigns need two-person approval and a kill switch, landing pages
+  never capture passwords, secrets typed into replies are redacted before
+  storage, coercive and brand-impersonation themes are blocked, and every action
+  is written to a tamper-evident audit log.
 
-Use responsibly. Train defenders, not attackers.
+Read [docs/ethics.md](docs/ethics.md) and [docs/guardrails.md](docs/guardrails.md)
+before running live campaigns. Use responsibly. Train defenders, not attackers.
 
 ## License
 

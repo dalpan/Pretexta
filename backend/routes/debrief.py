@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from models.schemas import User
 from services.auth import get_current_user
 from services.database import db
+from services.simulation import get_simulation_for_viewer
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,7 @@ CIALDINI_DESCRIPTIONS = {
 @router.get("/{simulation_id}")
 async def get_debrief(simulation_id: str, current_user: User = Depends(get_current_user)):
     """Get or generate post-simulation debrief analysis."""
-    sim = await db.simulations.find_one({"id": simulation_id}, {"_id": 0})
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulation not found")
+    sim = await get_simulation_for_viewer(simulation_id, current_user)
 
     # Return cached debrief if exists
     if sim.get("debrief"):
@@ -165,18 +164,20 @@ async def get_ai_debrief(simulation_id: str, current_user: User = Depends(get_cu
     """Generate AI-powered deep behavioral analysis (requires LLM config)."""
     from services.ai_gateway import AIGateway
 
-    sim = await db.simulations.find_one({"id": simulation_id}, {"_id": 0})
-    if not sim:
-        raise HTTPException(status_code=404, detail="Simulation not found")
+    sim = await get_simulation_for_viewer(simulation_id, current_user)
 
     gateway = await AIGateway.from_db()
     if not gateway:
-        raise HTTPException(status_code=400, detail="LLM not configured. Add an API key in Settings.")
+        raise HTTPException(
+            status_code=400, detail="LLM not configured. Add an API key in Settings."
+        )
 
     # Build a minimal persona dict from simulation data
     persona = {
         "name": sim.get("title", "Unknown Attacker"),
-        "category": sim.get("challenge_data", {}).get("cialdini_categories", ["general"])[0] if sim.get("challenge_data") else "general",
+        "category": sim.get("challenge_data", {}).get("cialdini_categories", ["general"])[0]
+        if sim.get("challenge_data")
+        else "general",
     }
 
     try:
@@ -186,12 +187,16 @@ async def get_ai_debrief(simulation_id: str, current_user: User = Depends(get_cu
             final_score=sim.get("score", 0),
         )
         analysis_text = (
-            f"**Summary:** {result.summary}\n\n"
-            f"**Cialdini Analysis:**\n"
-            + "\n".join(f"- **{k}:** {v}" for k, v in result.cialdini_breakdown.items())
-            + f"\n\n**Recommendations:**\n"
-            + "\n".join(f"- {r}" for r in result.recommendations)
-        ) if not isinstance(result.summary, dict) else result.summary
+            (
+                f"**Summary:** {result.summary}\n\n"
+                f"**Cialdini Analysis:**\n"
+                + "\n".join(f"- **{k}:** {v}" for k, v in result.cialdini_breakdown.items())
+                + "\n\n**Recommendations:**\n"
+                + "\n".join(f"- {r}" for r in result.recommendations)
+            )
+            if not isinstance(result.summary, dict)
+            else result.summary
+        )
 
         return {
             "ai_analysis": analysis_text,

@@ -6,14 +6,13 @@ Mengelola peserta, kelompok pelatihan, penugasan, dan laporan.
 """
 
 import logging
-from datetime import UTC, datetime
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.schemas import (
     Assignment,
-    AssignmentResult,
     TrainingGroup,
     User,
 )
@@ -56,9 +55,9 @@ async def create_group(
 async def list_groups(current_user: User = Depends(get_current_user)):
     """Daftar semua kelompok yang dibuat oleh instruktur ini."""
     _require_trainer(current_user)
-    groups = await db.training_groups.find(
-        {"instructor_id": current_user.id}, {"_id": 0}
-    ).to_list(100)
+    groups = await db.training_groups.find({"instructor_id": current_user.id}, {"_id": 0}).to_list(
+        100
+    )
     return groups
 
 
@@ -128,9 +127,7 @@ async def remove_trainee_from_group(
     group = await db.training_groups.find_one({"id": group_id}, {"_id": 0})
     if not group or group["instructor_id"] != current_user.id:
         raise HTTPException(status_code=404, detail="Group not found")
-    await db.training_groups.update_one(
-        {"id": group_id}, {"$pull": {"trainee_ids": trainee_id}}
-    )
+    await db.training_groups.update_one({"id": group_id}, {"$pull": {"trainee_ids": trainee_id}})
     return {"message": "Trainee removed from group"}
 
 
@@ -187,7 +184,9 @@ async def create_assignment(
             raise HTTPException(status_code=404, detail="Group not found")
         trainee_ids = group.get("trainee_ids", [])
         if not trainee_ids:
-            raise HTTPException(status_code=400, detail="Group has no members yet. Add users to the group first.")
+            raise HTTPException(
+                status_code=400, detail="Group has no members yet. Add users to the group first."
+            )
         for tid in trainee_ids:
             a = Assignment(
                 instructor_id=current_user.id,
@@ -262,9 +261,7 @@ async def get_assignment_results(
     enriched = []
     for r in results:
         if r.get("simulation_id"):
-            sim = await db.simulations.find_one(
-                {"id": r["simulation_id"]}, {"_id": 0, "events": 0}
-            )
+            sim = await db.simulations.find_one({"id": r["simulation_id"]}, {"_id": 0, "events": 0})
             r["simulation"] = sim
         enriched.append(r)
 
@@ -366,18 +363,20 @@ async def cohort_analytics(
         ts = per_trainee.get(tid, {"scores": [], "simulations": 0, "types": {}})
         rp = risk_map.get(tid, {})
         avg = round(sum(ts["scores"]) / len(ts["scores"]), 1) if ts["scores"] else None
-        stats.append({
-            "user_id": tid,
-            "username": t.get("username", "unknown"),
-            "display_name": t.get("display_name"),
-            "level": t.get("level", 1),
-            "xp": t.get("xp", 0),
-            "simulations_completed": ts["simulations"],
-            "avg_score": avg,
-            "risk_vector": rp.get("current_vector"),
-            "high_risk_dimensions": rp.get("high_risk_dimensions", []),
-            "needs_attention": avg is not None and avg < 60,
-        })
+        stats.append(
+            {
+                "user_id": tid,
+                "username": t.get("username", "unknown"),
+                "display_name": t.get("display_name"),
+                "level": t.get("level", 1),
+                "xp": t.get("xp", 0),
+                "simulations_completed": ts["simulations"],
+                "avg_score": avg,
+                "risk_vector": rp.get("current_vector"),
+                "high_risk_dimensions": rp.get("high_risk_dimensions", []),
+                "needs_attention": avg is not None and avg < 60,
+            }
+        )
 
     # Sort: needs attention first, then by avg score ascending
     stats.sort(key=lambda x: (not x["needs_attention"], x["avg_score"] or 999))
@@ -407,26 +406,24 @@ async def get_trainee_profile(
     """Profile lengkap seorang peserta untuk instruktur."""
     _require_trainer(current_user)
 
-    trainee = await db.users.find_one(
-        {"id": trainee_id}, {"_id": 0, "password_hash": 0}
-    )
+    trainee = await db.users.find_one({"id": trainee_id}, {"_id": 0, "password_hash": 0})
     if not trainee:
         raise HTTPException(status_code=404, detail="Trainee not found")
 
-    sims = await db.simulations.find(
-        {"user_id": trainee_id, "status": "completed"},
-        {"_id": 0, "events": 0},
-    ).sort("completed_at", -1).to_list(50)
+    sims = (
+        await db.simulations.find(
+            {"user_id": trainee_id, "status": "completed"},
+            {"_id": 0, "events": 0},
+        )
+        .sort("completed_at", -1)
+        .to_list(50)
+    )
 
     risk_profile = await db.risk_profiles.find_one({"user_id": trainee_id}, {"_id": 0})
 
-    assignments = await db.assignments.find(
-        {"trainee_id": trainee_id}, {"_id": 0}
-    ).to_list(50)
+    assignments = await db.assignments.find({"trainee_id": trainee_id}, {"_id": 0}).to_list(50)
 
-    results = await db.assignment_results.find(
-        {"trainee_id": trainee_id}, {"_id": 0}
-    ).to_list(50)
+    results = await db.assignment_results.find({"trainee_id": trainee_id}, {"_id": 0}).to_list(50)
 
     return {
         "trainee": trainee,
@@ -438,7 +435,9 @@ async def get_trainee_profile(
             "total_simulations": len(sims),
             "avg_score": round(
                 sum(s["score"] for s in sims if s.get("score") is not None) / len(sims), 1
-            ) if sims else None,
+            )
+            if sims
+            else None,
             "total_assignments": len(assignments),
             "completed_assignments": len([r for r in results if r.get("passed")]),
         },
@@ -462,20 +461,24 @@ async def get_user_history(
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
 
-    simulations = await db.simulations.find(
-        {"user_id": user_id},
-        {"_id": 0, "events": 0},
-    ).sort("created_at", -1).to_list(limit)
+    simulations = (
+        await db.simulations.find(
+            {"user_id": user_id},
+            {"_id": 0, "events": 0},
+        )
+        .sort("created_at", -1)
+        .to_list(limit)
+    )
 
     risk_profile = await db.risk_profiles.find_one({"user_id": user_id}, {"_id": 0})
-    assignments = await db.assignments.find(
-        {"trainee_id": user_id}, {"_id": 0}
-    ).to_list(100)
+    assignments = await db.assignments.find({"trainee_id": user_id}, {"_id": 0}).to_list(100)
 
     completed = [s for s in simulations if s.get("status") == "completed"]
-    avg_score = round(
-        sum(s["score"] for s in completed if s.get("score") is not None) / len(completed), 1
-    ) if completed else None
+    avg_score = (
+        round(sum(s["score"] for s in completed if s.get("score") is not None) / len(completed), 1)
+        if completed
+        else None
+    )
 
     return {
         "user": target,
@@ -503,9 +506,7 @@ async def list_all_trainees(
     if org_id:
         query["organization_id"] = org_id
 
-    trainees = await db.users.find(
-        query, {"_id": 0, "password_hash": 0}
-    ).to_list(500)
+    trainees = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(500)
     return trainees
 
 
@@ -532,13 +533,15 @@ async def list_all_users(
 
     if search:
         query["$or"] = [
-            {"username": {"$regex": search, "$options": "i"}},
-            {"display_name": {"$regex": search, "$options": "i"}},
-            {"email": {"$regex": search, "$options": "i"}},
+            {"username": {"$regex": re.escape(search), "$options": "i"}},
+            {"display_name": {"$regex": re.escape(search), "$options": "i"}},
+            {"email": {"$regex": re.escape(search), "$options": "i"}},
         ]
 
-    users = await db.users.find(
-        query, {"_id": 0, "password_hash": 0}
-    ).sort("created_at", -1).to_list(500)
+    users = (
+        await db.users.find(query, {"_id": 0, "password_hash": 0})
+        .sort("created_at", -1)
+        .to_list(500)
+    )
 
     return users

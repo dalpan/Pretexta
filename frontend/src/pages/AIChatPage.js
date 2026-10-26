@@ -23,6 +23,11 @@ export default function AIChatPage() {
   const [loading, setLoading] = useState(false);
   const [gameStatus, setGameStatus] = useState('idle'); // idle | active | won | lost
   const [activeDifficulty, setActiveDifficulty] = useState('Easy');
+  const [sessionId, setSessionId] = useState(null);
+  const [finalScore, setFinalScore] = useState(null);
+  const [finalSimId, setFinalSimId] = useState(null);
+  const [turn, setTurn] = useState(0);
+  const [maxTurns, setMaxTurns] = useState(6);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -44,60 +49,56 @@ export default function AIChatPage() {
     }
   }, [searchParams, isLLMConfigured]);
 
-  const startChat = (persona) => {
+  // The server owns the conversation and the score; the client only sends turns.
+  const startChat = async (persona) => {
     setSelectedPersona(persona);
     setGameStatus('active');
-    setMessages([
-      {
-        role: 'system',
-        content: `${t('simulation.security_score')} — ${persona.name} | ${persona.category}`,
-      },
-      { role: 'assistant', content: persona.openingLine },
-    ]);
+    setMessages([{ role: 'assistant', content: persona.openingLine }]);
+    setFinalScore(null); setFinalSimId(null); setTurn(0);
+    try {
+      const res = await api.post('/llm/chat/start', {
+        persona_id: persona.id, language: i18n.language,
+      });
+      setSessionId(res.data.session_id);
+      setMaxTurns(res.data.max_turns || 6);
+      if (res.data.opening_line) setMessages([{ role: 'assistant', content: res.data.opening_line }]);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || t('errors.llm_not_configured'));
+      resetGame();
+    }
     setTimeout(() => inputRef.current?.focus(), 150);
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim() || loading || gameStatus !== 'active') return;
+    if (!inputValue.trim() || loading || gameStatus !== 'active' || !sessionId) return;
 
     const userMsg = { role: 'user', content: inputValue };
-    const newHistory = [...messages, userMsg];
-    setMessages(newHistory);
+    setMessages((prev) => [...prev, userMsg]);
     setInputValue('');
     setLoading(true);
 
     try {
-      const response = await api.post('/llm/chat', {
-        history: newHistory.filter((m) => m.role !== 'system'),
-        persona: selectedPersona,
-        message: userMsg.content,
-        language: i18n.language,
+      const res = await api.post('/llm/chat/turn', {
+        session_id: sessionId, message: userMsg.content,
       });
+      const d = res.data;
+      if (d.reply) setMessages((prev) => [...prev, { role: 'assistant', content: d.reply }]);
+      if (typeof d.turn === 'number') setTurn(d.turn);
 
-      const aiMsg = response.data;
-      setMessages((prev) => [...prev, { role: 'assistant', content: aiMsg.content }]);
-
-      if (aiMsg.status === 'failed' || aiMsg.status === 'completed') {
-        const isWin = aiMsg.status === 'completed';
+      if (d.status === 'won' || d.status === 'lost') {
+        const isWin = d.status === 'won';
         setGameStatus(isWin ? 'won' : 'lost');
+        setFinalScore(d.score);
+        setFinalSimId(d.simulation_id);
         toast[isWin ? 'success' : 'error'](
-          isWin ? t('simulation.attack_prevented') : t('simulation.compromised'),
+          isWin ? `${t('simulation.attack_prevented')} — ${d.score}/100`
+                : `${t('simulation.compromised')} — ${d.score}/100`,
           { duration: 5000 }
         );
-        await api.post('/simulations', {
-          type: 'ai_challenge',
-          status: 'completed',
-          score: isWin ? 100 : 0,
-          title: `AI Battle: ${selectedPersona.name}`,
-          challenge_Title: `AI Battle: ${selectedPersona.name}`,
-          simulation_type: 'ai_challenge',
-          completed_at: new Date().toISOString(),
-        });
       }
     } catch (err) {
-      const msg = err.response?.data?.detail || t('errors.llm_not_configured');
-      toast.error(msg);
+      toast.error(err.response?.data?.detail || t('errors.llm_not_configured'));
     } finally {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -109,6 +110,10 @@ export default function AIChatPage() {
     setMessages([]);
     setGameStatus('idle');
     setInputValue('');
+    setSessionId(null);
+    setFinalScore(null);
+    setFinalSimId(null);
+    setTurn(0);
   };
 
   // ── Persona Selection Screen ─────────────────────────────────────────
@@ -223,9 +228,16 @@ export default function AIChatPage() {
             </p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={resetGame} className="text-xs uppercase tracking-widest">
-          <RefreshCw className="w-3 h-3 mr-2" /> {t('simulation.end_challenge')}
-        </Button>
+        <div className="flex items-center gap-3">
+          {gameStatus === 'active' && (
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+              Turn {turn}/{maxTurns}
+            </span>
+          )}
+          <Button variant="ghost" size="sm" onClick={resetGame} className="text-xs uppercase tracking-widest">
+            <RefreshCw className="w-3 h-3 mr-2" /> {t('simulation.end_challenge')}
+          </Button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -273,13 +285,22 @@ export default function AIChatPage() {
           <Trophy className="w-6 h-6 text-emerald-400 flex-shrink-0" />
           <div>
             <p className="font-mono font-bold text-sm text-emerald-400 uppercase tracking-widest">
-              {t('simulation.attack_prevented')}
+              {t('simulation.attack_prevented')}{finalScore != null && ` — ${finalScore}/100`}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">You identified and blocked the social engineering attempt.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">You resisted the social engineering attempt. Score reflects how well and how long you held out.</p>
           </div>
-          <Button size="sm" onClick={resetGame} variant="outline" className="ml-auto text-xs uppercase tracking-widest">
-            {t('simulation.try_another')}
-          </Button>
+          <div className="ml-auto flex gap-2">
+            {finalSimId && (
+              <Link to={`/simulations/${finalSimId}/debrief`}>
+                <Button size="sm" variant="outline" className="text-xs uppercase tracking-widest">
+                  {t('nav.debrief', 'Debrief')}
+                </Button>
+              </Link>
+            )}
+            <Button size="sm" onClick={resetGame} variant="outline" className="text-xs uppercase tracking-widest">
+              {t('simulation.try_another')}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -288,13 +309,22 @@ export default function AIChatPage() {
           <Skull className="w-6 h-6 text-red-400 flex-shrink-0" />
           <div>
             <p className="font-mono font-bold text-sm text-red-400 uppercase tracking-widest">
-              {t('simulation.compromised')}
+              {t('simulation.compromised')}{finalScore != null && ` — ${finalScore}/100`}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">You revealed sensitive information. Study the debrief.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">You gave the attacker what they wanted. Study the debrief to see where.</p>
           </div>
-          <Button size="sm" onClick={resetGame} variant="outline" className="ml-auto text-xs uppercase tracking-widest">
-            {t('simulation.try_another')}
-          </Button>
+          <div className="ml-auto flex gap-2">
+            {finalSimId && (
+              <Link to={`/simulations/${finalSimId}/debrief`}>
+                <Button size="sm" variant="outline" className="text-xs uppercase tracking-widest">
+                  {t('nav.debrief', 'Debrief')}
+                </Button>
+              </Link>
+            )}
+            <Button size="sm" onClick={resetGame} variant="outline" className="text-xs uppercase tracking-widest">
+              {t('simulation.try_another')}
+            </Button>
+          </div>
         </div>
       )}
 

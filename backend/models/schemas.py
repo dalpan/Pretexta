@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -291,6 +292,15 @@ class Settings(BaseModel):
     reduce_motion: bool = False
 
 
+class SettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    language: str | None = None
+    theme: str | None = None
+    first_run_completed: bool | None = None
+    llm_enabled: bool | None = None
+    reduce_motion: bool | None = None
+
+
 # ==================== INSTRUCTOR / TRAINING ====================
 
 
@@ -322,12 +332,12 @@ class Assignment(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     instructor_id: str
-    group_id: str | None = None   # assigned to whole group
+    group_id: str | None = None  # assigned to whole group
     trainee_id: str | None = None  # or to individual trainee
 
     # What is being assigned
     content_type: str  # "challenge" | "campaign" | "quiz" | "ai_persona"
-    content_id: str    # id of the challenge/campaign/quiz/persona
+    content_id: str  # id of the challenge/campaign/quiz/persona
 
     title: str  # human-readable label for the assignment
     instructions: str | None = None  # instructor notes for trainees
@@ -604,4 +614,78 @@ class TrustEdge(BaseModel):
     # Preferred communication channels for this relationship
     channels: list[str] = Field(default_factory=lambda: ["email"])
 
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+# ==================== LIVE CAMPAIGNS ====================
+# See docs/design/live-campaigns.md. Guardrail ids (G1..G15) refer to §6 there.
+
+LIVE_OBJECTIVES = (
+    "click_link",
+    "reply",
+    "agree_to_share_otp",
+    "agree_to_approve_payment",
+    "agree_to_install_tool",
+)
+CIALDINI_PRINCIPLES = (
+    "reciprocity",
+    "scarcity",
+    "authority",
+    "commitment",
+    "liking",
+    "social_proof",
+)
+LIVE_CAMPAIGN_STATUSES = (
+    "draft",
+    "pending_approval",
+    "approved",
+    "launching",
+    "running",
+    "closed",
+    "killed",
+)
+
+
+class VerifiedDomain(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str | None = None
+    domain: str
+    token: str
+    sandbox: bool = False  # reserved test TLD: verified without DNS, can never reach real people
+    verified_at: str | None = None
+    last_checked_at: str | None = None
+    created_by: str
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+class LiveCampaignCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=120)
+    objective: str
+    principles: list[str] = Field(min_length=1)
+    sender_name: str = Field(min_length=1, max_length=80)
+    sender_email: str = Field(min_length=3, max_length=254)
+    subject: str = Field(min_length=1, max_length=200)
+    body_html: str = Field(min_length=1, max_length=20000)
+    recipients: list[str] = Field(min_length=1, max_length=5000)
+    starts_at: datetime
+    ends_at: datetime
+    max_turns: int = Field(default=4, ge=0, le=6)
+    language: str = "en"
+    brand_override_reason: str | None = Field(default=None, max_length=1000)
+
+
+class LiveCampaign(LiveCampaignCreate):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str | None = None
+    created_by: str
+    approved_by: str | None = None
+    status: str = "draft"
+    killed: bool = False
+    preflight: list[dict[str, Any]] = Field(default_factory=list)
+    gophish_campaign_id: int | None = None
+    # Opaque token in the Reply-To address, used to match inbound replies (P3).
+    reply_token: str = Field(default_factory=lambda: secrets.token_urlsafe(12))
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())

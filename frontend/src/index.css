@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -104,14 +104,14 @@
 
   .glitch::before {
     left: 2px;
-    text-shadow: -1px 0 #00ffff;
+    text-shadow: -1px 0 #8a9a3a;
     clip-path: inset(24% 0 13% 0);
     animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
   }
 
   .glitch::after {
     left: -2px;
-    text-shadow: -1px 0 #ff00ff;
+    text-shadow: -1px 0 #8a7320;
     clip-path: inset(85% 0 1% 0);
     animation: glitch-anim-2 3s infinite linear alternate-reverse;
   }
@@ -177,7 +177,7 @@ html.light {
   --card-foreground: 222.2 47.4% 11.2%;
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 47.4% 11.2%;
-  --primary: 142 71% 35%;
+  --primary: 79 45% 38%;
   --primary-foreground: 0 0% 100%;
   --secondary: 210 40% 96%;
   --secondary-foreground: 222.2 47.4% 11.2%;
@@ -189,7 +189,7 @@ html.light {
   --destructive-foreground: 210 40% 98%;
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: 142 71% 35%;
+  --ring: 79 45% 38%;
 }
 
 html.light .glass-panel {
@@ -206,7 +206,7 @@ html.light .neon-text {
 }
 
 html.light .neon-border {
-  box-shadow: 0 2px 8px rgba(0, 128, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(120, 130, 60, 0.18);
 }
 
 /* Print styles for certificates */

@@ -98,14 +98,14 @@ install:
 	@echo "Installing frontend packages..."
 	@cd frontend && yarn install
 	@echo "Installing backend packages..."
-	@cd backend && pip install -r requirements.txt
+	@cd backend && pip install -r requirements-dev.txt
 	@echo "$(GREEN)Dependencies installed$(RESET)"
 
 # ── Docker Build & Run ─────────────────────────────────────────────────────────
 
 build:
 	@echo "$(CYAN)Building Docker images...$(RESET)"
-	@if [ ! -f .env ]; then cp .env.example .env && echo "$(YELLOW)Created .env from .env.example$(RESET)"; fi
+	@bash scripts/init-env.sh
 	@if [ "$(IS_WSL)" = "true" ]; then \
 		echo "$(YELLOW)WSL2 detected. Using --network=host for build. If this fails, run: make fix-network$(RESET)"; \
 	fi
@@ -115,13 +115,13 @@ build:
 
 build-no-cache:
 	@echo "$(CYAN)Building Docker images (no cache)...$(RESET)"
-	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@bash scripts/init-env.sh
 	@DOCKER_BUILDKIT=1 $(COMPOSE) build --no-cache --parallel
 	@echo "$(GREEN)Images built$(RESET)"
 
 up:
 	@echo "$(CYAN)Starting Pretexta...$(RESET)"
-	@if [ ! -f .env ]; then cp .env.example .env && echo "$(YELLOW)Created .env from .env.example$(RESET)"; fi
+	@bash scripts/init-env.sh
 	@$(COMPOSE) up -d
 	@echo "Waiting for services to become healthy..."
 	@for i in 1 2 3 4 5 6 7 8 9 10; do \
@@ -146,7 +146,7 @@ restart:
 
 dev:
 	@echo "$(CYAN)Starting Pretexta in local development mode...$(RESET)"
-	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@bash scripts/init-env.sh
 	@echo "Starting MongoDB in Docker..."
 	@$(COMPOSE) up -d mongodb
 	@echo "Waiting for MongoDB..."
@@ -192,7 +192,7 @@ status:
 	echo "  API Docs:   http://localhost:$$BACKEND_PORT/docs"; \
 	echo "  MongoDB:    mongodb://localhost:47017"; \
 	echo ""; \
-	echo "$(YELLOW)Default credentials:$(RESET) soceng / Cialdini@2025!"
+	echo "$(YELLOW)Admin login:$(RESET) $$(grep '^SEED_ADMIN_USERNAME=' .env | cut -d= -f2) / see SEED_ADMIN_PASSWORD in .env"
 	@echo ""
 
 # ── Logs ───────────────────────────────────────────────────────────────────────
@@ -232,9 +232,10 @@ drop:
 # ── Quality ────────────────────────────────────────────────────────────────────
 
 test:
-	@echo "$(CYAN)Running backend tests...$(RESET)"
-	@cd backend && python -m pytest tests/ -v --tb=short 2>/dev/null || \
-		echo "$(YELLOW)No tests found. Create tests/ directory to add test coverage.$(RESET)"
+	@echo "$(CYAN)Running backend tests (throwaway MongoDB on 127.0.0.1:27099)...$(RESET)"
+	@docker ps --format '{{.Names}}' | grep -q '^pretexta_test_mongo$$' || \
+		docker run -d --rm --name pretexta_test_mongo -p 127.0.0.1:27099:27017 mongo:7.0 > /dev/null
+	@cd backend && python -m pytest -q
 	@echo ""
 	@echo "$(CYAN)Running frontend type check...$(RESET)"
 	@cd frontend && yarn test --watchAll=false --passWithNoTests 2>/dev/null || true

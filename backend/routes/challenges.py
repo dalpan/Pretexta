@@ -1,7 +1,9 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.schemas import Challenge, User
-from services.auth import get_current_user
+from services.auth import get_current_user, is_staff
 from services.database import db
 
 router = APIRouter(prefix="/challenges", tags=["challenges"])
@@ -22,17 +24,15 @@ async def get_challenges(
     if difficulty:
         query["difficulty"] = difficulty.lower()
     if search:
+        pattern = re.escape(search)
         query["$or"] = [
-            {"title": {"$regex": search, "$options": "i"}},
-            {"description": {"$regex": search, "$options": "i"}},
+            {"title": {"$regex": pattern, "$options": "i"}},
+            {"description": {"$regex": pattern, "$options": "i"}},
         ]
 
     skip = (page - 1) * limit
     challenges = (
-        await db.challenges.find(query, {"_id": 0})
-        .sort("created_at", -1)
-        .skip(skip)
-        .to_list(limit)
+        await db.challenges.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).to_list(limit)
     )
     total = await db.challenges.count_documents(query)
     return {
@@ -64,13 +64,19 @@ async def get_challenge(challenge_id: str, current_user: User = Depends(get_curr
     # Ensure nodes is always a list to prevent player crash
     if not isinstance(challenge.get("nodes"), list):
         challenge["nodes"] = []
+    # Trainees must not receive the answer key (score_impact / branch targets);
+    # staff keep the full graph for authoring and preview.
+    if not is_staff(current_user):
+        for node in challenge["nodes"]:
+            node.pop("next", None)
+            for opt in node.get("options", []) or []:
+                opt.pop("score_impact", None)
+                opt.pop("next", None)
     return challenge
 
 
 @router.post("", response_model=Challenge)
-async def create_challenge(
-    challenge: Challenge, current_user: User = Depends(get_current_user)
-):
+async def create_challenge(challenge: Challenge, current_user: User = Depends(get_current_user)):
     if current_user.role not in ("admin", "trainer"):
         raise HTTPException(status_code=403, detail="Instructor or admin role required")
     doc = challenge.model_dump()
@@ -80,9 +86,7 @@ async def create_challenge(
 
 
 @router.delete("/{challenge_id}")
-async def delete_challenge(
-    challenge_id: str, current_user: User = Depends(get_current_user)
-):
+async def delete_challenge(challenge_id: str, current_user: User = Depends(get_current_user)):
     if current_user.role not in ("admin", "trainer"):
         raise HTTPException(status_code=403, detail="Instructor or admin role required")
     result = await db.challenges.delete_one({"id": challenge_id})

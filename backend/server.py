@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -13,17 +14,20 @@ from middleware.rate_limit import RateLimitMiddleware
 from models.schemas import User
 from routes import (
     adaptive_router,
-    glossary_router,
     analytics_router,
     assignments_router,
+    audit_router,
     auth_router,
     campaigns_router,
     certificates_router,
     challenges_router,
     debrief_router,
+    freetext_router,
+    glossary_router,
     imports_router,
     instructor_router,
     leaderboard_router,
+    live_router,
     llm_router,
     notifications_router,
     organizations_router,
@@ -32,8 +36,10 @@ from routes import (
     reports_router,
     risk_profile_router,
     scenario_builder_router,
+    scenarios_router,
     settings_router,
     simulations_router,
+    triage_router,
     webhooks_router,
 )
 from services.auth import hash_password
@@ -50,93 +56,179 @@ logger = logging.getLogger(__name__)
 async def _seed_glossary():
     """Seed initial glossary terms on first startup."""
     terms = [
-        {"term": "Phishing", "category": "Attack Vector", "cialdini_principle": "authority",
-         "definition": "Pengiriman komunikasi palsu yang terlihat berasal dari sumber terpercaya, biasanya melalui email, untuk mencuri data.",
-         "example": "Email yang tampak dari Microsoft 365 meminta login ulang dengan tautan ke situs palsu."},
-        {"term": "Spear Phishing", "category": "Attack Vector", "cialdini_principle": "liking",
-         "definition": "Phishing bertarget dimana penyerang meneliti korban terlebih dahulu untuk membuat pesan yang sangat personal dan meyakinkan.",
-         "example": "Email yang menyebut nama proyek Anda yang spesifik dan jabatan Anda."},
-        {"term": "Vishing (Voice Phishing)", "category": "Attack Vector", "cialdini_principle": "authority",
-         "definition": "Phishing yang dilakukan melalui telepon. Penyerang sering menggunakan modulasi suara atau deepfake.",
-         "example": "Telepon dari 'Departemen Penipuan Bank' yang meminta PIN ATM Anda."},
-        {"term": "Smishing", "category": "Attack Vector", "cialdini_principle": "scarcity",
-         "definition": "Phishing yang dilakukan melalui SMS atau pesan teks, sering mengandung tautan berbahaya.",
-         "example": "SMS 'Paket Anda tertahan, verifikasi sekarang: [link]'."},
-        {"term": "BEC (Business Email Compromise)", "category": "Attack Vector", "cialdini_principle": "authority",
-         "definition": "Serangan yang menarget perusahaan dengan menyamar sebagai eksekutif atau vendor untuk meminta transfer dana atau data sensitif.",
-         "example": "Email dari 'Direktur Utama' meminta transfer dana darurat ke rekening baru."},
-        {"term": "Pretexting", "category": "Attack Vector", "cialdini_principle": "liking",
-         "definition": "Penciptaan skenario palsu (pretext) untuk memanipulasi korban agar mau memberikan informasi atau melakukan tindakan.",
-         "example": "Berpura-pura sebagai karyawan IT yang perlu akses darurat ke sistem."},
-        {"term": "Baiting", "category": "Attack Vector",
-         "definition": "Menggunakan umpan fisik atau digital untuk menjebak korban, mengeksploitasi rasa ingin tahu.",
-         "example": "USB drive berlabel 'Gaji Direksi 2026' yang ditinggalkan di parkiran."},
-        {"term": "Tailgating / Piggybacking", "category": "Attack Vector",
-         "definition": "Memasuki area terlarang secara fisik dengan mengikuti orang yang berwenang, sering dengan dalih 'tangan penuh'.",
-         "example": "Mengikuti karyawan masuk ke ruang server saat mereka membuka pintu."},
-        {"term": "Quid Pro Quo", "category": "Attack Vector", "cialdini_principle": "reciprocity",
-         "definition": "Menawarkan sesuatu sebagai imbalan informasi atau tindakan. Penyerang memberikan 'layanan' untuk mendapat akses.",
-         "example": "Pura-pura sebagai IT Support yang menawarkan perbaikan masalah komputer sebagai imbalan password."},
-        {"term": "Reciprocity (Timbal Balik)", "category": "Psychology", "cialdini_principle": "reciprocity",
-         "definition": "Kecenderungan manusia untuk merasa wajib membalas budi. Penyerang mengeksploitasi ini dengan memberi sesuatu terlebih dahulu.",
-         "example": "Penyerang membantu masalah IT Anda tanpa diminta, lalu meminta password untuk 'verifikasi perbaikan'.",
-         "related_terms": ["Quid Pro Quo", "Liking"]},
-        {"term": "Scarcity (Kelangkaan)", "category": "Psychology", "cialdini_principle": "scarcity",
-         "definition": "Manusia menilai tinggi sesuatu yang langka atau hampir habis. Penyerang menciptakan tekanan waktu buatan untuk bypass berpikir kritis.",
-         "example": "'Akun Anda akan dihapus dalam 24 jam' atau 'Transfer harus dilakukan sebelum pukul 15.00 hari ini'.",
-         "related_terms": ["FOMO", "Urgency"]},
-        {"term": "Authority (Otoritas)", "category": "Psychology", "cialdini_principle": "authority",
-         "definition": "Kita dikondisikan untuk mematuhi figur otoritas. Penyerang menyamar sebagai CEO, pejabat, atau administrator IT.",
-         "example": "Voice call deepfake dari 'CEO' yang meminta transfer wire segera.",
-         "related_terms": ["BEC", "Impersonation"]},
-        {"term": "Commitment (Komitmen)", "category": "Psychology", "cialdini_principle": "commitment",
-         "definition": "Setelah berkomitmen pada sesuatu, manusia cenderung konsisten dengan keputusan tersebut meski tidak lagi masuk akal.",
-         "example": "Penyerang meminta persetujuan kecil dulu (isi survei), lalu eskalasi ke permintaan lebih besar (download file).",
-         "related_terms": ["Foot-in-the-Door", "Social Proof"]},
-        {"term": "Liking (Kesukaan)", "category": "Psychology", "cialdini_principle": "liking",
-         "definition": "Kita lebih mudah menyetujui permintaan orang yang kita sukai. Penyerang membangun rapport sebelum menyerang.",
-         "example": "Penyerang meneliti hobi Anda dari LinkedIn dan membangun persahabatan sebelum meminta informasi sensitif.",
-         "related_terms": ["Rapport Building", "Pretexting"]},
-        {"term": "Social Proof (Bukti Sosial)", "category": "Psychology", "cialdini_principle": "social_proof",
-         "definition": "Kita melihat perilaku sebagai lebih benar ketika orang lain melakukannya. Penyerang mengklaim 'semua orang sudah melakukannya'.",
-         "example": "'70% rekan Anda sudah memperbarui password di sini. Jangan sampai tertinggal.'",
-         "related_terms": ["Peer Pressure", "Bandwagon Effect"]},
-        {"term": "OSINT", "category": "Technology",
-         "definition": "Open Source Intelligence — pengumpulan data dari sumber publik untuk keperluan intelijen atau persiapan serangan.",
-         "example": "Penyerang memindai LinkedIn untuk membangun struktur organisasi sebelum serangan spear phishing.",
-         "related_terms": ["Reconnaissance", "Pretexting"]},
-        {"term": "Deepfake", "category": "Technology",
-         "definition": "Media sintetis berbasis AI di mana wajah atau suara seseorang digantikan dengan milik orang lain secara realistis.",
-         "example": "Audio palsu CEO yang mengotorisasi transfer dana.",
-         "related_terms": ["AI Voice Cloning", "Vishing"]},
-        {"term": "MFA Fatigue Attack", "category": "Technology", "cialdini_principle": "scarcity",
-         "definition": "Serangan yang membanjiri korban dengan notifikasi MFA hingga kelelahan dan menyetujui salah satunya.",
-         "example": "Penyerang brute-force password Anda dan mengirim 50 notifikasi MFA berturut-turut hingga Anda menyetujui satu.",
-         "related_terms": ["Account Takeover", "2FA"]},
-        {"term": "Caller ID Spoofing", "category": "Technology",
-         "definition": "Manipulasi nomor telepon yang muncul di layar penerima agar terlihat seperti nomor resmi atau terpercaya.",
-         "example": "Penipu menelepon dengan nomor yang terlihat persis seperti nomor resmi Bank BRI 14017.",
-         "related_terms": ["Vishing", "Impersonation"]},
-        {"term": "DJP (Direktorat Jenderal Pajak)", "category": "Konteks Indonesia",
-         "definition": "Instansi pajak pemerintah Indonesia. Domain resmi: @pajak.go.id | Website: www.pajak.go.id | Hotline: 1500200.",
-         "example": "Penipu menyamar sebagai petugas DJP untuk mencuri NPWP dan data rekening bank korban.",
-         "related_terms": ["NPWP", "Phishing Pemerintah"]},
-        {"term": "UU PDP (Perlindungan Data Pribadi)", "category": "Regulation",
-         "definition": "UU No. 27 Tahun 2022 tentang Perlindungan Data Pribadi Indonesia. Mewajibkan notifikasi pelanggaran data dalam 14 hari.",
-         "example": "Perusahaan yang mengalami kebocoran data wajib memberitahu pemilik data dalam 14 hari.",
-         "related_terms": ["BSSN", "OJK", "Data Breach"]},
-        {"term": "BSSN (Badan Siber dan Sandi Negara)", "category": "Konteks Indonesia",
-         "definition": "Lembaga pemerintah Indonesia yang bertanggung jawab atas keamanan siber nasional. Laporan insiden: lapor@bssn.go.id | 021-5797-4552.",
-         "example": "Serangan siber terhadap infrastruktur pemerintah dilaporkan ke BSSN untuk koordinasi respons nasional.",
-         "related_terms": ["CSIRT", "UU PDP"]},
-        {"term": "OTP (One-Time Password)", "category": "Technology",
-         "definition": "Kode verifikasi sekali pakai yang dikirim ke perangkat terdaftar untuk autentikasi dua faktor.",
-         "example": "Kode 6 digit yang dikirim WhatsApp saat mendaftar perangkat baru. TIDAK BOLEH dibagikan ke siapapun.",
-         "related_terms": ["MFA", "WhatsApp Hijacking", "2FA"]},
-        {"term": "SIM Swap", "category": "Technology",
-         "definition": "Penipuan di mana penipu menduplikasi kartu SIM Anda dengan berpura-pura sebagai Anda ke operator telekomunikasi untuk mencegat OTP.",
-         "example": "Penipu melaporkan SIM hilang ke Telkomsel, mendapat SIM baru, lalu mencegat semua OTP mobile banking.",
-         "related_terms": ["OTP", "Vishing", "Mobile Banking"]},
+        {
+            "term": "Phishing",
+            "category": "Attack Vector",
+            "cialdini_principle": "authority",
+            "definition": "Pengiriman komunikasi palsu yang terlihat berasal dari sumber terpercaya, biasanya melalui email, untuk mencuri data.",
+            "example": "Email yang tampak dari Microsoft 365 meminta login ulang dengan tautan ke situs palsu.",
+        },
+        {
+            "term": "Spear Phishing",
+            "category": "Attack Vector",
+            "cialdini_principle": "liking",
+            "definition": "Phishing bertarget dimana penyerang meneliti korban terlebih dahulu untuk membuat pesan yang sangat personal dan meyakinkan.",
+            "example": "Email yang menyebut nama proyek Anda yang spesifik dan jabatan Anda.",
+        },
+        {
+            "term": "Vishing (Voice Phishing)",
+            "category": "Attack Vector",
+            "cialdini_principle": "authority",
+            "definition": "Phishing yang dilakukan melalui telepon. Penyerang sering menggunakan modulasi suara atau deepfake.",
+            "example": "Telepon dari 'Departemen Penipuan Bank' yang meminta PIN ATM Anda.",
+        },
+        {
+            "term": "Smishing",
+            "category": "Attack Vector",
+            "cialdini_principle": "scarcity",
+            "definition": "Phishing yang dilakukan melalui SMS atau pesan teks, sering mengandung tautan berbahaya.",
+            "example": "SMS 'Paket Anda tertahan, verifikasi sekarang: [link]'.",
+        },
+        {
+            "term": "BEC (Business Email Compromise)",
+            "category": "Attack Vector",
+            "cialdini_principle": "authority",
+            "definition": "Serangan yang menarget perusahaan dengan menyamar sebagai eksekutif atau vendor untuk meminta transfer dana atau data sensitif.",
+            "example": "Email dari 'Direktur Utama' meminta transfer dana darurat ke rekening baru.",
+        },
+        {
+            "term": "Pretexting",
+            "category": "Attack Vector",
+            "cialdini_principle": "liking",
+            "definition": "Penciptaan skenario palsu (pretext) untuk memanipulasi korban agar mau memberikan informasi atau melakukan tindakan.",
+            "example": "Berpura-pura sebagai karyawan IT yang perlu akses darurat ke sistem.",
+        },
+        {
+            "term": "Baiting",
+            "category": "Attack Vector",
+            "definition": "Menggunakan umpan fisik atau digital untuk menjebak korban, mengeksploitasi rasa ingin tahu.",
+            "example": "USB drive berlabel 'Gaji Direksi 2026' yang ditinggalkan di parkiran.",
+        },
+        {
+            "term": "Tailgating / Piggybacking",
+            "category": "Attack Vector",
+            "definition": "Memasuki area terlarang secara fisik dengan mengikuti orang yang berwenang, sering dengan dalih 'tangan penuh'.",
+            "example": "Mengikuti karyawan masuk ke ruang server saat mereka membuka pintu.",
+        },
+        {
+            "term": "Quid Pro Quo",
+            "category": "Attack Vector",
+            "cialdini_principle": "reciprocity",
+            "definition": "Menawarkan sesuatu sebagai imbalan informasi atau tindakan. Penyerang memberikan 'layanan' untuk mendapat akses.",
+            "example": "Pura-pura sebagai IT Support yang menawarkan perbaikan masalah komputer sebagai imbalan password.",
+        },
+        {
+            "term": "Reciprocity (Timbal Balik)",
+            "category": "Psychology",
+            "cialdini_principle": "reciprocity",
+            "definition": "Kecenderungan manusia untuk merasa wajib membalas budi. Penyerang mengeksploitasi ini dengan memberi sesuatu terlebih dahulu.",
+            "example": "Penyerang membantu masalah IT Anda tanpa diminta, lalu meminta password untuk 'verifikasi perbaikan'.",
+            "related_terms": ["Quid Pro Quo", "Liking"],
+        },
+        {
+            "term": "Scarcity (Kelangkaan)",
+            "category": "Psychology",
+            "cialdini_principle": "scarcity",
+            "definition": "Manusia menilai tinggi sesuatu yang langka atau hampir habis. Penyerang menciptakan tekanan waktu buatan untuk bypass berpikir kritis.",
+            "example": "'Akun Anda akan dihapus dalam 24 jam' atau 'Transfer harus dilakukan sebelum pukul 15.00 hari ini'.",
+            "related_terms": ["FOMO", "Urgency"],
+        },
+        {
+            "term": "Authority (Otoritas)",
+            "category": "Psychology",
+            "cialdini_principle": "authority",
+            "definition": "Kita dikondisikan untuk mematuhi figur otoritas. Penyerang menyamar sebagai CEO, pejabat, atau administrator IT.",
+            "example": "Voice call deepfake dari 'CEO' yang meminta transfer wire segera.",
+            "related_terms": ["BEC", "Impersonation"],
+        },
+        {
+            "term": "Commitment (Komitmen)",
+            "category": "Psychology",
+            "cialdini_principle": "commitment",
+            "definition": "Setelah berkomitmen pada sesuatu, manusia cenderung konsisten dengan keputusan tersebut meski tidak lagi masuk akal.",
+            "example": "Penyerang meminta persetujuan kecil dulu (isi survei), lalu eskalasi ke permintaan lebih besar (download file).",
+            "related_terms": ["Foot-in-the-Door", "Social Proof"],
+        },
+        {
+            "term": "Liking (Kesukaan)",
+            "category": "Psychology",
+            "cialdini_principle": "liking",
+            "definition": "Kita lebih mudah menyetujui permintaan orang yang kita sukai. Penyerang membangun rapport sebelum menyerang.",
+            "example": "Penyerang meneliti hobi Anda dari LinkedIn dan membangun persahabatan sebelum meminta informasi sensitif.",
+            "related_terms": ["Rapport Building", "Pretexting"],
+        },
+        {
+            "term": "Social Proof (Bukti Sosial)",
+            "category": "Psychology",
+            "cialdini_principle": "social_proof",
+            "definition": "Kita melihat perilaku sebagai lebih benar ketika orang lain melakukannya. Penyerang mengklaim 'semua orang sudah melakukannya'.",
+            "example": "'70% rekan Anda sudah memperbarui password di sini. Jangan sampai tertinggal.'",
+            "related_terms": ["Peer Pressure", "Bandwagon Effect"],
+        },
+        {
+            "term": "OSINT",
+            "category": "Technology",
+            "definition": "Open Source Intelligence — pengumpulan data dari sumber publik untuk keperluan intelijen atau persiapan serangan.",
+            "example": "Penyerang memindai LinkedIn untuk membangun struktur organisasi sebelum serangan spear phishing.",
+            "related_terms": ["Reconnaissance", "Pretexting"],
+        },
+        {
+            "term": "Deepfake",
+            "category": "Technology",
+            "definition": "Media sintetis berbasis AI di mana wajah atau suara seseorang digantikan dengan milik orang lain secara realistis.",
+            "example": "Audio palsu CEO yang mengotorisasi transfer dana.",
+            "related_terms": ["AI Voice Cloning", "Vishing"],
+        },
+        {
+            "term": "MFA Fatigue Attack",
+            "category": "Technology",
+            "cialdini_principle": "scarcity",
+            "definition": "Serangan yang membanjiri korban dengan notifikasi MFA hingga kelelahan dan menyetujui salah satunya.",
+            "example": "Penyerang brute-force password Anda dan mengirim 50 notifikasi MFA berturut-turut hingga Anda menyetujui satu.",
+            "related_terms": ["Account Takeover", "2FA"],
+        },
+        {
+            "term": "Caller ID Spoofing",
+            "category": "Technology",
+            "definition": "Manipulasi nomor telepon yang muncul di layar penerima agar terlihat seperti nomor resmi atau terpercaya.",
+            "example": "Penipu menelepon dengan nomor yang terlihat persis seperti nomor resmi Bank BRI 14017.",
+            "related_terms": ["Vishing", "Impersonation"],
+        },
+        {
+            "term": "DJP (Direktorat Jenderal Pajak)",
+            "category": "Konteks Indonesia",
+            "definition": "Instansi pajak pemerintah Indonesia. Domain resmi: @pajak.go.id | Website: www.pajak.go.id | Hotline: 1500200.",
+            "example": "Penipu menyamar sebagai petugas DJP untuk mencuri NPWP dan data rekening bank korban.",
+            "related_terms": ["NPWP", "Phishing Pemerintah"],
+        },
+        {
+            "term": "UU PDP (Perlindungan Data Pribadi)",
+            "category": "Regulation",
+            "definition": "UU No. 27 Tahun 2022 tentang Perlindungan Data Pribadi Indonesia. Mewajibkan notifikasi pelanggaran data dalam 14 hari.",
+            "example": "Perusahaan yang mengalami kebocoran data wajib memberitahu pemilik data dalam 14 hari.",
+            "related_terms": ["BSSN", "OJK", "Data Breach"],
+        },
+        {
+            "term": "BSSN (Badan Siber dan Sandi Negara)",
+            "category": "Konteks Indonesia",
+            "definition": "Lembaga pemerintah Indonesia yang bertanggung jawab atas keamanan siber nasional. Laporan insiden: lapor@bssn.go.id | 021-5797-4552.",
+            "example": "Serangan siber terhadap infrastruktur pemerintah dilaporkan ke BSSN untuk koordinasi respons nasional.",
+            "related_terms": ["CSIRT", "UU PDP"],
+        },
+        {
+            "term": "OTP (One-Time Password)",
+            "category": "Technology",
+            "definition": "Kode verifikasi sekali pakai yang dikirim ke perangkat terdaftar untuk autentikasi dua faktor.",
+            "example": "Kode 6 digit yang dikirim WhatsApp saat mendaftar perangkat baru. TIDAK BOLEH dibagikan ke siapapun.",
+            "related_terms": ["MFA", "WhatsApp Hijacking", "2FA"],
+        },
+        {
+            "term": "SIM Swap",
+            "category": "Technology",
+            "definition": "Penipuan di mana penipu menduplikasi kartu SIM Anda dengan berpura-pura sebagai Anda ke operator telekomunikasi untuk mencegat OTP.",
+            "example": "Penipu melaporkan SIM hilang ke Telkomsel, mendapat SIM baru, lalu mencegat semua OTP mobile banking.",
+            "related_terms": ["OTP", "Vishing", "Mobile Banking"],
+        },
     ]
     for t in terms:
         t["id"] = str(uuid.uuid4())
@@ -214,10 +306,16 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Startup: seed default admin user from env vars
     seed_username = os.environ.get("SEED_ADMIN_USERNAME", "soceng")
-    seed_password = os.environ.get("SEED_ADMIN_PASSWORD", "Cialdini@2025!")
+    seed_password = os.environ.get("SEED_ADMIN_PASSWORD") or ""
     seed_display = os.environ.get("SEED_ADMIN_DISPLAY_NAME", "Admin")
     existing_user = await db.users.find_one({"username": seed_username})
     if not existing_user:
+        if not seed_password:
+            seed_password = secrets.token_urlsafe(12)
+            logger.warning(
+                f"SEED_ADMIN_PASSWORD not set. Generated admin password for "
+                f"'{seed_username}': {seed_password}  (shown once, change it after login)"
+            )
         seed_user = User(
             username=seed_username,
             password_hash=hash_password(seed_password),
@@ -234,6 +332,12 @@ async def lifespan(app: FastAPI):
     await db.organizations.create_index("invite_code", unique=True, sparse=True)
     await db.notifications.create_index([("user_id", 1), ("read", 1)])
     await db.simulations.create_index([("user_id", 1), ("status", 1)])
+    await db.lab_sessions.create_index("id", unique=True)
+    await db.lab_sessions.create_index([("user_id", 1), ("status", 1)])
+    await db.scenario_sessions.create_index("id", unique=True)
+    await db.scenario_sessions.create_index([("user_id", 1), ("status", 1)])
+    await db.triage_sets.create_index("id", unique=True)
+    await db.freetext_prompts.create_index("id", unique=True)
     await db.campaign_progress.create_index([("campaign_id", 1), ("user_id", 1)])
     # v3 platform indexes
     await db.simulation_events.create_index([("simulation_id", 1), ("sequence", 1)])
@@ -247,6 +351,21 @@ async def lifespan(app: FastAPI):
     await db.assignment_results.create_index([("assignment_id", 1), ("trainee_id", 1)])
     await db.glossary.create_index("id", unique=True)
     await db.glossary.create_index("term")
+    # live campaigns
+    await db.audit_log.create_index("seq", unique=True)
+    await db.verified_domains.create_index([("organization_id", 1), ("domain", 1)], unique=True)
+    await db.live_exclusions.create_index([("organization_id", 1), ("email", 1)], unique=True)
+    await db.live_campaigns.create_index("id", unique=True)
+    await db.live_campaigns.create_index([("status", 1), ("recipients", 1)])
+    await db.live_recipients.create_index([("campaign_id", 1), ("email", 1)], unique=True)
+    await db.live_config.create_index("id", unique=True)
+    # G14: live campaign telemetry expires after 180 days
+    await db.live_events.create_index("at", expireAfterSeconds=180 * 24 * 3600)
+    await db.live_events.create_index([("campaign_id", 1), ("type", 1)])
+    await db.live_messages.create_index("id", unique=True)
+    await db.live_messages.create_index([("campaign_id", 1), ("email", 1), ("at", 1)])
+    await db.live_messages.create_index([("direction", 1), ("status", 1)])
+    await db.live_messages.create_index("at", expireAfterSeconds=180 * 24 * 3600)
 
     # Auto-import sample data on every startup (skips titles that already exist)
     logger.info("Syncing sample data from YAML files...")
@@ -256,16 +375,31 @@ async def lifespan(app: FastAPI):
     if await db.glossary.count_documents({}) == 0:
         await _seed_glossary()
 
-    # Warn about default JWT secret
-    jwt_secret = os.environ.get("JWT_SECRET", "")
-    if not jwt_secret or jwt_secret == "change-this-secret-key-in-production":
-        logger.warning("WARNING: Using default JWT secret. Set JWT_SECRET env var in production!")
+    # Seed a default inbox-triage set and free-text prompts
+    from services.freetext import seed_default_prompts
+    from services.triage import seed_default_set
+
+    await seed_default_set()
+    await seed_default_prompts()
+
+    # Start the live-reply IMAP poller if configured
+    poller_task = None
+    live_config = await db.live_config.find_one({"id": "live_config"}, {"imap_host": 1})
+    if live_config and live_config.get("imap_host"):
+        import asyncio
+
+        from services.live.inbound import run_poller
+
+        poller_task = asyncio.create_task(run_poller())
+        logger.info("Live reply poller scheduled")
 
     yield
 
     # Shutdown
     from services.database import client
 
+    if poller_task:
+        poller_task.cancel()
     client.close()
 
 
@@ -292,6 +426,7 @@ async def root():
 async def health_check():
     """Health check endpoint for Docker, load balancers, and monitoring."""
     from datetime import UTC, datetime
+
     db_status = "disconnected"
     try:
         await db.command("ping")
@@ -312,6 +447,9 @@ async def health_check():
 api_router.include_router(auth_router)
 api_router.include_router(challenges_router)
 api_router.include_router(quizzes_router)
+api_router.include_router(scenarios_router)
+api_router.include_router(triage_router)
+api_router.include_router(freetext_router)
 api_router.include_router(simulations_router)
 api_router.include_router(llm_router)
 api_router.include_router(settings_router)
@@ -333,6 +471,8 @@ api_router.include_router(risk_profile_router)
 api_router.include_router(instructor_router)
 api_router.include_router(assignments_router)
 api_router.include_router(glossary_router)
+api_router.include_router(live_router)
+api_router.include_router(audit_router)
 
 app.include_router(api_router)
 
@@ -345,4 +485,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(RateLimitMiddleware, max_attempts=10, window_seconds=300)
+app.add_middleware(RateLimitMiddleware)

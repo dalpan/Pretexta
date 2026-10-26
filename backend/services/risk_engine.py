@@ -16,7 +16,6 @@ import logging
 from datetime import UTC, datetime
 
 from models.schemas import (
-    ChannelRiskProfile,
     RiskProfile,
     RiskVector,
 )
@@ -215,13 +214,21 @@ def _generate_recommendations(vector: RiskVector, high_risk: list[str]) -> list[
     values = vector.as_dict()
 
     if "authority" in high_risk:
-        recs.append("Practice scenarios involving executive impersonation and IT impersonation attacks.")
+        recs.append(
+            "Practice scenarios involving executive impersonation and IT impersonation attacks."
+        )
     if "scarcity" in high_risk:
-        recs.append("Train on high-urgency scenarios — urgency is the most common manipulation trigger.")
+        recs.append(
+            "Train on high-urgency scenarios — urgency is the most common manipulation trigger."
+        )
     if "liking" in high_risk:
-        recs.append("Explore reconnaissance and rapport-building scenarios to recognize charm-based approaches.")
+        recs.append(
+            "Explore reconnaissance and rapport-building scenarios to recognize charm-based approaches."
+        )
     if "reciprocity" in high_risk:
-        recs.append("Study scenarios where attackers offer unsolicited help before making requests.")
+        recs.append(
+            "Study scenarios where attackers offer unsolicited help before making requests."
+        )
     if "commitment" in high_risk:
         recs.append("Practice recognizing foot-in-the-door escalation techniques.")
     if "social_proof" in high_risk:
@@ -250,9 +257,9 @@ async def get_org_risk_map(org_id: str) -> dict:
     if not member_ids:
         return {"member_count": 0, "dimensions": {}, "department_map": {}}
 
-    profiles = await db.risk_profiles.find(
-        {"user_id": {"$in": member_ids}}, {"_id": 0}
-    ).to_list(len(member_ids))
+    profiles = await db.risk_profiles.find({"user_id": {"$in": member_ids}}, {"_id": 0}).to_list(
+        len(member_ids)
+    )
 
     if not profiles:
         return {"member_count": len(member_ids), "coverage": 0, "dimensions": {}}
@@ -266,8 +273,7 @@ async def get_org_risk_map(org_id: str) -> dict:
             aggregated[dim].append(vec.get(dim, 50.0))
 
     avg_dimensions = {
-        dim: round(sum(vals) / len(vals), 1) if vals else 50.0
-        for dim, vals in aggregated.items()
+        dim: round(sum(vals) / len(vals), 1) if vals else 50.0 for dim, vals in aggregated.items()
     }
 
     coverage = round(len(profiles) / len(member_ids) * 100, 1)

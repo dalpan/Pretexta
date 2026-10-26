@@ -13,6 +13,7 @@ select = [
     "S",    # flake8-bandit (security)
 ]
 ignore = [
+    "E501",  # line length is enforced by `ruff format`; remaining long lines are prose strings
     "S105",  # hardcoded-password-string (we handle this via env vars)
     "S106",  # hardcoded-password-func-arg
     "B008",  # function-call-in-default-argument (FastAPI Depends pattern)
@@ -22,6 +23,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/*" = ["S"]  # Allow security warnings in utility scripts
+"tests/*" = ["S"]  # asserts and fixed test secrets are expected in tests
 
 [tool.ruff.format]
 quote-style = "double"
@@ -30,3 +32,6 @@ indent-style = "space"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+

@@ -5,13 +5,13 @@ services:
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-soceng_admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-soceng_secure_password_2025}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?run make up (or scripts/init-env.sh) to create .env}
       MONGO_INITDB_DATABASE: ${DB_NAME:-Pretexta}
     volumes:
       - mongodb_data:/data/db
       - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     ports:
-      - "${MONGO_PORT:-47017}:27017"
+      - "127.0.0.1:${MONGO_PORT:-47017}:27017"
     networks:
       - soceng_network
     dns:
@@ -32,16 +32,14 @@ services:
     container_name: soceng_backend
     restart: unless-stopped
     environment:
-      MONGO_URL: mongodb://${MONGO_USERNAME:-soceng_admin}:${MONGO_PASSWORD:-soceng_secure_password_2025}@mongodb:27017/${DB_NAME:-Pretexta}?authSource=admin
+      MONGO_URL: mongodb://${MONGO_USERNAME:-soceng_admin}:${MONGO_PASSWORD}@mongodb:27017/${DB_NAME:-Pretexta}?authSource=admin
       DB_NAME: ${DB_NAME:-Pretexta}
-      JWT_SECRET: ${JWT_SECRET:-change-this-secret-key-in-production}
+      JWT_SECRET: ${JWT_SECRET:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:${FRONTEND_PORT:-9443},http://localhost:80,http://localhost:3000}
-      # Seed admin credentials — change before production deployment
       SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME:-soceng}
-      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Cialdini@2025!}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
       SEED_ADMIN_DISPLAY_NAME: ${SEED_ADMIN_DISPLAY_NAME:-Admin}
     volumes:
-      - ./backend:/app
       - ./data:/app/data
       - ./bin:/app/bin
     ports:
@@ -60,7 +58,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
-    command: uvicorn server:app --host 0.0.0.0 --port 8001 --reload
 
   frontend:
     build:
@@ -82,7 +79,7 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
       interval: 10s
       timeout: 5s
       retries: 3

@@ -44,15 +44,15 @@ function AssignmentCard({ assignment }) {
     try {
       switch (assignment.content_type) {
         case 'challenge': {
-          // Create simulation directly for this specific challenge
-          const res = await api.post('/simulations', {
+          // The server creates the simulation and holds the scenario state.
+          const res = await api.post('/scenarios/start', {
             challenge_id: assignment.content_id,
-            title: assignment.title,
-            simulation_type: 'simulation',
-            status: 'running',
             assignment_id: assignment.id,
           });
-          navigate(`/simulations/${res.data.id}/play`);
+          try {
+            sessionStorage.setItem(`scenario_session_${res.data.simulation_id}`, res.data.session_id);
+          } catch { /* noop */ }
+          navigate(`/simulations/${res.data.simulation_id}/play`);
           break;
         }
         case 'quiz':

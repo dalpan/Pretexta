@@ -17,7 +17,6 @@ Legacy routes/llm.py still works for backward compatibility.
 
 import logging
 from dataclasses import dataclass
-from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
@@ -28,15 +27,6 @@ logger = logging.getLogger(__name__)
 
 
 # ── Response types ───────────────────────────────────────────────────
-
-
-@dataclass
-class ChatResult:
-    content: str
-    provider: str
-    model: str | None
-    status: str  # "ongoing" | "success_attack" | "attack_failed"
-    persona_state_updates: dict  # instructions for PersonaEngine to apply
 
 
 @dataclass
@@ -73,70 +63,6 @@ class AIGateway:
         self._provider = config.get("provider", "unknown")
         self._model = config.get("model_name")
 
-    async def persona_chat(
-        self,
-        *,
-        persona: dict,
-        history: list[dict],
-        user_message: str,
-        language: str = "en",
-        persona_state: dict | None = None,
-    ) -> ChatResult:
-        """
-        Drive a roleplay turn with an adversarial persona.
-        Returns structured result including state update hints.
-        """
-        system_prompt = _build_persona_prompt(persona, language, persona_state)
-        messages = [SystemMessage(content=system_prompt)]
-
-        for msg in history:
-            role = msg.get("role", "")
-            content = msg.get("content", "")
-            if role == "assistant":
-                messages.append(AIMessage(content=content))
-            elif role == "user":
-                messages.append(HumanMessage(content=content))
-
-        messages.append(HumanMessage(content=user_message))
-
-        raw = await _invoke_provider(self._config, messages, temperature=0.8)
-        content: str = raw.content
-
-        # Parse outcome signals from content
-        status = "ongoing"
-        if "[SUCCESS_ATTACK]" in content:
-            status = "success_attack"
-            content = content.replace("[SUCCESS_ATTACK]", "").strip()
-        elif "[ATTACK_FAILED]" in content:
-            status = "attack_failed"
-            content = content.replace("[ATTACK_FAILED]", "").strip()
-
-        # Derive state update hints from status
-        state_updates: dict = {}
-        if status == "success_attack":
-            state_updates["outcome"] = "success"
-            state_updates["pressure_level"] = 0.0
-        elif status == "attack_failed":
-            state_updates["outcome"] = "failure"
-        else:
-            # Pressure naturally escalates each turn
-            current_pressure = (persona_state or {}).get("pressure_level", 0.0)
-            escalation = persona.get("escalation_pattern", "gradual")
-            if escalation == "immediate":
-                state_updates["pressure_level"] = min(1.0, current_pressure + 0.3)
-            elif escalation == "gradual":
-                state_updates["pressure_level"] = min(1.0, current_pressure + 0.1)
-            # adaptive: engine decides — no update here
-            state_updates["turn_count"] = (persona_state or {}).get("turn_count", 0) + 1
-
-        return ChatResult(
-            content=content,
-            provider=self._provider,
-            model=self._model,
-            status=status,
-            persona_state_updates=state_updates,
-        )
-
     async def generate_scenario_content(
         self,
         *,
@@ -148,7 +74,11 @@ class AIGateway:
         Generate structured scenario content (quiz questions, pretext messages, etc.).
         Always frames output as training material.
         """
-        lang_note = "Respond in Indonesian (Bahasa Indonesia)." if language == "id" else "Respond in English."
+        lang_note = (
+            "Respond in Indonesian (Bahasa Indonesia)."
+            if language == "id"
+            else "Respond in English."
+        )
 
         system = SystemMessage(
             content=(
@@ -169,6 +99,7 @@ class AIGateway:
         parsed = None
         try:
             import json
+
             parsed = json.loads(repaired)
         except Exception:
             pass
@@ -192,7 +123,11 @@ class AIGateway:
         Post-simulation debrief analysis.
         Produces structured behavioral insights, not a raw transcript.
         """
-        lang_note = "Respond in Indonesian (Bahasa Indonesia)." if language == "id" else "Respond in English."
+        lang_note = (
+            "Respond in Indonesian (Bahasa Indonesia)."
+            if language == "id"
+            else "Respond in English."
+        )
 
         system = SystemMessage(
             content=(
@@ -223,6 +158,7 @@ class AIGateway:
 
         try:
             import json
+
             data = json.loads(repaired)
             return AnalysisResult(
                 summary=data.get("summary", "Analysis unavailable."),
@@ -240,6 +176,78 @@ class AIGateway:
                 risk_delta={},
                 provider=self._provider,
             )
+
+    async def persona_reply(self, *, system_prompt: str, history: list[dict]) -> str:
+        """One persona turn for a live-campaign email thread (P3).
+
+        The system prompt is built server-side from the locked campaign objective;
+        the caller has already scrubbed secrets from the history.
+        """
+        messages = [SystemMessage(content=system_prompt)]
+        for msg in history:
+            content = msg.get("content", "")
+            if msg.get("role") == "assistant":
+                messages.append(AIMessage(content=content))
+            else:
+                messages.append(HumanMessage(content=content))
+        raw = await _invoke_provider(self._config, messages, temperature=0.7)
+        return raw.content.strip()
+
+    async def judge_compliance(self, *, objective: str, message: str) -> bool:
+        """Decide whether a recipient's reply AGREES to the campaign objective.
+
+        Returns True only on a clear yes, so an uncertain model keeps the
+        conversation going rather than falsely recording compliance.
+        """
+        system = SystemMessage(
+            content=(
+                "You judge whether a person's email reply AGREES to a request. "
+                f"The request is: {objective}. "
+                "Answer with a single word: YES if they clearly agree or comply, "
+                "otherwise NO. Refusals, questions, and hesitation are NO."
+            )
+        )
+        raw = await _invoke_provider(
+            self._config, [system, HumanMessage(content=message)], temperature=0.0
+        )
+        return raw.content.strip().upper().startswith("YES")
+
+    async def grade_freetext(self, *, scenario: str, response: str, language: str = "en") -> dict:
+        """Grade a trainee's free-text reply to a social-engineering message
+        against a fixed rubric. Returns a dict of booleans plus short feedback."""
+        import json
+
+        lang = "Write feedback in Indonesian." if language == "id" else "Write feedback in English."
+        system = SystemMessage(
+            content=(
+                "You grade how a person replied to a suspected social-engineering "
+                "message, for security-awareness training. Judge ONLY their reply.\n"
+                "Return strict JSON with these keys and no prose outside it:\n"
+                '{"complied": bool,            // did they give the requested secret/action, or agree to\n'
+                ' "verified_independently": bool, // did they say they would verify via a TRUSTED channel '
+                "(call the official number, check with IT) rather than trusting the message\n"
+                ' "asked_the_sender": bool,     // weak move: they ask the sender "is this really you?" '
+                "instead of an independent channel\n"
+                ' "would_report": bool,         // would they report/escalate it\n'
+                ' "feedback": "one or two sentences of coaching"}\n'
+                f"{lang}"
+            )
+        )
+        user = HumanMessage(
+            content=f"The suspicious message was:\n{scenario}\n\nTheir reply was:\n{response}"
+        )
+        raw = await _invoke_provider(self._config, [system, user], temperature=0.0)
+        try:
+            data = json.loads(repair_json(raw.content))
+        except Exception:
+            data = {}
+        return {
+            "complied": bool(data.get("complied")),
+            "verified_independently": bool(data.get("verified_independently")),
+            "asked_the_sender": bool(data.get("asked_the_sender")),
+            "would_report": bool(data.get("would_report")),
+            "feedback": str(data.get("feedback", ""))[:600],
+        }
 
     @classmethod
     async def from_db(cls) -> "AIGateway | None":
@@ -267,62 +275,6 @@ class AIGateway:
 
 
 # ── Prompt builders ──────────────────────────────────────────────────
-
-
-def _build_persona_prompt(persona: dict, language: str, state: dict | None) -> str:
-    """
-    Construct a complete, structured system prompt for a persona roleplay session.
-    Centralizing prompt construction ensures consistent behavior across all
-    surfaces that trigger persona chat (AIChatPage, SimulationPlayer, Campaigns).
-    """
-    state = state or {}
-    turn_count = state.get("turn_count", 0)
-    pressure = state.get("pressure_level", 0.0)
-    current_strategy = state.get("current_strategy", "rapport_building")
-
-    lang_instruction = (
-        "Respond in Indonesian (Bahasa Indonesia) throughout the entire session."
-        if language == "id"
-        else "Respond in English throughout the entire session."
-    )
-
-    # Escalation guidance based on current pressure
-    if pressure < 0.3:
-        pressure_note = "Keep the conversation low-pressure. Build rapport. Do not reveal your true goal yet."
-    elif pressure < 0.7:
-        pressure_note = "Begin applying gentle pressure. Reference your goal indirectly. Show some impatience."
-    else:
-        pressure_note = "Apply firm pressure. The attack is in its final phase. Be direct but stay in character."
-
-    principles = ", ".join(persona.get("cialdini_principles", persona.get("cialdini_categories", [])))
-
-    return f"""You are a roleplay actor in a professional cybersecurity awareness simulation.
-
-IDENTITY
-Name: {persona.get('name', 'Unknown')}
-Role: {persona.get('role', persona.get('category', 'Attacker'))}
-Goal: {persona.get('goal', 'Extract sensitive information')}
-Style: {persona.get('style', persona.get('communication_style', 'Professional'))}
-Context: {persona.get('context', persona.get('scenario_context', 'Corporate environment'))}
-
-BEHAVIORAL STATE (Turn {turn_count})
-Current strategy: {current_strategy}
-Pressure guidance: {pressure_note}
-Active Cialdini principles: {principles or 'authority, scarcity'}
-
-SIMULATION RULES
-1. Respond naturally as your character. Messages should be realistic and appropriately sized
-   for the channel (email = longer, chat = shorter, phone = conversational).
-2. Never break character or acknowledge you are an AI simulation.
-3. Adapt naturally to what the participant says — this is a live interaction.
-4. If the participant successfully identifies and refuses the attack, acknowledge their resistance
-   realistically, then output exactly: [ATTACK_FAILED]
-5. If the participant complies with your goal (shares credentials, approves transfer, etc.),
-   react with success naturally, then output exactly: [SUCCESS_ATTACK]
-6. Do not use [SUCCESS_ATTACK] or [ATTACK_FAILED] unless the session has definitively ended.
-
-LANGUAGE
-{lang_instruction}"""
 
 
 def _format_context(context: dict) -> str:

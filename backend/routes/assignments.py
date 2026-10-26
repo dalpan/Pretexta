@@ -27,9 +27,11 @@ async def get_my_groups(current_user: User = Depends(get_current_user)):
     Return all training groups the current user belongs to.
     Used to show group membership on user dashboard.
     """
-    groups = await db.training_groups.find(
-        {"trainee_ids": current_user.id}, {"_id": 0}
-    ).sort("created_at", -1).to_list(50)
+    groups = (
+        await db.training_groups.find({"trainee_ids": current_user.id}, {"_id": 0})
+        .sort("created_at", -1)
+        .to_list(50)
+    )
 
     # Enrich with trainer name
     result = []
@@ -38,10 +40,14 @@ async def get_my_groups(current_user: User = Depends(get_current_user)):
             {"id": g.get("instructor_id")},
             {"_id": 0, "username": 1, "display_name": 1},
         )
-        result.append({
-            **g,
-            "trainer_name": (trainer or {}).get("display_name") or (trainer or {}).get("username") or "Unknown",
-        })
+        result.append(
+            {
+                **g,
+                "trainer_name": (trainer or {}).get("display_name")
+                or (trainer or {}).get("username")
+                or "Unknown",
+            }
+        )
     return result
 
 
@@ -100,8 +106,27 @@ async def submit_assignment(
     if assignment.get("status") == "cancelled":
         raise HTTPException(status_code=400, detail="Assignment is cancelled")
 
-    score = data.get("score", 0)
+    # The score always comes from a completed simulation the trainee owns,
+    # never from the request body.
     simulation_id = data.get("simulation_id")
+    sim = await db.simulations.find_one(
+        {"id": simulation_id, "user_id": current_user.id, "status": "completed"}, {"_id": 0}
+    )
+    if not simulation_id or not sim:
+        raise HTTPException(status_code=404, detail="Completed simulation not found")
+
+    content_field = {"challenge": "challenge_id", "quiz": "quiz_id"}.get(
+        assignment.get("content_type")
+    )
+    if content_field and sim.get(content_field) != assignment.get("content_id"):
+        raise HTTPException(status_code=400, detail="Simulation does not match this assignment")
+
+    if await db.assignment_results.find_one(
+        {"assignment_id": assignment_id, "simulation_id": simulation_id}
+    ):
+        raise HTTPException(status_code=409, detail="Simulation already submitted")
+
+    score = sim.get("score") or 0
     passing_score = assignment.get("passing_score", 70)
     passed = score >= passing_score
 
