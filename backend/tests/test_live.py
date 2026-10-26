@@ -301,3 +301,23 @@ async def test_list_campaigns_omits_recipients(api):
     rows = (await api.get("/api/live/campaigns", headers=h)).json()
     assert rows and "recipients" not in rows[0] and "body_html" not in rows[0]
     assert rows[0]["recipient_count"] == 2
+
+
+# ---------- phishing templates ----------
+
+
+async def test_live_templates_seeded_and_listed(api):
+    from services.live.launch import seed_templates
+
+    await seed_templates()
+    _, h = await make_user("trainer")
+    rows = (await api.get("/api/live/templates", headers=h)).json()
+    assert len(rows) >= 3
+    t = rows[0]
+    assert {"id", "name", "objective", "subject", "body_html", "principles"} <= set(t)
+    assert "{{.URL}}" in t["body_html"] or t["objective"] == "reply"
+
+
+async def test_templates_require_trainer(api):
+    _, h = await make_user("user")
+    assert (await api.get("/api/live/templates", headers=h)).status_code == 403

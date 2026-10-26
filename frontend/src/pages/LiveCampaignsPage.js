@@ -119,9 +119,28 @@ const BLANK = {
 
 function CreateForm({ onClose, onCreated }) {
   const [f, setF] = useState(BLANK);
+  const [templates, setTemplates] = useState([]);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const togglePrinciple = (p) =>
     set('principles', f.principles.includes(p) ? f.principles.filter((x) => x !== p) : [...f.principles, p]);
+
+  useEffect(() => {
+    api.get('/live/templates').then((r) => setTemplates(r.data)).catch(() => {});
+  }, []);
+
+  const applyTemplate = (id) => {
+    const t = templates.find((x) => x.id === id);
+    if (!t) return;
+    setF((p) => ({
+      ...p,
+      name: p.name || t.name,
+      objective: t.objective,
+      principles: t.principles,
+      sender_name: t.sender_name,
+      subject: t.subject,
+      body_html: t.body_html,
+    }));
+  };
 
   const submit = async () => {
     const payload = {
@@ -146,6 +165,16 @@ function CreateForm({ onClose, onCreated }) {
         <h3 className="font-bold">New live campaign</h3>
         <Button variant="ghost" size="sm" onClick={onClose}><XCircle className="w-4 h-4" /></Button>
       </div>
+      {templates.length > 0 && (
+        <div>
+          <Label>Start from a template</Label>
+          <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            defaultValue="" onChange={(e) => applyTemplate(e.target.value)}>
+            <option value="">— choose a phishing template (optional) —</option>
+            {templates.map((t) => <option key={t.id} value={t.id}>{t.name} · {t.category}</option>)}
+          </select>
+        </div>
+      )}
       <div className="grid md:grid-cols-2 gap-3">
         <div><Label>Name</Label><Input value={f.name} onChange={(e) => set('name', e.target.value)} /></div>
         <div>
@@ -185,6 +214,7 @@ function CreateForm({ onClose, onCreated }) {
 function Detail({ id, onChanged }) {
   const [c, setC] = useState(null);
   const [results, setResults] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [replyEmail, setReplyEmail] = useState('');
   const [replyBody, setReplyBody] = useState('');
 
@@ -192,6 +222,7 @@ function Detail({ id, onChanged }) {
     try {
       setC((await api.get(`/live/campaigns/${id}`)).data);
       setResults((await api.get(`/live/campaigns/${id}/results`)).data);
+      setMessages((await api.get(`/live/campaigns/${id}/messages`)).data);
     } catch { /* noop */ }
   }, [id]);
   useEffect(() => { load(); }, [load]);
@@ -274,6 +305,32 @@ function Detail({ id, onChanged }) {
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {messages.length > 0 && (
+        <div className="border-t border-border pt-3 space-y-2">
+          <h4 className="text-sm font-semibold">Conversation</h4>
+          <div className="max-h-56 overflow-auto space-y-2">
+            {messages.map((msg, i) => (
+              <div key={msg.id || i} className={`text-sm p-2 rounded-md ${msg.direction === 'inbound' ? 'bg-muted/40' : 'bg-primary/10'}`}>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="font-mono">{msg.direction === 'inbound' ? `${msg.email} replied` : 'persona'}</span>
+                  <Badge variant="outline" className="text-[10px]">{msg.status}</Badge>
+                </div>
+                <div className="mt-1">{msg.body_redacted}</div>
+                {msg.secrets_found?.length > 0 && (
+                  <div className="text-[10px] text-amber-500 mt-1">secret redacted: {msg.secrets_found.join(', ')}</div>
+                )}
+              </div>
+            ))}
+          </div>
+          {messages.some((x) => x.direction === 'inbound') &&
+            !messages.some((x) => x.direction === 'outbound' && x.status === 'draft_pending') && (
+              <p className="text-xs text-amber-500">
+                A reply was received but no AI draft was produced — configure an LLM provider in Settings so the persona can reply (drafts then appear in Reply Review).
+              </p>
+            )}
         </div>
       )}
 

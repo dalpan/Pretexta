@@ -106,8 +106,9 @@ async def route_message(raw: bytes, gateway=None) -> dict:
 # ── IMAP I/O ─────────────────────────────────────────────────────────
 
 
-def _fetch_unseen(config: dict) -> list[bytes]:
-    """Blocking IMAP fetch of UNSEEN messages; marks them Seen. Runs in a thread."""
+def _fetch_new(config: dict, last_uid: int, last_uidvalidity: int) -> tuple[list[bytes], int, int]:
+    """Blocking IMAP fetch of messages with UID greater than the watermark.
+    Returns (raw messages, current UIDVALIDITY, highest UID fetched). Runs in a thread."""
     host, _, port = config["imap_host"].partition(":")
     conn = (
         imaplib.IMAP4_SSL(host, int(port))
@@ -117,14 +118,22 @@ def _fetch_unseen(config: dict) -> list[bytes]:
     try:
         conn.login(config["imap_user"], config.get("imap_password", ""))
         conn.select("INBOX")
-        _, data = conn.search(None, "UNSEEN")
-        raws = []
-        for num in data[0].split():
-            _, msg_data = conn.fetch(num, "(RFC822)")
+        # Track by UID, not the \Seen flag: a human reading the mailbox (e.g. in
+        # Thunderbird) marks replies seen, which an UNSEEN search would then skip.
+        uidvalidity = _uidvalidity(conn)
+        start = last_uid + 1 if uidvalidity == last_uidvalidity else 1
+        _, data = conn.uid("SEARCH", None, f"UID {start}:*")
+        raws: list[bytes] = []
+        max_uid = last_uid if uidvalidity == last_uidvalidity else 0
+        for raw_uid in data[0].split():
+            uid = int(raw_uid)
+            if uid < start:  # the "n:*" range can return the last message even if its uid < n
+                continue
+            _, msg_data = conn.uid("FETCH", raw_uid, "(RFC822)")
             if msg_data and msg_data[0]:
                 raws.append(msg_data[0][1])
-            conn.store(num, "+FLAGS", "\\Seen")
-        return raws
+            max_uid = max(max_uid, uid)
+        return raws, uidvalidity, max_uid
     finally:
         try:
             conn.logout()
@@ -132,13 +141,23 @@ def _fetch_unseen(config: dict) -> list[bytes]:
             pass
 
 
+def _uidvalidity(conn: imaplib.IMAP4) -> int:
+    _, resp = conn.status("INBOX", "(UIDVALIDITY)")
+    match = re.search(rb"UIDVALIDITY (\d+)", resp[0] or b"")
+    return int(match.group(1)) if match else 0
+
+
 async def poll_once() -> dict:
-    """Fetch and route all unseen replies once."""
+    """Fetch and route replies that arrived since the last poll."""
     config = await db.live_config.find_one({"id": "live_config"}, {"_id": 0})
     if not config or not config.get("imap_host"):
         return {"polled": 0, "reason": "imap_not_configured"}
+
+    state = await db.live_state.find_one({"id": "imap_watermark"}, {"_id": 0}) or {}
     try:
-        raws = await asyncio.to_thread(_fetch_unseen, config)
+        raws, uidvalidity, max_uid = await asyncio.to_thread(
+            _fetch_new, config, int(state.get("last_uid", 0)), int(state.get("uidvalidity", 0))
+        )
     except Exception as exc:
         logger.warning(f"IMAP poll failed: {exc}")
         return {"polled": 0, "error": str(exc)}
@@ -148,11 +167,19 @@ async def poll_once() -> dict:
     for raw in raws:
         result = await route_message(raw, gateway=gateway)
         outcomes[result["status"]] = outcomes.get(result["status"], 0) + 1
+
+    await db.live_state.update_one(
+        {"id": "imap_watermark"},
+        {"$set": {"last_uid": max_uid, "uidvalidity": uidvalidity}},
+        upsert=True,
+    )
     return {"polled": len(raws), "outcomes": outcomes}
 
 
 async def run_poller(interval_seconds: int = 30) -> None:
-    """Background loop. Started from the app lifespan when IMAP is configured."""
+    """Background loop, always running. poll_once is a no-op until IMAP is
+    configured, so saving the config in Settings takes effect on the next tick
+    without a restart."""
     logger.info("Live reply poller started")
     while True:
         try:

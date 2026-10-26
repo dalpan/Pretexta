@@ -359,6 +359,8 @@ async def lifespan(app: FastAPI):
     await db.live_campaigns.create_index([("status", 1), ("recipients", 1)])
     await db.live_recipients.create_index([("campaign_id", 1), ("email", 1)], unique=True)
     await db.live_config.create_index("id", unique=True)
+    await db.live_state.create_index("id", unique=True)
+    await db.live_templates.create_index("id", unique=True)
     # G14: live campaign telemetry expires after 180 days
     await db.live_events.create_index("at", expireAfterSeconds=180 * 24 * 3600)
     await db.live_events.create_index([("campaign_id", 1), ("type", 1)])
@@ -375,23 +377,22 @@ async def lifespan(app: FastAPI):
     if await db.glossary.count_documents({}) == 0:
         await _seed_glossary()
 
-    # Seed a default inbox-triage set and free-text prompts
+    # Seed a default inbox-triage set, free-text prompts and live templates
     from services.freetext import seed_default_prompts
+    from services.live.launch import seed_templates
     from services.triage import seed_default_set
 
     await seed_default_set()
     await seed_default_prompts()
+    await seed_templates()
 
-    # Start the live-reply IMAP poller if configured
-    poller_task = None
-    live_config = await db.live_config.find_one({"id": "live_config"}, {"imap_host": 1})
-    if live_config and live_config.get("imap_host"):
-        import asyncio
+    # Start the live-reply IMAP poller. It is a no-op until IMAP is configured,
+    # so it is always running and picks up a config change without a restart.
+    import asyncio
 
-        from services.live.inbound import run_poller
+    from services.live.inbound import run_poller
 
-        poller_task = asyncio.create_task(run_poller())
-        logger.info("Live reply poller scheduled")
+    poller_task = asyncio.create_task(run_poller())
 
     yield
 
