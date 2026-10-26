@@ -8,10 +8,20 @@ from tests.conftest import make_user
 async def _seed_content():
     # A scenario and a quiz, each tagged with the 'authority' principle.
     await db.challenges.insert_one(
-        {"id": "ch-auth", "title": "Authority drill", "cialdini_categories": ["authority"], "nodes": []}
+        {
+            "id": "ch-auth",
+            "title": "Authority drill",
+            "cialdini_categories": ["authority"],
+            "nodes": [],
+        }
     )
     await db.quizzes.insert_one(
-        {"id": "qz-auth", "title": "Authority quiz", "cialdini_categories": ["authority"], "questions": []}
+        {
+            "id": "qz-auth",
+            "title": "Authority quiz",
+            "cialdini_categories": ["authority"],
+            "questions": [],
+        }
     )
 
 
@@ -87,7 +97,9 @@ async def test_live_click_assigns_remediation_to_matching_user(api):
 async def test_live_fail_for_non_user_is_ignored(api):
     await _seed_content()
     # no user with this email -> nothing created, no error
-    await remediation.on_live_fail({"id": "c", "principles": ["authority"]}, "stranger@x.test", "clicked")
+    await remediation.on_live_fail(
+        {"id": "c", "principles": ["authority"]}, "stranger@x.test", "clicked"
+    )
     assert await db.assignments.count_documents({}) == 0
 
 
@@ -102,7 +114,9 @@ async def test_passing_remediation_schedules_a_retest(api):
     # mark it completed, then run the retest hook
     await db.assignments.update_one({"id": aid}, {"$set": {"status": "completed"}})
     await remediation.on_assignment_passed(assignment, user.id)
-    retests = await db.assignments.find({"trainee_id": user.id, "source": "retest"}, {"_id": 0}).to_list(5)
+    retests = await db.assignments.find(
+        {"trainee_id": user.id, "source": "retest"}, {"_id": 0}
+    ).to_list(5)
     assert len(retests) == 1
     assert retests[0]["retest_of"] == aid
     assert retests[0]["principle"] == "authority"
