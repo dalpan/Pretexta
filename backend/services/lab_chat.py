@@ -170,6 +170,10 @@ async def submit_turn(user_id: str, session_id: str, message: str, gateway) -> d
     history = [*session["history"], {"role": "user", "content": message}]
     reply = ""
     if outcome != "compromised":
+        if not gateway:
+            raise HTTPException(
+                status_code=400, detail="LLM config missing. Configure a provider in Settings."
+            )
         try:
             reply = await gateway.persona_reply(
                 system_prompt=_build_prompt(persona, session["language"], turn),

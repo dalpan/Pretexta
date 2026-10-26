@@ -269,10 +269,9 @@ async def start_chat(data: ChatStartRequest, current_user: User = Depends(get_cu
 @router.post("/chat/turn")
 async def chat_turn(data: ChatTurnRequest, current_user: User = Depends(get_current_user)):
     """Submit one trainee message. The server appends it, replies in character,
-    and on a terminal outcome records the simulation with a server-computed score."""
+    and on a terminal outcome records the simulation with a server-computed score.
+
+    The gateway may be None (no provider configured); submit_turn only needs it
+    to generate a persona reply, not to score a compromise."""
     gateway = await AIGateway.from_db()
-    if not gateway:
-        raise HTTPException(
-            status_code=400, detail="LLM config missing. Configure a provider in Settings."
-        )
     return await lab_chat.submit_turn(current_user.id, data.session_id, data.message, gateway)
