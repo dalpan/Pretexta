@@ -1,0 +1,244 @@
+# Walkthrough: run a live campaign end to end
+
+This is a complete, copy-pasteable tutorial for setting up GoPhish and running a
+full live phishing simulation in Pretexta — from zero to a running campaign with
+AI follow-up. Every step here was executed against the real app; the screenshots
+are from that run.
+
+> Live mode sends real email. Do this first against **sandbox domains**
+> (`*.test`) and a local mail server, as shown here. Only point it at real
+> mailboxes with the organization's authorization — see [ethics.md](ethics.md).
+
+Contents:
+1. [What you need](#1-what-you-need)
+2. [Start GoPhish and a test mail server](#2-start-gophish-and-a-test-mail-server)
+3. [Get the GoPhish API key](#3-get-the-gophish-api-key)
+4. [Configure Pretexta](#4-configure-pretexta)
+5. [Make a second admin (for approval)](#5-make-a-second-admin-for-approval)
+6. [Verify a domain](#6-verify-a-domain)
+7. [Create a campaign](#7-create-a-campaign)
+8. [Submit → approve → launch](#8-submit--approve--launch)
+9. [Replies and the review queue](#9-replies-and-the-review-queue)
+10. [Results and the kill switch](#10-results-and-the-kill-switch)
+11. [Going to real mailboxes](#11-going-to-real-mailboxes)
+12. [Troubleshooting](#12-troubleshooting)
+
+---
+
+## 1. What you need
+
+- Pretexta running (`make up`), reachable at http://localhost:9443.
+- Docker (for GoPhish and a local mail server).
+- An admin login (the `soceng` account).
+
+GoPhish does the sending and click-tracking; Pretexta drives it and adds the AI
+conversation. For testing we also run **GreenMail** as a throwaway mail server
+so nothing leaves your machine.
+
+---
+
+## 2. Start GoPhish and a test mail server
+
+Run both on the **same Docker network as Pretexta** so the backend can reach
+them by name. Pretexta's network is `pretexta_soceng_network`:
+
+```bash
+NET=pretexta_soceng_network
+
+# Local SMTP+IMAP sink (receives the simulated mail)
+docker run -d --name greenmail --network $NET \
+  -p 127.0.0.1:3025:3025 -p 127.0.0.1:3143:3143 \
+  -e GREENMAIL_OPTS='-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled' \
+  greenmail/standalone:2.1.0
+
+# GoPhish (admin API on :3333, phishing server on :80)
+docker run -d --name gophish --network $NET \
+  -p 127.0.0.1:3333:3333 -p 127.0.0.1:8080:80 \
+  gophish/gophish:latest
+```
+
+Within `pretexta_soceng_network`, the backend reaches GoPhish at `gophish:3333`
+and `gophish:80`, and GoPhish reaches the relay at `greenmail:3025`.
+
+---
+
+## 3. Get the GoPhish API key
+
+GoPhish prints a one-time admin password in its logs on first start:
+
+```bash
+docker logs gophish 2>&1 | grep -i password
+# -> "Please login with the username admin and the password <PASSWORD>"
+```
+
+Open **https://127.0.0.1:3333** (accept the self-signed certificate), log in as
+`admin` with that password, set a new password when prompted, then copy the key
+from **Settings → API Key** (top-right user menu). That string is your
+`gophish_api_key`.
+
+---
+
+## 4. Configure Pretexta
+
+In Pretexta, log in as `soceng`, open **Settings** (bottom of the sidebar), and
+fill the **Live Campaigns (GoPhish)** panel:
+
+![Settings — Live config](images/09-settings.jpg)
+
+| Field | Value for this local setup |
+|-------|-----------------------------|
+| GoPhish admin URL | `https://gophish:3333` |
+| GoPhish API key | *(the key from step 3)* |
+| Phishing server URL | `http://gophish` |
+| SMTP relay (host:port) | `greenmail:3025` |
+| Reply mailbox local part | `sim-reply` |
+| Reply domain | `acme.test` |
+| IMAP host / user / password | *(leave empty for this demo — we use the "simulate a reply" box instead)* |
+
+Save, then use **Test GoPhish** — it should report success. Secrets are stored
+masked; re-saving with the masked `***` keeps the stored value.
+
+> Hostnames: `gophish` and `greenmail` only resolve **inside** the Docker
+> network, which is where the Pretexta backend runs. From your laptop they are
+> `127.0.0.1:3333` / `127.0.0.1:3025` instead.
+
+---
+
+## 5. Make a second admin (for approval)
+
+A campaign must be approved by **someone other than its creator** (guardrail G2).
+With a single admin you can never approve your own campaign, so create a second
+admin: **Settings → User Management** won't create admins directly, so use the
+API once:
+
+```bash
+# get a token for soceng, then create an admin called "approver"
+TOKEN=...   # from POST /api/auth/login
+curl -s -X POST http://localhost:9442/api/auth/create-user \
+  -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+  -d '{"username":"approver","password":"Password123","display_name":"Approver","role":"admin"}'
+```
+
+Or register a normal user and promote them in **Settings → User Management**
+(that panel promotes to Trainer; for admin use the API above).
+
+---
+
+## 6. Verify a domain
+
+Open **Live Campaigns** (under **LIVE OPS**). In **Verified domains**, add
+`acme.test` and click **+**. Because `.test` is a reserved sandbox TLD it is
+verified instantly — no DNS needed, and mail to it can never reach a real person.
+
+For a real domain you would add it, then publish the shown DNS **TXT** record
+(`pretexta-verify=<token>`) and click the verify button.
+
+---
+
+## 7. Create a campaign
+
+Click **+ New campaign** and fill the form:
+
+![New campaign form](images/live-01-create-form.jpg)
+
+| Field | Example |
+|-------|---------|
+| Name | Q4 Helpdesk Phishing Drill |
+| Objective | `agree_to_share_otp` |
+| Sender name / email | IT Helpdesk / `helpdesk@acme.test` (must be on a verified domain) |
+| Influence principles | authority, scarcity |
+| Subject | Action required: verify your mailbox |
+| Body (HTML) | `<p>We detected unusual activity. Confirm within 2 hours: {{.URL}}</p>` |
+| Recipients | `alice@acme.test`, `bob@acme.test` (one per line or comma-separated) |
+| Starts / Ends | now … within 30 days |
+| Max AI turns | 3 |
+
+`{{.URL}}` is the tracked link GoPhish fills in. Click **Create draft**.
+
+The campaign opens with its pre-flight result. Green means every guardrail
+check passed; errors (coercive themes, brand impersonation, recipients outside a
+verified domain, a window over 30 days) block submission until fixed.
+
+![Pre-flight passed](images/live-02-preflight.jpg)
+
+---
+
+## 8. Submit → approve → launch
+
+1. **Submit for approval** — the campaign moves to `pending_approval`.
+2. Log in as the **second admin** and open the same campaign → **Approve**.
+   (The creator's Approve is refused by design.)
+3. Back as the creator, **Launch**. Pretexta creates the GoPhish objects and
+   sends. The landing page is a teachable-moment page and never captures
+   passwords.
+
+Each recipient now has a state (`sent`). The emails arrive in GreenMail with the
+sender you set and a `Reply-To` of `sim-reply+<campaign-token>@acme.test`, which
+is how replies are routed back to this campaign.
+
+---
+
+## 9. Replies and the review queue
+
+When a recipient replies, Pretexta's AI persona drafts a follow-up — and in
+**review mode (the default)** it is **held for a human**, never sent
+automatically.
+
+For this demo (no IMAP configured) use the **Simulate a recipient reply** box on
+the running campaign to feed a reply into the engine. Then open **Reply Review**:
+
+![Reply review queue](images/live-04-review.jpg)
+
+Each draft can be **approved (and edited first)** or **discarded**. If a
+recipient types a secret (an OTP, a password), it is **redacted before storage**
+and the conversation ends with a teachable-moment email — the AI never asks for
+the secret itself, and the secret never reaches the database.
+
+> The persona reply needs an LLM provider configured (Settings → LLM; a local
+> Ollama works well and keeps everything offline).
+
+---
+
+## 10. Results and the kill switch
+
+The running campaign shows live metrics — recipients, **reported**, clicked, and
+**report rate** (the metric that matters) — plus per-recipient state. **Sync
+results** pulls the latest from GoPhish.
+
+![Running campaign](images/live-03-running.jpg)
+
+**Kill** stops a single campaign immediately and deletes its GoPhish campaign so
+no more mail is sent. The **global kill switch** (Settings / API) halts every
+active campaign at once.
+
+---
+
+## 11. Going to real mailboxes
+
+To run against a real organization instead of the sandbox:
+
+1. **Verify the real domain** by DNS TXT (step 6).
+2. Host **GoPhish** and a **real mail relay** the backend can reach, and set a
+   **public `phish_url`** so recipients can open the link.
+3. Configure **IMAP** (host/user/password) for a reply mailbox so replies route
+   in automatically — Pretexta polls it and feeds replies to the engine. The
+   reply address is `<reply_local>+<token>@<reply_domain>`.
+4. Add an **exclusion list** for anyone who must not be targeted (Live Campaigns
+   → Exclusions).
+5. Get **authorization** and inform staff through policy as your law requires
+   (UU PDP / PDPL / GDPR). See [ethics.md](ethics.md) and
+   [guardrails.md](guardrails.md).
+
+---
+
+## 12. Troubleshooting
+
+| Symptom | Cause / fix |
+|---------|-------------|
+| **Test GoPhish** fails | Backend can't reach `gophish:3333`. Check both containers are on `pretexta_soceng_network` (`docker network inspect pretexta_soceng_network`). |
+| Recipients stuck at `queued`, state never `sent` | GoPhish can't reach the SMTP relay. Verify `smtp_host` (`greenmail:3025`) is resolvable from GoPhish's network. |
+| "Sender address … is not an email address" | GoPhish wants a bare email; Pretexta already sends the display name as a `From` header, so just use `helpdesk@acme.test`. |
+| Can't approve a campaign | You are the creator. Approve from a different admin account (step 5). |
+| Pre-flight error about recipients | A recipient is outside a verified domain, or on the exclusion list. |
+| Reply drafts never appear | No LLM provider configured (Settings → LLM), or you haven't fed a reply (IMAP, or the "simulate a reply" box). |
+| Self-signed cert warning at :3333 | Expected for GoPhish's admin UI; accept it, or set `verify_tls: false` (default). |

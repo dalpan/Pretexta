@@ -13,7 +13,10 @@ QUIZ = {
     "questions": [
         {
             "id": "q1",
-            "content_en": {"text": "Which is phishing?", "explanation": "Urgent reset links are classic."},
+            "content_en": {
+                "text": "Which is phishing?",
+                "explanation": "Urgent reset links are classic.",
+            },
             "options": [
                 {"text": "Urgent reset link", "correct": True},
                 {"text": "Calendar invite", "correct": False},
@@ -107,7 +110,5 @@ async def test_points_weighting(api):
 
 async def test_submit_missing_quiz(api):
     _, h = await make_user("user")
-    r = await api.post(
-        f"/api/quizzes/{uuid.uuid4()}/submit", json={"answers": {}}, headers=h
-    )
+    r = await api.post(f"/api/quizzes/{uuid.uuid4()}/submit", json={"answers": {}}, headers=h)
     assert r.status_code == 404

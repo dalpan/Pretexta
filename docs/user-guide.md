@@ -142,8 +142,9 @@ extraction) that unlock stage by stage.
 ## 5. Live Ops (admin / trainer)
 
 Live mode runs **authorized** phishing simulations in an organization's real
-mailboxes. It is gated by enforced guardrails — read
-[guardrails.md](guardrails.md) and [ethics.md](ethics.md) first.
+mailboxes. For a complete, copy-pasteable setup (GoPhish + a test mail server) and
+a full run, follow **[live-campaign-walkthrough.md](live-campaign-walkthrough.md)**.
+Read [guardrails.md](guardrails.md) and [ethics.md](ethics.md) first.
 
 ![Live Campaigns](images/08-live-campaigns.jpg)
 
