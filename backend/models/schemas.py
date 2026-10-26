@@ -634,7 +634,15 @@ CIALDINI_PRINCIPLES = (
     "liking",
     "social_proof",
 )
-LIVE_CAMPAIGN_STATUSES = ("draft", "pending_approval", "approved", "running", "closed", "killed")
+LIVE_CAMPAIGN_STATUSES = (
+    "draft",
+    "pending_approval",
+    "approved",
+    "launching",
+    "running",
+    "closed",
+    "killed",
+)
 
 
 class VerifiedDomain(BaseModel):

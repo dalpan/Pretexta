@@ -215,3 +215,22 @@ a domain owned by the project.
   local model, so that raw replies never leave the deployment?
 - Should P1 add per-organization roles (`org_admin`, `org_trainer`) to replace
   today's global `admin` and `trainer` roles?
+
+## Appendix A: GoPhish REST contract (verified 2026-10-26, gophish:latest)
+
+Auth: `Authorization: Bearer <api_key>` (admin API, HTTPS, self-signed by default).
+
+| Object | Create | Notes |
+|--------|--------|-------|
+| Group | `POST /api/groups/` `{name, targets:[{email,first_name,last_name,position}]}` | returns `id` |
+| Template | `POST /api/templates/` `{name, subject, html, text}` | `{{.URL}}` is the click link |
+| Landing page | `POST /api/pages/` `{name, html, capture_credentials, capture_passwords, redirect_url}` | **Sending `capture_passwords:true` flips `capture_credentials` to true.** Pretexta always sends both `false` and re-reads the returned object to enforce G5. |
+| SMTP profile | `POST /api/smtp/` `{name, interface_type:"SMTP", host, from_address, ignore_cert_errors}` | |
+| Campaign | `POST /api/campaigns/` `{name, template:{name}, page:{name}, smtp:{name}, url, groups:[{name}]}` | launches immediately |
+
+Results: `GET /api/campaigns/:id/results` → `{status, results:[{email, status, reported, send_date, ip}], timeline:[{message}]}`.
+Per-recipient `status`: `Error`, `Email Sent`, `Email Opened`, `Clicked Link`, `Submitted Data`; `reported` is a bool.
+Stop: `DELETE /api/campaigns/:id`.
+
+Status → Pretexta event: Email Sent→`sent`, Email Opened→`opened`, Clicked Link→`clicked`,
+Submitted Data→`submitted`, reported flag→`reported`, Error→`send_error`.

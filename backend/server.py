@@ -348,6 +348,11 @@ async def lifespan(app: FastAPI):
     await db.live_exclusions.create_index([("organization_id", 1), ("email", 1)], unique=True)
     await db.live_campaigns.create_index("id", unique=True)
     await db.live_campaigns.create_index([("status", 1), ("recipients", 1)])
+    await db.live_recipients.create_index([("campaign_id", 1), ("email", 1)], unique=True)
+    await db.live_config.create_index("id", unique=True)
+    # G14: live campaign telemetry expires after 180 days
+    await db.live_events.create_index("at", expireAfterSeconds=180 * 24 * 3600)
+    await db.live_events.create_index([("campaign_id", 1), ("type", 1)])
 
     # Auto-import sample data on every startup (skips titles that already exist)
     logger.info("Syncing sample data from YAML files...")

@@ -146,7 +146,10 @@ def _covered(domain: str, verified: set[str]) -> bool:
     return any(domain == v or domain.endswith("." + v) for v in verified)
 
 
-def _as_utc(value: datetime) -> datetime:
+def _as_utc(value: datetime | str) -> datetime:
+    # Dates may arrive as datetimes (Pydantic) or ISO strings (Mongo round-trip).
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value)
     return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 

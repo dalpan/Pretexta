@@ -15,13 +15,15 @@ from services import audit
 from services.auth import require_admin, require_trainer
 from services.database import db
 from services.live import domains as domain_svc
+from services.live import launch as launch_svc
 from services.live.domains import email_domain
+from services.live.gophish import GophishClient, GophishError
 from services.live.preflight import has_errors, run_preflight
 
 router = APIRouter(prefix="/live", tags=["live-campaigns"])
 audit_router = APIRouter(prefix="/audit", tags=["audit"])
 
-ACTIVE_STATUSES = ("pending_approval", "approved", "running")
+ACTIVE_STATUSES = ("pending_approval", "approved", "launching", "running")
 
 
 def _scope(user: User) -> dict:
@@ -274,8 +276,47 @@ async def reject_campaign(
 async def kill_campaign(campaign_id: str, current_user: User = Depends(require_trainer)):
     campaign = await _get_campaign(campaign_id, current_user)
     await _transition(campaign, ("draft", *ACTIVE_STATUSES), {"status": "killed", "killed": True})
+    await launch_svc.stop_campaign(campaign)
     await audit.record(current_user.id, "live.campaign.kill", campaign_id)
     return {"status": "killed"}
+
+
+# ==================== LAUNCH & RESULTS (P2) ====================
+
+
+@router.post("/campaigns/{campaign_id}/launch")
+async def launch_campaign(campaign_id: str, current_user: User = Depends(require_trainer)):
+    campaign = await _get_campaign(campaign_id, current_user)
+    if campaign["status"] != "approved":
+        raise HTTPException(status_code=409, detail="Only approved campaigns can be launched")
+    if await _global_kill_engaged():
+        raise HTTPException(status_code=423, detail="Global kill switch is engaged")
+    # Claim the transition before sending, so two launches cannot both proceed.
+    await _transition(campaign, ("approved",), {"status": "launching"})
+    try:
+        result = await launch_svc.launch_campaign(campaign, current_user.id)
+    except GophishError as exc:
+        await db.live_campaigns.update_one({"id": campaign_id}, {"$set": {"status": "approved"}})
+        raise HTTPException(status_code=502, detail=f"Launch failed: {exc}")
+    return result
+
+
+@router.post("/campaigns/{campaign_id}/sync")
+async def sync_campaign(campaign_id: str, current_user: User = Depends(require_trainer)):
+    campaign = await _get_campaign(campaign_id, current_user)
+    try:
+        return await launch_svc.sync_results(campaign)
+    except GophishError as exc:
+        raise HTTPException(status_code=502, detail=f"Sync failed: {exc}")
+
+
+@router.get("/campaigns/{campaign_id}/results")
+async def campaign_results(campaign_id: str, current_user: User = Depends(require_trainer)):
+    await _get_campaign(campaign_id, current_user)  # enforces ownership (404 if not yours)
+    recipients = await db.live_recipients.find({"campaign_id": campaign_id}, {"_id": 0}).to_list(
+        5000
+    )
+    return {"metrics": await launch_svc.report_rate(campaign_id), "recipients": recipients}
 
 
 # ==================== GLOBAL KILL SWITCH (G4) ====================
@@ -302,15 +343,75 @@ async def set_kill_switch(data: KillSwitchRequest, current_user: User = Depends(
     )
     killed = 0
     if data.engaged:
-        result = await db.live_campaigns.update_many(
-            {"status": {"$in": list(ACTIVE_STATUSES)}},
-            {"$set": {"status": "killed", "killed": True}},
-        )
-        killed = result.modified_count
+        active = await db.live_campaigns.find(
+            {"status": {"$in": list(ACTIVE_STATUSES)}}, {"_id": 0}
+        ).to_list(1000)
+        for campaign in active:
+            await db.live_campaigns.update_one(
+                {"id": campaign["id"]}, {"$set": {"status": "killed", "killed": True}}
+            )
+            await launch_svc.stop_campaign(campaign)
+            killed += 1
     await audit.record(
         current_user.id, "live.kill_switch", None, {"engaged": data.engaged, "killed": killed}
     )
     return {"engaged": data.engaged, "campaigns_killed": killed}
+
+
+# ==================== GOPHISH CONFIG (admin) ====================
+
+
+class LiveConfig(BaseModel):
+    model_config = {"extra": "forbid"}
+    gophish_base_url: str = Field(min_length=1, max_length=300)
+    gophish_api_key: str = Field(min_length=1, max_length=200)
+    verify_tls: bool = False
+    phish_url: str = Field(min_length=1, max_length=300)
+    smtp_host: str = Field(min_length=1, max_length=200)
+    smtp_username: str = ""
+    smtp_password: str = ""
+
+
+@router.get("/config")
+async def get_config(current_user: User = Depends(require_admin)):
+    config = await db.live_config.find_one({"id": "live_config"}, {"_id": 0})
+    if not config:
+        return None
+    # Never return stored secrets
+    for secret in ("gophish_api_key", "smtp_password"):
+        if config.get(secret):
+            config[secret] = "***"
+    return config
+
+
+@router.put("/config")
+async def set_config(data: LiveConfig, current_user: User = Depends(require_admin)):
+    doc = {"id": "live_config", **data.model_dump()}
+    # A resubmitted mask ("***") means "keep the stored secret", not overwrite it.
+    existing = await db.live_config.find_one({"id": "live_config"}, {"_id": 0})
+    for secret in ("gophish_api_key", "smtp_password"):
+        if doc[secret] in ("", "***") and existing:
+            doc[secret] = existing.get(secret, "")
+    await db.live_config.update_one({"id": "live_config"}, {"$set": doc}, upsert=True)
+    await audit.record(
+        current_user.id, "live.config.update", None, {"base_url": data.gophish_base_url}
+    )
+    return {"message": "Live config saved"}
+
+
+@router.post("/config/test")
+async def test_config(current_user: User = Depends(require_admin)):
+    config = await db.live_config.find_one({"id": "live_config"}, {"_id": 0})
+    if not config:
+        raise HTTPException(status_code=400, detail="Configure GoPhish first")
+    try:
+        async with GophishClient(
+            config["gophish_base_url"], config["gophish_api_key"], config.get("verify_tls", False)
+        ) as gp:
+            await gp.ping()
+    except GophishError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return {"ok": True}
 
 
 # ==================== AUDIT LOG (G12) ====================
