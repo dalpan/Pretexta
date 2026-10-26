@@ -37,7 +37,8 @@
     "profile": "Profil",
     "about": "Tentang",
     "live_campaigns": "Kampanye Live",
-    "reply_review": "Tinjau Balasan"
+    "reply_review": "Tinjau Balasan",
+    "triage": "Triase Inbox"
   },
   "dashboard": {
     "welcome": "Selamat Datang di Pretexta",

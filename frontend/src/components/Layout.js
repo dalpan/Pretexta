@@ -39,6 +39,7 @@ function buildAdminNav(t) {
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
+        { name: t('nav.triage'), path: '/triage', icon: Inbox },
       ],
     },
     {
@@ -80,6 +81,7 @@ function buildTrainerNav(t) {
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
+        { name: t('nav.triage'), path: '/triage', icon: Inbox },
       ],
     },
     {
@@ -110,6 +112,7 @@ function buildUserNav(t) {
         { name: t('nav.scenarios'), path: '/scenarios', icon: Target },
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
+        { name: t('nav.triage'), path: '/triage', icon: Inbox },
         { name: t('nav.campaigns'), path: '/campaigns', icon: Flag },
       ],
     },

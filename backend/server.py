@@ -38,6 +38,7 @@ from routes import (
     scenarios_router,
     settings_router,
     simulations_router,
+    triage_router,
     webhooks_router,
 )
 from services.auth import hash_password
@@ -334,6 +335,7 @@ async def lifespan(app: FastAPI):
     await db.lab_sessions.create_index([("user_id", 1), ("status", 1)])
     await db.scenario_sessions.create_index("id", unique=True)
     await db.scenario_sessions.create_index([("user_id", 1), ("status", 1)])
+    await db.triage_sets.create_index("id", unique=True)
     await db.campaign_progress.create_index([("campaign_id", 1), ("user_id", 1)])
     # v3 platform indexes
     await db.simulation_events.create_index([("simulation_id", 1), ("sequence", 1)])
@@ -370,6 +372,11 @@ async def lifespan(app: FastAPI):
     # Seed glossary terms if empty
     if await db.glossary.count_documents({}) == 0:
         await _seed_glossary()
+
+    # Seed a default inbox-triage set
+    from services.triage import seed_default_set
+
+    await seed_default_set()
 
     # Start the live-reply IMAP poller if configured
     poller_task = None
@@ -437,6 +444,7 @@ api_router.include_router(auth_router)
 api_router.include_router(challenges_router)
 api_router.include_router(quizzes_router)
 api_router.include_router(scenarios_router)
+api_router.include_router(triage_router)
 api_router.include_router(simulations_router)
 api_router.include_router(llm_router)
 api_router.include_router(settings_router)

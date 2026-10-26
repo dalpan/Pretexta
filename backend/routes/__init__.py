@@ -23,6 +23,7 @@ from routes.scenario_builder import router as scenario_builder_router
 from routes.scenarios import router as scenarios_router
 from routes.settings import router as settings_router
 from routes.simulations import router as simulations_router
+from routes.triage import router as triage_router
 from routes.webhooks import router as webhooks_router
 
 __all__ = [
@@ -30,6 +31,7 @@ __all__ = [
     "challenges_router",
     "quizzes_router",
     "scenarios_router",
+    "triage_router",
     "simulations_router",
     "llm_router",
     "settings_router",
