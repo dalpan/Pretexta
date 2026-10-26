@@ -12,8 +12,10 @@ from pydantic import BaseModel, Field
 
 from models.schemas import LiveCampaign, LiveCampaignCreate, User, VerifiedDomain
 from services import audit
+from services.ai_gateway import AIGateway
 from services.auth import require_admin, require_trainer
 from services.database import db
+from services.live import conversation
 from services.live import domains as domain_svc
 from services.live import launch as launch_svc
 from services.live.domains import email_domain
@@ -317,6 +319,89 @@ async def campaign_results(campaign_id: str, current_user: User = Depends(requir
         5000
     )
     return {"metrics": await launch_svc.report_rate(campaign_id), "recipients": recipients}
+
+
+# ==================== CONVERSATION & REVIEW QUEUE (P3) ====================
+
+
+class InboundReply(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    body: str = Field(min_length=1, max_length=20000)
+
+
+@router.post("/campaigns/{campaign_id}/inbound")
+async def ingest_reply(
+    campaign_id: str, data: InboundReply, current_user: User = Depends(require_trainer)
+):
+    """Process one recipient reply. Normally fed by the IMAP poller; exposed for
+    testing and booth demos."""
+    campaign = await _get_campaign(campaign_id, current_user)
+    gateway = await AIGateway.from_db()
+    result = await conversation.process_inbound(
+        campaign, data.email.strip().lower(), data.body, gateway=gateway
+    )
+    await audit.record(
+        current_user.id, "live.conversation.inbound", campaign_id, {"outcome": result["status"]}
+    )
+    return result
+
+
+@router.get("/campaigns/{campaign_id}/messages")
+async def list_messages(campaign_id: str, current_user: User = Depends(require_trainer)):
+    await _get_campaign(campaign_id, current_user)
+    return (
+        await db.live_messages.find({"campaign_id": campaign_id}, {"_id": 0})
+        .sort("at", 1)
+        .to_list(2000)
+    )
+
+
+@router.get("/review")
+async def review_queue(current_user: User = Depends(require_trainer)):
+    """Outbound persona drafts awaiting human approval, across the caller's scope."""
+    scope = _scope(current_user)
+    query = {"direction": "outbound", "status": "draft_pending"}
+    query.update(scope)
+    return await db.live_messages.find(query, {"_id": 0}).sort("at", 1).to_list(500)
+
+
+class ReviewDecision(BaseModel):
+    body: str | None = Field(default=None, max_length=20000)
+
+
+async def _get_draft(message_id: str, user: User) -> dict:
+    msg = await db.live_messages.find_one(
+        {"id": message_id, "status": "draft_pending", **_scope(user)}, {"_id": 0}
+    )
+    if not msg:
+        raise HTTPException(status_code=404, detail="Pending draft not found")
+    return msg
+
+
+@router.post("/review/{message_id}/approve")
+async def approve_draft(
+    message_id: str, data: ReviewDecision, current_user: User = Depends(require_trainer)
+):
+    msg = await _get_draft(message_id, current_user)
+    campaign = await db.live_campaigns.find_one({"id": msg["campaign_id"]}, {"_id": 0})
+    if not campaign or campaign.get("killed"):
+        raise HTTPException(status_code=409, detail="Campaign is not active")
+    body = data.body if data.body is not None else msg["body_redacted"]
+    sent = await conversation.send_approved_reply(campaign, msg, body, current_user.id)
+    await audit.record(
+        current_user.id, "live.review.approve", message_id, {"edited": bool(data.body)}
+    )
+    return sent
+
+
+@router.post("/review/{message_id}/discard")
+async def discard_draft(message_id: str, current_user: User = Depends(require_trainer)):
+    await _get_draft(message_id, current_user)  # enforces ownership + pending state
+    await db.live_messages.update_one(
+        {"id": message_id}, {"$set": {"status": "discarded", "reviewed_by": current_user.id}}
+    )
+    await audit.record(current_user.id, "live.review.discard", message_id)
+    return {"status": "discarded"}
 
 
 # ==================== GLOBAL KILL SWITCH (G4) ====================

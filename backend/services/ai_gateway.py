@@ -250,6 +250,41 @@ class AIGateway:
                 provider=self._provider,
             )
 
+    async def persona_reply(self, *, system_prompt: str, history: list[dict]) -> str:
+        """One persona turn for a live-campaign email thread (P3).
+
+        The system prompt is built server-side from the locked campaign objective;
+        the caller has already scrubbed secrets from the history.
+        """
+        messages = [SystemMessage(content=system_prompt)]
+        for msg in history:
+            content = msg.get("content", "")
+            if msg.get("role") == "assistant":
+                messages.append(AIMessage(content=content))
+            else:
+                messages.append(HumanMessage(content=content))
+        raw = await _invoke_provider(self._config, messages, temperature=0.7)
+        return raw.content.strip()
+
+    async def judge_compliance(self, *, objective: str, message: str) -> bool:
+        """Decide whether a recipient's reply AGREES to the campaign objective.
+
+        Returns True only on a clear yes, so an uncertain model keeps the
+        conversation going rather than falsely recording compliance.
+        """
+        system = SystemMessage(
+            content=(
+                "You judge whether a person's email reply AGREES to a request. "
+                f"The request is: {objective}. "
+                "Answer with a single word: YES if they clearly agree or comply, "
+                "otherwise NO. Refusals, questions, and hesitation are NO."
+            )
+        )
+        raw = await _invoke_provider(
+            self._config, [system, HumanMessage(content=message)], temperature=0.0
+        )
+        return raw.content.strip().upper().startswith("YES")
+
     @classmethod
     async def from_db(cls) -> "AIGateway | None":
         """

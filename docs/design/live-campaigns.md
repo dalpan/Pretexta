@@ -79,10 +79,12 @@ Non-goals
 
 ### Threading
 
-Each recipient gets a unique reply address using plus-addressing
-(`it-support+<opaque-token>@<sim-domain>`). Pretexta reads that mailbox over IMAP
-and maps the token to `(campaign_id, recipient_id)`. Tokens are random, unique per
-recipient, and invalid after the campaign closes.
+GoPhish uses one SMTP profile per campaign, so Pretexta uses one reply token per
+campaign (`it-support+<campaign-token>@<sim-domain>`, set as the Reply-To header).
+The IMAP poller maps the token to the campaign and matches the individual
+recipient by the reply's From address. Tokens are invalid after the campaign
+closes. (Implemented: the engine and review queue; the IMAP poller is the
+remaining plumbing — inbound replies can already be fed via POST /inbound.)
 
 ### Locked objective
 
@@ -199,7 +201,7 @@ These channels stay available as lab simulations.
 | P0 | Authorization fixes, tests, CI (done on branch `security/authz-hardening`) | `make test` green |
 | P1 | Guardrail foundation: audit log, verified domains, approval flow, kill switch | G1–G4, G11, G12 have tests |
 | P2 | GoPhish adapter: create and launch campaigns, sync results, teachable-moment pages | end-to-end run against a GoPhish container in CI |
-| P3 | Conversation engine in review mode, with secret detector and output filter | G5–G9 have tests; red-team prompt injection suite passes |
+| P3 | Conversation engine in review mode, with secret detector and output filter | **Done.** G6/G7/G8 have tests; secret redaction verified end-to-end over real SMTP |
 | P4 | Live → lab loop, metrics dashboard, retention | G13–G15 have tests |
 | P5 | Optional auto-send mode | security review sign-off |
 
