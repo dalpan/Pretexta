@@ -35,6 +35,7 @@ from routes import (
     reports_router,
     risk_profile_router,
     scenario_builder_router,
+    scenarios_router,
     settings_router,
     simulations_router,
     webhooks_router,
@@ -331,6 +332,8 @@ async def lifespan(app: FastAPI):
     await db.simulations.create_index([("user_id", 1), ("status", 1)])
     await db.lab_sessions.create_index("id", unique=True)
     await db.lab_sessions.create_index([("user_id", 1), ("status", 1)])
+    await db.scenario_sessions.create_index("id", unique=True)
+    await db.scenario_sessions.create_index([("user_id", 1), ("status", 1)])
     await db.campaign_progress.create_index([("campaign_id", 1), ("user_id", 1)])
     # v3 platform indexes
     await db.simulation_events.create_index([("simulation_id", 1), ("sequence", 1)])
@@ -433,6 +436,7 @@ async def health_check():
 api_router.include_router(auth_router)
 api_router.include_router(challenges_router)
 api_router.include_router(quizzes_router)
+api_router.include_router(scenarios_router)
 api_router.include_router(simulations_router)
 api_router.include_router(llm_router)
 api_router.include_router(settings_router)

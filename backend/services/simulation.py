@@ -37,7 +37,12 @@ async def create_simulation(data: dict, user_id: str, internal: bool = False) ->
     data = {k: v for k, v in data.items() if k not in PROTECTED_FIELDS}
     # These result types are graded on the server; clients must use the dedicated
     # endpoints (chat session / quiz submit) rather than POSTing a self-reported score.
-    if not internal and data.get("simulation_type") in ("ai_challenge", "quiz"):
+    if not internal and data.get("simulation_type") in (
+        "ai_challenge",
+        "quiz",
+        "simulation",
+        "challenge",
+    ):
         raise HTTPException(
             status_code=409,
             detail="This result type is recorded by the server. Use its dedicated endpoint.",

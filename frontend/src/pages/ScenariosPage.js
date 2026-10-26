@@ -60,13 +60,11 @@ export default function ScenariosPage() {
 
   const startChallenge = async (challengeId) => {
     try {
-      const response = await api.post('/simulations', {
-        challenge_id: challengeId,
-        title: challenges.find((c) => c.id === challengeId)?.title,
-        simulation_type: 'simulation',
-        status: 'running',
-      });
-      window.location.href = `/simulations/${response.data.id}/play`;
+      // The server creates the simulation and holds the scenario state.
+      const response = await api.post('/scenarios/start', { challenge_id: challengeId });
+      const { session_id, simulation_id } = response.data;
+      try { sessionStorage.setItem(`scenario_session_${simulation_id}`, session_id); } catch { /* noop */ }
+      window.location.href = `/simulations/${simulation_id}/play`;
     } catch (error) {
       toast.error('Failed to start challenge');
     }

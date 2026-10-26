@@ -3,7 +3,7 @@ import re
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from models.schemas import Challenge, User
-from services.auth import get_current_user
+from services.auth import get_current_user, is_staff
 from services.database import db
 
 router = APIRouter(prefix="/challenges", tags=["challenges"])
@@ -64,6 +64,14 @@ async def get_challenge(challenge_id: str, current_user: User = Depends(get_curr
     # Ensure nodes is always a list to prevent player crash
     if not isinstance(challenge.get("nodes"), list):
         challenge["nodes"] = []
+    # Trainees must not receive the answer key (score_impact / branch targets);
+    # staff keep the full graph for authoring and preview.
+    if not is_staff(current_user):
+        for node in challenge["nodes"]:
+            node.pop("next", None)
+            for opt in node.get("options", []) or []:
+                opt.pop("score_impact", None)
+                opt.pop("next", None)
     return challenge
 
 

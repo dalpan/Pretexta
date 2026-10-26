@@ -20,6 +20,7 @@ from routes.quizzes import router as quizzes_router
 from routes.reports import router as reports_router
 from routes.risk_profile import router as risk_profile_router
 from routes.scenario_builder import router as scenario_builder_router
+from routes.scenarios import router as scenarios_router
 from routes.settings import router as settings_router
 from routes.simulations import router as simulations_router
 from routes.webhooks import router as webhooks_router
@@ -28,6 +29,7 @@ __all__ = [
     "auth_router",
     "challenges_router",
     "quizzes_router",
+    "scenarios_router",
     "simulations_router",
     "llm_router",
     "settings_router",

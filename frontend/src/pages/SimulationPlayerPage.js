@@ -16,11 +16,11 @@ export default function SimulationPlayerPage() {
   const [simulation, setSimulation] = useState(null);
   const [challenge, setChallenge] = useState(null);
   const [currentNode, setCurrentNode] = useState(null);
-  const [events, setEvents] = useState([]);
+  const [sessionId, setSessionId] = useState(null);
+  const [outcome, setOutcome] = useState(null);
   const [score, setScore] = useState(100);
   const [loading, setLoading] = useState(true);
-  const [aiThinking, setAiThinking] = useState(false);
-  const [historyStack, setHistoryStack] = useState([]); // Track node history for undo/retry
+  const [aiThinking, setAiThinking] = useState(false); // kept false; server drives flow now
   const [language, setLanguage] = useState('en');
 
   useEffect(() => {
@@ -32,19 +32,21 @@ export default function SimulationPlayerPage() {
     try {
       const simRes = await api.get(`/simulations/${simulationId}`);
       setSimulation(simRes.data);
-      setScore(simRes.data.score || 100);
-      setEvents(simRes.data.events || []);
 
       if (simRes.data.challenge_id) {
-        const challengeRes = await api.get(`/challenges/${simRes.data.challenge_id}`);
-        const challengeData = challengeRes.data;
-        setChallenge(challengeData);
-        const nodes = Array.isArray(challengeData.nodes) ? challengeData.nodes : [];
-        const lastEvent = simRes.data.events?.[simRes.data.events.length - 1];
-        const nodeId = lastEvent?.next_node || 'start';
-        const node = nodes.find((n) => n.id === nodeId) || nodes[0] || null;
-        setCurrentNode(node);
+        // Keep the challenge only for display metadata (title, principles).
+        try {
+          const challengeRes = await api.get(`/challenges/${simRes.data.challenge_id}`);
+          setChallenge(challengeRes.data);
+        } catch { /* noop */ }
       }
+
+      // The server holds the scenario node graph and the score.
+      const res = await api.post('/scenarios/resume', { simulation_id: simulationId });
+      setSessionId(res.data.session_id);
+      setCurrentNode(res.data.node);
+      setScore(res.data.score);
+      if (res.data.status === 'completed') setOutcome(res.data.outcome || (res.data.score >= 70 ? 'success' : 'failure'));
     } catch (error) {
       console.error('Failed to load simulation:', error);
       toast.error('Gagal memuat simulasi — ' + (error.response?.data?.detail || error.message));
@@ -53,131 +55,29 @@ export default function SimulationPlayerPage() {
     }
   };
 
-  const handleChoice = async (option) => {
-    // Save current state to stack before moving
-    setHistoryStack([...historyStack, currentNode]);
-
-    const event = {
-      node_id: currentNode.id,
-      action: option.text,
-      timestamp: new Date().toISOString(),
-      score_impact: option.score_impact || 0,
-      next_node: option.next
-    };
-
-    // Update local score
-    const newScore = Math.max(0, Math.min(100, score + (option.score_impact || 0)));
-    setScore(newScore);
-    setEvents([...events, event]);
-
-    // Save to backend
+  // optionIndex is null to advance past a message node.
+  const handleChoice = async (optionIndex) => {
     try {
-      await api.put(`/simulations/${simulationId}`, { events: [...events, event], score: newScore });
-    } catch (error) {
-      console.error('Failed to save event', error);
-    }
-
-    // Move to next node
-    const nextNode = challenge.nodes.find(n => n.id === option.next);
-
-    if (nextNode) {
-      // Check if AI should generate adaptive content
-      if (nextNode.type === 'ai_adaptive' || (newScore < 50 && nextNode.type === 'message')) {
-        await generateAIResponse(nextNode, option);
+      const res = await api.post('/scenarios/choose', {
+        session_id: sessionId,
+        option_index: optionIndex,
+      });
+      setScore(res.data.score);
+      if (res.data.status === 'completed') {
+        setOutcome(res.data.outcome);
+        setCurrentNode(res.data.node || { type: 'end' });
+        await onCompleted(res.data.score, res.data.outcome);
       } else {
-        setCurrentNode(nextNode);
+        setCurrentNode(res.data.node);
       }
-
-      // Check if simulation ended
-      if (nextNode.type === 'end') {
-        await completeSimulation(newScore, nextNode.result);
-      }
-    }
-  };
-
-  const generateAIResponse = async (node, previousChoice) => {
-    setAiThinking(true);
-
-    try {
-      const context = {
-        scenario_title: challenge.title,
-        current_node: currentNode.id,
-        participant_action: previousChoice.text,
-        current_score: score,
-        cialdini_triggers: challenge.cialdini_categories,
-        event_history: events,
-        language: language
-      };
-
-      const prompt = `You are simulating a social engineering attack for training purposes.
-
-Scenario: ${challenge.title}
-Participant just chose: "${previousChoice.text}"
-Current susceptibility score: ${score}/100 (lower = more susceptible)
-Active Cialdini principles: ${challenge.cialdini_categories.join(', ')}
-
-Generate the next message in this attack sequence. Make it realistic but educational.
-${language === 'id' ? 'Respond in Indonesian.' : 'Respond in English.'}
-
-Format your response as JSON:
-{
-  "message": "The attack message content",
-  "channel": "email_inbox or chat_ui or phone_sim",
-  "from": "Sender name/email",
-  "tactics_used": ["tactic1", "tactic2"]
-}`;
-
-      const response = await api.post('/llm/generate', {
-        prompt,
-        context,
-      });
-
-      // Parse AI response
-      let aiContent;
-      try {
-        aiContent = JSON.parse(response.data.generated_text);
-      } catch {
-        // Fallback if not JSON
-        aiContent = {
-          message: response.data.generated_text,
-          channel: node.channel || 'email_inbox',
-          from: 'Attacker'
-        };
-      }
-
-      // Create AI-generated node
-      const aiNode = {
-        ...node,
-        id: `ai_${Date.now()}`,
-        content_en: {
-          body: aiContent.message,
-          from: aiContent.from
-        },
-        ai_generated: true,
-        tactics_used: aiContent.tactics_used
-      };
-
-      setCurrentNode(aiNode);
-      toast.success('🤖 AI adapted the scenario based on your response');
-
     } catch (error) {
-      console.error('AI generation failed', error);
-      toast.error('AI generation failed, continuing with standard flow');
-      setCurrentNode(node);
-    } finally {
-      setAiThinking(false);
+      toast.error(error.response?.data?.detail || 'Failed to continue');
     }
   };
 
-  const completeSimulation = async (finalScore, result) => {
+  const onCompleted = async (finalScore, result) => {
     try {
-      await api.put(`/simulations/${simulationId}`, {
-        status: 'completed',
-        score: finalScore,
-        completed_at: new Date().toISOString(),
-      });
-
-      // If this simulation was started as part of a campaign stage, auto-complete the stage
+      // The server already recorded the simulation; just handle campaign-stage linkage.
       if (simulation?.campaign_id !== undefined && simulation?.stage_index !== undefined) {
         try {
           const stageRes = await api.post(
@@ -291,8 +191,8 @@ Format your response as JSON:
       {/* Progress */}
       <div className="glass-panel p-4">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Event {events.length + 1}</span>
-          <span>{simulation?.status}</span>
+          <span>Score {Math.round(score)}/100</span>
+          <span>{currentNode?.type === 'end' ? 'Completed' : 'In progress'}</span>
         </div>
       </div>
 
@@ -367,13 +267,7 @@ Format your response as JSON:
           </div>
 
           <div className="mt-6 flex justify-end">
-            <Button
-              onClick={() => {
-                const nextNode = challenge.nodes.find(n => n.id === currentNode.next);
-                setCurrentNode(nextNode);
-              }}
-              disabled={!currentNode.next}
-            >
+            <Button onClick={() => handleChoice(null)}>
               Continue <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -391,7 +285,7 @@ Format your response as JSON:
             {currentNode.options?.map((option, idx) => (
               <button
                 key={idx}
-                onClick={() => handleChoice(option)}
+                onClick={() => handleChoice(idx)}
                 disabled={aiThinking}
                 className="w-full p-4 text-left bg-muted/10 hover:bg-muted/20 border border-muted/30 hover:border-primary/30 rounded-lg transition-colors group"
                 data-testid={`option-${idx}`}
@@ -419,11 +313,11 @@ Format your response as JSON:
 
       {/* End Node */}
       {currentNode.type === 'end' && (
-        <Card className={`glass-panel p-8 text-center ${currentNode.result === 'success' ? 'border-tertiary/50' : 'border-destructive/50'
+        <Card className={`glass-panel p-8 text-center ${outcome === 'success' ? 'border-tertiary/50' : 'border-destructive/50'
           }`}>
-          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${currentNode.result === 'success' ? 'bg-tertiary/20' : 'bg-destructive/20'
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${outcome === 'success' ? 'bg-tertiary/20' : 'bg-destructive/20'
             }`}>
-            {currentNode.result === 'success' ? (
+            {outcome === 'success' ? (
               <Check className="w-10 h-10 text-tertiary" />
             ) : (
               <X className="w-10 h-10 text-destructive" />
@@ -452,25 +346,10 @@ Format your response as JSON:
               Coba Skenario Lain
             </Button>
 
-            {/* RETRY BUTTON FOR PROFESSIONAL LEARNING */}
-            {currentNode.result !== 'success' && (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  if (historyStack.length > 0) {
-                    // Get last node (before failure)
-                    const lastNode = historyStack[historyStack.length - 1];
-                    setCurrentNode(lastNode);
-                    setHistoryStack(historyStack.slice(0, -1));
-
-                    toast.info("Rewinding... Try a different approach!");
-                  } else {
-                    // Fallback if no history (e.g. reload)
-                    window.location.reload();
-                  }
-                }}
-              >
-                Start Over / Retry Step
+            {/* A fresh attempt is a new scenario run, so scoring stays honest. */}
+            {outcome !== 'success' && (
+              <Button variant="secondary" onClick={() => navigate('/scenarios')}>
+                Try another scenario
               </Button>
             )}
           </div>
