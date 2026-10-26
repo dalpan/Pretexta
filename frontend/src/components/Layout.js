@@ -39,8 +39,13 @@ function buildAdminNav(t) {
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
-        { name: 'Live Campaigns', path: '/live', icon: Radio },
-        { name: 'Reply Review', path: '/live/review', icon: MessageSquare },
+      ],
+    },
+    {
+      section: 'LIVE OPS',
+      items: [
+        { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
+        { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
       ],
     },
     {
@@ -75,8 +80,13 @@ function buildTrainerNav(t) {
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
-        { name: 'Live Campaigns', path: '/live', icon: Radio },
-        { name: 'Reply Review', path: '/live/review', icon: MessageSquare },
+      ],
+    },
+    {
+      section: 'LIVE OPS',
+      items: [
+        { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
+        { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
       ],
     },
     {

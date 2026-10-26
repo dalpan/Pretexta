@@ -27,7 +27,7 @@
     "scenarios": "Skenario",
     "quizzes": "Kuis",
     "ai_challenge": "Tantangan AI",
-    "campaigns": "Kampanye",
+    "campaigns": "Kampanye Latihan",
     "history": "Riwayat",
     "leaderboard": "Papan Peringkat",
     "analytics": "Analitik",
@@ -35,7 +35,9 @@
     "glossary": "Glosarium",
     "settings": "Pengaturan",
     "profile": "Profil",
-    "about": "Tentang"
+    "about": "Tentang",
+    "live_campaigns": "Kampanye Live",
+    "reply_review": "Tinjau Balasan"
   },
   "dashboard": {
     "welcome": "Selamat Datang di Pretexta",
@@ -131,7 +133,7 @@
     "retake": "Ulangi Kuis"
   },
   "campaigns": {
-    "title": "Kampanye",
+    "title": "Kampanye Latihan",
     "page_description": "Simulasi rantai serangan rekayasa sosial multi-tahap.",
     "no_campaigns": "Tidak ada kampanye tersedia.",
     "stages": "Tahap",
