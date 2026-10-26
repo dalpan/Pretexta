@@ -76,6 +76,81 @@ function AdminPanel() {
 }
 
 
+function LiveConfigCard() {
+  const [f, setF] = useState(null);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    api.get('/live/config')
+      .then((r) => setF(r.data || {}))
+      .catch(() => setF({}));
+  }, []);
+
+  const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+  const save = async () => {
+    try {
+      await api.put('/live/config', {
+        gophish_base_url: f.gophish_base_url || '',
+        gophish_api_key: f.gophish_api_key || '',
+        verify_tls: !!f.verify_tls,
+        phish_url: f.phish_url || '',
+        smtp_host: f.smtp_host || '',
+        smtp_username: f.smtp_username || '',
+        smtp_password: f.smtp_password || '',
+        reply_local: f.reply_local || '',
+        reply_domain: f.reply_domain || '',
+        imap_host: f.imap_host || '',
+        imap_user: f.imap_user || '',
+        imap_password: f.imap_password || '',
+      });
+      toast.success('Live config saved');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Save failed');
+    }
+  };
+  const test = async () => {
+    setTesting(true);
+    try { await api.post('/live/config/test'); toast.success('GoPhish reachable'); }
+    catch (e) { toast.error(e.response?.data?.detail || 'GoPhish unreachable'); }
+    finally { setTesting(false); }
+  };
+
+  if (!f) return null;
+  const field = (k, label, type = 'text') => (
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      <Input type={type} value={f[k] || ''} onChange={(e) => set(k, e.target.value)} />
+    </div>
+  );
+
+  return (
+    <div className="glass-panel p-6 space-y-4">
+      <h2 className="text-2xl font-bold flex items-center gap-2">Live Campaigns (GoPhish)</h2>
+      <p className="text-xs text-muted-foreground">
+        Connects the live-campaign module to a GoPhish instance and mail relay.
+        Leave empty if you only use lab mode. Secrets are stored masked.
+      </p>
+      <div className="grid md:grid-cols-2 gap-3">
+        {field('gophish_base_url', 'GoPhish admin URL (https://host:3333)')}
+        {field('gophish_api_key', 'GoPhish API key', 'password')}
+        {field('phish_url', 'Phishing server URL (where links point)')}
+        {field('smtp_host', 'SMTP relay (host:port)')}
+        {field('smtp_username', 'SMTP username (optional)')}
+        {field('smtp_password', 'SMTP password (optional)', 'password')}
+        {field('reply_local', 'Reply mailbox local part (e.g. sim-reply)')}
+        {field('reply_domain', 'Reply domain (e.g. acme.test)')}
+        {field('imap_host', 'IMAP host for replies (host:port)')}
+        {field('imap_user', 'IMAP username')}
+        {field('imap_password', 'IMAP password', 'password')}
+      </div>
+      <div className="flex gap-2">
+        <Button onClick={save}>Save</Button>
+        <Button variant="outline" onClick={test} disabled={testing}>Test GoPhish</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -226,6 +301,7 @@ export default function SettingsPage() {
 
       {/* Admin Panel — only for admin users */}
       {isAdmin && <AdminPanel />}
+      {isAdmin && <LiveConfigCard />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEFT COLUMN */}

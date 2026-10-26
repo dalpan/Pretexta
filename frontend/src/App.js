@@ -40,6 +40,8 @@ const InstructorReportsPage = lazy(() => import('./pages/InstructorReportsPage')
 const UserHistoryPage      = lazy(() => import('./pages/UserHistoryPage'));
 const ScenarioBuilderPage  = lazy(() => import('./pages/ScenarioBuilderPage'));
 const AIChallengePage      = lazy(() => import('./pages/AIChallengePage'));
+const LiveCampaignsPage    = lazy(() => import('./pages/LiveCampaignsPage'));
+const LiveReviewPage       = lazy(() => import('./pages/LiveReviewPage'));
 const UsersPage            = lazy(() => import('./pages/UsersPage'));
 
 function PageLoader() {
@@ -68,6 +70,8 @@ function AdminRoutes() {
       {/* Content — admin can access everything */}
       <Route path="/scenarios"               element={<ScenariosPage />} />
       <Route path="/campaigns"               element={<CampaignsPage />} />
+      <Route path="/live"                    element={<LiveCampaignsPage />} />
+      <Route path="/live/review"             element={<LiveReviewPage />} />
       <Route path="/quizzes"                 element={<QuizzesPage />} />
       <Route path="/quizzes/:quizId/play"    element={<QuizPlayerPage />} />
       <Route path="/ai-challenge"            element={<AIChatPage />} />
@@ -104,6 +108,8 @@ function TrainerRoutes() {
       {/* Content — trainers can use all training content */}
       <Route path="/scenarios"               element={<ScenariosPage />} />
       <Route path="/campaigns"               element={<CampaignsPage />} />
+      <Route path="/live"                    element={<LiveCampaignsPage />} />
+      <Route path="/live/review"             element={<LiveReviewPage />} />
       <Route path="/quizzes"                 element={<QuizzesPage />} />
       <Route path="/quizzes/:quizId/play"    element={<QuizPlayerPage />} />
       <Route path="/ai-challenge"            element={<AIChatPage />} />

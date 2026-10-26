@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Terminal, LayoutDashboard, FileCode, ListChecks, Activity, Settings, LogOut,
   BookOpen, Trophy, BarChart3, Flag, Pencil, Zap, Sun, Moon, User, Globe,
-  Menu, X, Users, ClipboardList, ShieldAlert, Radio, Target, Inbox,
+  Menu, X, Users, ClipboardList, ShieldAlert, Radio, Target, Inbox, MessageSquare,
   Shield, UserCog, History, BookMarked,
 } from 'lucide-react';
 
@@ -39,6 +39,8 @@ function buildAdminNav(t) {
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
+        { name: 'Live Campaigns', path: '/live', icon: Radio },
+        { name: 'Reply Review', path: '/live/review', icon: MessageSquare },
       ],
     },
     {
@@ -73,6 +75,8 @@ function buildTrainerNav(t) {
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
+        { name: 'Live Campaigns', path: '/live', icon: Radio },
+        { name: 'Reply Review', path: '/live/review', icon: MessageSquare },
       ],
     },
     {
