@@ -104,9 +104,7 @@ async def ensure_session(user_id: str, simulation_id: str) -> dict:
     if session:
         return await get_session(user_id, session["id"])
 
-    sim = await db.simulations.find_one(
-        {"id": simulation_id, "user_id": user_id}, {"_id": 0}
-    )
+    sim = await db.simulations.find_one({"id": simulation_id, "user_id": user_id}, {"_id": 0})
     if not sim or not sim.get("challenge_id"):
         raise HTTPException(status_code=404, detail="Scenario simulation not found")
     challenge = await db.challenges.find_one({"id": sim["challenge_id"]}, {"_id": 0})
