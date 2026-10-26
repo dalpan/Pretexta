@@ -24,6 +24,14 @@ Social engineering is the #1 attack vector — and it doesn't exploit software. 
 
 Built on **Cialdini's 6 Principles of Influence**: Reciprocity, Scarcity, Authority, Commitment, Liking, and Social Proof.
 
+Pretexta measures **what people do** under pressure, not just what they know. Two
+modes: a **lab** (open-ended AI roleplay, scenarios, quizzes — all scored on the
+server so results can't be gamed) and **live campaigns** (authorized phishing in
+real mailboxes via GoPhish, with an AI persona that continues the thread and
+stops before any real secret is disclosed). The primary live metrics are
+**report rate** and **time-to-report**, not click rate alone. See
+[docs/concept.md](docs/concept.md).
+
 ## Screenshots
 
 <details>
@@ -41,7 +49,7 @@ Built on **Cialdini's 6 Principles of Influence**: Reciprocity, Scarcity, Author
 </details>
 
 <details>
-<summary><strong>AI Challenge Selection</strong> — 8 built-in social engineering personas</summary>
+<summary><strong>AI Challenge Selection</strong> — 22 built-in social engineering personas</summary>
 
 ![AI Challenge](screenshots/04-ai-challenge.png)
 
@@ -235,9 +243,11 @@ Also supports **LM Studio** (port 1234) and **llama.cpp** (port 8080).
 |-------|-----------|
 | **Auth** | `POST /register`, `POST /login`, `GET /me`, `PUT /profile`, `POST /change-password` |
 | **Challenges** | `GET /challenges`, `GET /challenges/:id`, `POST /challenges` |
-| **Quizzes** | `GET /quizzes`, `GET /quizzes/:id` |
+| **Quizzes** | `GET /quizzes`, `GET /quizzes/:id` (answer key stripped), `POST /quizzes/:id/submit` |
+| **Scenarios** | `POST /scenarios/start`, `POST /scenarios/choose`, `POST /scenarios/resume` |
+| **Live Campaigns** | `CRUD /live/campaigns`, `/submit`, `/approve`, `/launch`, `/kill`, `/sync`, `/review`, `/audit` |
 | **Simulations** | `CRUD /simulations` |
-| **LLM** | `GET /providers`, `GET /models/:provider`, `POST /config`, `POST /generate`, `POST /chat` |
+| **LLM / AI chat** | `GET /providers`, `GET /models/:provider`, `POST /config`, `POST /generate`, `POST /chat/start`, `POST /chat/turn` |
 | **Campaigns** | `GET /campaigns`, `POST /start`, `POST /stage/:idx/complete` |
 | **Leaderboard** | `GET /leaderboard`, `GET /me`, `GET /badges` |
 | **Analytics** | `GET /personal`, `GET /team` |
@@ -317,6 +327,14 @@ Run `make seed` to import.
 
 Or use the **Scenario Builder** in the UI for a visual editor.
 
+## Documentation
+
+Full documentation lives in [`docs/`](docs/):
+
+- [Concept](docs/concept.md) — why Pretexta measures behavior, not knowledge
+- [Architecture](docs/architecture.md) · [Scoring & anti-cheat](docs/scoring.md) · [Guardrails](docs/guardrails.md)
+- [Live campaigns design](docs/design/live-campaigns.md) · [API](docs/api.md) · [Deployment](docs/deployment.md)
+
 ## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
@@ -330,14 +348,20 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Ethics
 
-Pretexta is strictly for **defensive education and research**.
+Pretexta is for **authorized defensive training and research**. It has two modes
+with different footprints:
 
-- All simulations are fictional and self-contained
-- No real-world targeting or phishing infrastructure
-- No data harvesting or live attack automation
-- No offensive tooling
+- **Lab mode** — fictional, self-contained simulations. No real targeting, no
+  live infrastructure.
+- **Live mode** — authorized phishing simulations in an organization's own
+  mailboxes. Gated by enforced guardrails: recipients must be on a verified
+  domain, campaigns need two-person approval and a kill switch, landing pages
+  never capture passwords, secrets typed into replies are redacted before
+  storage, coercive and brand-impersonation themes are blocked, and every action
+  is written to a tamper-evident audit log.
 
-Use responsibly. Train defenders, not attackers.
+Read [docs/ethics.md](docs/ethics.md) and [docs/guardrails.md](docs/guardrails.md)
+before running live campaigns. Use responsibly. Train defenders, not attackers.
 
 ## License
 
