@@ -60,8 +60,11 @@ as an optional advanced layer, not the headline.
 1. **Remediation loop** *(the missing core)* — ✅ **DONE**. A failed live outcome
    auto-assigns the relevant lab exercise (by the Cialdini principle the person
    fell for), then schedules a variant retest. `services/remediation.py`.
-2. **Click campaigns as the primary flow** — report rate as the headline metric;
-   demote the conversational layer in the UI. *(pending)*
+2. **Click campaigns as the primary flow** — ✅ **DONE**. The Live Campaigns page
+   leads with report rate (aggregate KPI band + per-campaign hero), the create
+   form defaults to a click campaign, and the AI conversation is a clearly-labelled
+   advanced option. Backend metric now also returns click rate + median
+   time-to-report.
 3. **Prune** — ✅ **DONE**. Removed certificates, the standalone AI-challenge menu
    and lab "Campaigns"; gamification still never reads live data (G15).
 4. **Human Attack Surface Map** *(differentiator; fits the military theme)* —

@@ -206,7 +206,8 @@ async def stop_campaign(campaign: dict) -> None:
 
 
 async def report_rate(campaign_id: str) -> dict[str, Any]:
-    """Primary metric: share of recipients who reported, and median time-to-report."""
+    """Primary metric: share of recipients who reported, who clicked, and the
+    median time-to-report. Report rate is the headline — the behaviour we want."""
     recipients = await db.live_recipients.count_documents({"campaign_id": campaign_id})
     reported = await db.live_recipients.count_documents(
         {"campaign_id": campaign_id, "reported": True}
@@ -219,7 +220,36 @@ async def report_rate(campaign_id: str) -> dict[str, Any]:
         "reported": reported,
         "clicked": clicked,
         "report_rate": round(reported / recipients, 3) if recipients else None,
+        "click_rate": round(clicked / recipients, 3) if recipients else None,
+        "median_time_to_report_min": await _median_time_to_report(campaign_id),
     }
+
+
+async def _median_time_to_report(campaign_id: str) -> float | None:
+    """Median minutes from launch to a recipient reporting the phish."""
+    campaign = await db.live_campaigns.find_one({"id": campaign_id}, {"_id": 0, "launched_at": 1})
+    launched = (campaign or {}).get("launched_at")
+    if not launched:
+        return None
+
+    # Compare as naive UTC: Mongo returns `at` tz-naive, launched_at is tz-aware.
+    def _naive_utc(dt: datetime) -> datetime:
+        return dt.astimezone(UTC).replace(tzinfo=None) if dt.tzinfo else dt
+
+    launch_dt = _naive_utc(datetime.fromisoformat(launched))
+    events = await db.live_events.find(
+        {"campaign_id": campaign_id, "type": "reported"}, {"_id": 0, "at": 1}
+    ).to_list(1000)
+    deltas = sorted(
+        (_naive_utc(e["at"]) - launch_dt).total_seconds() / 60
+        for e in events
+        if e.get("at") and (_naive_utc(e["at"]) - launch_dt).total_seconds() >= 0
+    )
+    if not deltas:
+        return None
+    mid = len(deltas) // 2
+    median = deltas[mid] if len(deltas) % 2 else (deltas[mid - 1] + deltas[mid]) / 2
+    return round(median, 1)
 
 
 __all__ = [

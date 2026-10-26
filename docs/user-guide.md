@@ -148,26 +148,33 @@ Read [guardrails.md](guardrails.md) and [ethics.md](ethics.md) first.
 
 ![Live Campaigns](images/08-live-campaigns.jpg)
 
+**The primary flow is a click campaign.** You send a phishing email and measure
+behaviour: who clicks, and — the headline metric — who **reports** it. The page
+leads with the aggregate **report rate**, click rate, and median time-to-report.
+
 **Workflow:**
 
 1. **Verify a domain.** Recipients must be on a domain you control (DNS TXT).
    Reserved TLDs like `acme.test` are sandbox domains, accepted without DNS and
    safe for demos.
-2. **Create a campaign** — objective, Cialdini principles, sender, subject,
-   body, recipients, and a time window (≤ 30 days). Pre-flight checks run
-   automatically and block coercive themes and brand impersonation.
+2. **Create a campaign.** Pick the campaign type — **Kampanye Klik** (the default:
+   measure clicks and reports) or **Percakapan AI** (an advanced layer, below) —
+   then set Cialdini principles, sender, subject, body, recipients, and a time
+   window (≤ 30 days). Pre-flight checks block coercive themes and impersonation.
 3. **Submit → approve.** A *second* admin must approve it; the creator can never
    approve their own campaign.
 4. **Launch.** Pretexta creates the GoPhish objects and sends. The landing page
    is a teachable moment and never captures passwords.
-5. **Replies → Reply Review.** When a recipient replies, an AI persona drafts a
-   follow-up that is **held for a human to approve** before it is sent. If a
-   recipient types a secret (OTP, password), it is redacted before storage and
-   the conversation ends with a teachable-moment email.
-6. **Results.** Track report rate, time-to-report, clicks and per-recipient
-   state. A **kill switch** stops everything immediately.
+5. **Results.** Report rate is the headline, alongside click rate, median
+   time-to-report and per-recipient state. A **kill switch** stops everything
+   immediately. A click or a failure also feeds the remediation loop.
 
-The **Reply Review** queue is where you approve, edit, or discard each AI reply.
+**Advanced: AI conversation (optional).** Choose the *Percakapan AI* type to let
+an AI persona continue a reply thread toward one approved objective. Every persona
+reply is **held in the Reply Review queue for a human to approve** before it is
+sent; if a recipient types a secret (OTP, password) it is redacted before storage
+and the thread ends with a teachable-moment email. This layer is powerful but
+stays manual by design (G8) — it is not the headline.
 
 ---
 
