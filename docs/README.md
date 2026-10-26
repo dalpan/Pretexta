@@ -10,6 +10,7 @@ Start here, then follow the links:
 | Doc | What it covers |
 |-----|----------------|
 | [concept.md](concept.md) | Why Pretexta measures behavior, not knowledge — the idea and the evidence. Read this first. |
+| [roadmap.md](roadmap.md) | Product direction: what's core, what's cut, and the order of work. |
 | [user-guide.md](user-guide.md) | **Rule book**: install, admin & trainee usage, every menu with screenshots. |
 | [live-campaign-walkthrough.md](live-campaign-walkthrough.md) | **Step-by-step**: set up GoPhish and run a full live campaign, with screenshots. |
 | [architecture.md](architecture.md) | How the system is built: frontend, backend services, data model, auth. |

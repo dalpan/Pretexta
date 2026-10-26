@@ -35,7 +35,6 @@ function buildAdminNav(t) {
       section: 'TRAINING',
       items: [
         { name: t('nav.scenarios'), path: '/scenarios', icon: FileCode },
-        { name: t('nav.campaigns'), path: '/campaigns', icon: Flag },
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
@@ -78,7 +77,6 @@ function buildTrainerNav(t) {
       section: 'CONTENT',
       items: [
         { name: t('nav.scenarios'), path: '/scenarios', icon: FileCode },
-        { name: t('nav.campaigns'), path: '/campaigns', icon: Flag },
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
@@ -116,7 +114,6 @@ function buildUserNav(t) {
         { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.triage'), path: '/triage', icon: Inbox },
         { name: t('nav.write_reply'), path: '/write-reply', icon: PenLine },
-        { name: t('nav.campaigns'), path: '/campaigns', icon: Flag },
       ],
     },
     {

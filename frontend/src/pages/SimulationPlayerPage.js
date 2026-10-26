@@ -333,15 +333,9 @@ export default function SimulationPlayerPage() {
           </p>
 
           <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
-            {simulation?.campaign_id ? (
-              <Button onClick={() => navigate('/campaigns')}>
-                <Flag className="w-4 h-4 mr-2" /> Kembali ke Kampanye
-              </Button>
-            ) : (
-              <Button onClick={() => navigate('/simulations')}>
-                Lihat Semua Riwayat
-              </Button>
-            )}
+            <Button onClick={() => navigate('/simulations')}>
+              Lihat Semua Riwayat
+            </Button>
             <Button variant="outline" onClick={() => navigate('/scenarios')}>
               Coba Skenario Lain
             </Button>

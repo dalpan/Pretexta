@@ -22,7 +22,6 @@ const SettingsPage         = lazy(() => import('./pages/SettingsPage'));
 const InstallerPage        = lazy(() => import('./pages/InstallerPage'));
 const ProfilePage          = lazy(() => import('./pages/ProfilePage'));
 const DebriefPage          = lazy(() => import('./pages/DebriefPage'));
-const CertificatePage      = lazy(() => import('./pages/CertificatePage'));
 
 // ── User-only pages ────────────────────────────────────────────────────────
 const DashboardPage        = lazy(() => import('./pages/DashboardPage'));
@@ -30,7 +29,6 @@ const LeaderboardPage      = lazy(() => import('./pages/LeaderboardPage'));
 const AnalyticsPage        = lazy(() => import('./pages/AnalyticsPage'));
 const GlossaryPage         = lazy(() => import('./pages/GlossaryPage'));
 const MyAssignmentsPage    = lazy(() => import('./pages/MyAssignmentsPage'));
-const CampaignsPage        = lazy(() => import('./pages/CampaignsPage'));
 
 // ── Trainer/Admin pages ────────────────────────────────────────────────────
 const InstructorDashboard  = lazy(() => import('./pages/InstructorDashboard'));
@@ -39,7 +37,6 @@ const AssignmentsPage      = lazy(() => import('./pages/AssignmentsPage'));
 const InstructorReportsPage = lazy(() => import('./pages/InstructorReportsPage'));
 const UserHistoryPage      = lazy(() => import('./pages/UserHistoryPage'));
 const ScenarioBuilderPage  = lazy(() => import('./pages/ScenarioBuilderPage'));
-const AIChallengePage      = lazy(() => import('./pages/AIChallengePage'));
 const LiveCampaignsPage    = lazy(() => import('./pages/LiveCampaignsPage'));
 const LiveReviewPage       = lazy(() => import('./pages/LiveReviewPage'));
 const TriageInboxPage      = lazy(() => import('./pages/TriageInboxPage'));
@@ -71,20 +68,17 @@ function AdminRoutes() {
       <Route path="/trainer/user-history"    element={<UserHistoryPage />} />
       {/* Content — admin can access everything */}
       <Route path="/scenarios"               element={<ScenariosPage />} />
-      <Route path="/campaigns"               element={<CampaignsPage />} />
       <Route path="/live"                    element={<LiveCampaignsPage />} />
       <Route path="/live/review"             element={<LiveReviewPage />} />
       <Route path="/quizzes"                 element={<QuizzesPage />} />
       <Route path="/quizzes/:quizId/play"    element={<QuizPlayerPage />} />
       <Route path="/ai-challenge"            element={<AIChatPage />} />
-      <Route path="/ai-generate"             element={<AIChallengePage />} />
       <Route path="/scenario-builder"        element={<ScenarioBuilderPage />} />
       <Route path="/triage"                  element={<TriageInboxPage />} />
       <Route path="/write-reply"             element={<FreeTextPage />} />
       <Route path="/simulations"             element={<SimulationsPage />} />
       <Route path="/simulations/:simulationId/play"    element={<ProtectedRoute><SimulationPlayerPage /></ProtectedRoute>} />
       <Route path="/simulations/:simulationId/debrief" element={<DebriefPage />} />
-      <Route path="/simulations/:simulationId/certificate" element={<CertificatePage />} />
       <Route path="/analytics"               element={<AnalyticsPage />} />
       <Route path="/glossary"                element={<GlossaryPage />} />
       {/* System */}
@@ -111,7 +105,6 @@ function TrainerRoutes() {
       <Route path="/trainer/user-history"    element={<UserHistoryPage />} />
       {/* Content — trainers can use all training content */}
       <Route path="/scenarios"               element={<ScenariosPage />} />
-      <Route path="/campaigns"               element={<CampaignsPage />} />
       <Route path="/live"                    element={<LiveCampaignsPage />} />
       <Route path="/live/review"             element={<LiveReviewPage />} />
       <Route path="/quizzes"                 element={<QuizzesPage />} />
@@ -123,7 +116,6 @@ function TrainerRoutes() {
       <Route path="/simulations"             element={<SimulationsPage />} />
       <Route path="/simulations/:simulationId/play"    element={<ProtectedRoute><SimulationPlayerPage /></ProtectedRoute>} />
       <Route path="/simulations/:simulationId/debrief" element={<DebriefPage />} />
-      <Route path="/simulations/:simulationId/certificate" element={<CertificatePage />} />
       <Route path="/analytics"               element={<AnalyticsPage />} />
       <Route path="/glossary"                element={<GlossaryPage />} />
       {/* Account */}
@@ -147,14 +139,12 @@ function UserRoutes() {
       <Route path="/scenarios"               element={<ScenariosPage />} />
       <Route path="/quizzes"                 element={<QuizzesPage />} />
       <Route path="/quizzes/:quizId/play"    element={<QuizPlayerPage />} />
-      <Route path="/campaigns"               element={<CampaignsPage />} />
       <Route path="/ai-challenge"            element={<AIChatPage />} />
       <Route path="/triage"                  element={<TriageInboxPage />} />
       <Route path="/write-reply"             element={<FreeTextPage />} />
       <Route path="/simulations"             element={<SimulationsPage />} />
       <Route path="/simulations/:simulationId/play"    element={<ProtectedRoute><SimulationPlayerPage /></ProtectedRoute>} />
       <Route path="/simulations/:simulationId/debrief" element={<DebriefPage />} />
-      <Route path="/simulations/:simulationId/certificate" element={<CertificatePage />} />
       {/* Progress */}
       <Route path="/leaderboard"             element={<LeaderboardPage />} />
       <Route path="/analytics"               element={<AnalyticsPage />} />

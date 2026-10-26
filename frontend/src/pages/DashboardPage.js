@@ -15,7 +15,6 @@ import SectionCard from '../components/SectionCard';
 
 const CONTENT_ROUTES = {
   challenge: '/scenarios',
-  campaign: '/campaigns',
   quiz: '/quizzes',
   ai_persona: '/ai-challenge',
 };
