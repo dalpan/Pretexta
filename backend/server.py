@@ -13,14 +13,12 @@ from starlette.middleware.cors import CORSMiddleware
 from middleware.rate_limit import RateLimitMiddleware
 from models.schemas import User
 from routes import (
-    adaptive_router,
     analytics_router,
     assignments_router,
     attack_surface_router,
     audit_router,
     auth_router,
     campaigns_router,
-    certificates_router,
     challenges_router,
     debrief_router,
     freetext_router,
@@ -469,8 +467,6 @@ api_router.include_router(notifications_router)
 api_router.include_router(webhooks_router)
 api_router.include_router(scenario_builder_router)
 api_router.include_router(debrief_router)
-api_router.include_router(certificates_router)
-api_router.include_router(adaptive_router)
 # v3 platform services
 api_router.include_router(personas_router)
 api_router.include_router(risk_profile_router)

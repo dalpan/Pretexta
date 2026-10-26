@@ -203,19 +203,7 @@
     "ai_analysis": "AI Analysis",
     "generating": "Generating AI analysis...",
     "get_ai_analysis": "Get AI Analysis",
-    "back": "Back",
-    "view_certificate": "View Certificate"
-  },
-  "certificate": {
-    "title": "Certificate of Completion",
-    "platinum": "Platinum",
-    "gold": "Gold",
-    "silver": "Silver",
-    "download": "Download Certificate",
-    "share": "Share",
-    "score": "Score",
-    "completed_on": "Completed on",
-    "issued_by": "Issued by Pretexta"
+    "back": "Back"
   },
   "profile": {
     "title": "Profile",

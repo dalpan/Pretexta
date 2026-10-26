@@ -150,14 +150,6 @@ async def test_report_requires_ownership(api):
     assert r.status_code in (403, 404)
 
 
-async def test_certificate_requires_ownership(api):
-    owner, _ = await make_user("user")
-    _, h = await make_user("user")
-    sim = await insert_sim(owner.id)
-    r = await api.get(f"/api/certificates/{sim['id']}", headers=h)
-    assert r.status_code in (403, 404)
-
-
 async def test_trainer_can_read_trainee_report(api):
     owner, _ = await make_user("user")
     _, h = await make_user("trainer")

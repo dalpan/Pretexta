@@ -203,19 +203,7 @@
     "ai_analysis": "Analisis AI",
     "generating": "Membuat analisis AI...",
     "get_ai_analysis": "Dapatkan Analisis AI",
-    "back": "Kembali",
-    "view_certificate": "Lihat Sertifikat"
-  },
-  "certificate": {
-    "title": "Sertifikat Kelulusan",
-    "platinum": "Platinum",
-    "gold": "Emas",
-    "silver": "Perak",
-    "download": "Unduh Sertifikat",
-    "share": "Bagikan",
-    "score": "Skor",
-    "completed_on": "Diselesaikan pada",
-    "issued_by": "Diterbitkan oleh Pretexta"
+    "back": "Kembali"
   },
   "profile": {
     "title": "Profil",

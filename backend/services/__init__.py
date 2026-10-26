@@ -1,4 +1,3 @@
-from services.adaptive import get_recommended_categories, get_recommended_difficulty
 from services.auth import create_token, get_current_user, hash_password, verify_password
 from services.gamification import BADGE_DEFINITIONS, award_xp, check_simulation_badges
 from services.llm import (
@@ -22,6 +21,4 @@ __all__ = [
     "award_xp",
     "check_simulation_badges",
     "BADGE_DEFINITIONS",
-    "get_recommended_difficulty",
-    "get_recommended_categories",
 ]

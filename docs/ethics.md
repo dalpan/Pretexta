@@ -41,9 +41,8 @@ click in real life. Do not present them as if they do.
 - **Role-based access.** Only admins configure LLM providers, platform settings and
   outbound URLs. Only trainers and admins import or publish content to the shared
   catalog. Creating an organization grants no platform role.
-- **Data ownership.** Simulations, debriefs, reports and certificates are visible
-  only to their owner and to trainers or admins. Certificates can only be issued to
-  the person who completed the simulation.
+- **Data ownership.** Simulations, debriefs and reports are visible only to their
+  owner and to trainers or admins.
 - **Server-side scoring of assignments.** An assignment result is taken from a
   completed simulation the trainee owns, never from the request body.
 - **No default credentials.** Setup generates random JWT, database and admin
