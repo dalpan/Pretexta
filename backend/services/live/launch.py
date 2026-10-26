@@ -38,6 +38,15 @@ def _obj_name(campaign_id: str) -> str:
     return f"pretexta-{campaign_id}"
 
 
+def _reply_to_address(config: dict, campaign: dict) -> str | None:
+    """Reply-To that routes replies back to this campaign via plus-addressing."""
+    local = config.get("reply_local")
+    domain = config.get("reply_domain")
+    if not local or not domain:
+        return None
+    return f"{local}+{campaign['reply_token']}@{domain}"
+
+
 async def _eligible_recipients(campaign: dict) -> list[str]:
     excluded = await excluded_addresses(campaign.get("organization_id"))
     return [email for email in campaign["recipients"] if email not in excluded]
@@ -67,15 +76,19 @@ async def launch_campaign(campaign: dict, actor_id: str) -> dict:
         await gp.create_group(name, targets)
         await gp.create_template(name, campaign["subject"], campaign["body_html"])
         await gp.create_page(name, TEACHABLE_MOMENT_HTML, redirect_url="")
+        headers = [
+            {"key": "From", "value": f"{campaign['sender_name']} <{campaign['sender_email']}>"}
+        ]
+        reply_to = _reply_to_address(config, campaign)
+        if reply_to:
+            headers.append({"key": "Reply-To", "value": reply_to})
         await gp.create_smtp(
             name,
             host=config.get("smtp_host", "localhost:25"),
             from_address=campaign["sender_email"],
             username=config.get("smtp_username", ""),
             password=config.get("smtp_password", ""),
-            headers=[
-                {"key": "From", "value": f"{campaign['sender_name']} <{campaign['sender_email']}>"}
-            ],
+            headers=headers,
         )
         result = await gp.launch_campaign(
             name,

@@ -455,6 +455,14 @@ class LiveConfig(BaseModel):
     smtp_host: str = Field(min_length=1, max_length=200)
     smtp_username: str = ""
     smtp_password: str = ""
+    smtp_starttls: bool = False
+    # Reply routing for the conversation engine (optional until live replies are used)
+    reply_local: str = ""
+    reply_domain: str = ""
+    imap_host: str = ""
+    imap_ssl: bool = True
+    imap_user: str = ""
+    imap_password: str = ""
 
 
 @router.get("/config")
@@ -463,10 +471,18 @@ async def get_config(current_user: User = Depends(require_admin)):
     if not config:
         return None
     # Never return stored secrets
-    for secret in ("gophish_api_key", "smtp_password"):
+    for secret in ("gophish_api_key", "smtp_password", "imap_password"):
         if config.get(secret):
             config[secret] = "***"
     return config
+
+
+@router.post("/poll")
+async def poll_inbox(current_user: User = Depends(require_admin)):
+    """Fetch and route inbound replies now. The poller also runs on a timer."""
+    from services.live.inbound import poll_once
+
+    return await poll_once()
 
 
 @router.put("/config")
@@ -474,8 +490,8 @@ async def set_config(data: LiveConfig, current_user: User = Depends(require_admi
     doc = {"id": "live_config", **data.model_dump()}
     # A resubmitted mask ("***") means "keep the stored secret", not overwrite it.
     existing = await db.live_config.find_one({"id": "live_config"}, {"_id": 0})
-    for secret in ("gophish_api_key", "smtp_password"):
-        if doc[secret] in ("", "***") and existing:
+    for secret in ("gophish_api_key", "smtp_password", "imap_password"):
+        if doc.get(secret) in ("", "***") and existing:
             doc[secret] = existing.get(secret, "")
     await db.live_config.update_one({"id": "live_config"}, {"$set": doc}, upsert=True)
     await audit.record(

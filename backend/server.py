@@ -366,11 +366,24 @@ async def lifespan(app: FastAPI):
     if await db.glossary.count_documents({}) == 0:
         await _seed_glossary()
 
+    # Start the live-reply IMAP poller if configured
+    poller_task = None
+    live_config = await db.live_config.find_one({"id": "live_config"}, {"imap_host": 1})
+    if live_config and live_config.get("imap_host"):
+        import asyncio
+
+        from services.live.inbound import run_poller
+
+        poller_task = asyncio.create_task(run_poller())
+        logger.info("Live reply poller scheduled")
+
     yield
 
     # Shutdown
     from services.database import client
 
+    if poller_task:
+        poller_task.cancel()
     client.close()
 
 

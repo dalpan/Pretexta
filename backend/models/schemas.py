@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -685,4 +686,6 @@ class LiveCampaign(LiveCampaignCreate):
     killed: bool = False
     preflight: list[dict[str, Any]] = Field(default_factory=list)
     gophish_campaign_id: int | None = None
+    # Opaque token in the Reply-To address, used to match inbound replies (P3).
+    reply_token: str = Field(default_factory=lambda: secrets.token_urlsafe(12))
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
