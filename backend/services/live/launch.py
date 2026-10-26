@@ -155,6 +155,13 @@ async def sync_results(campaign: dict) -> dict:
         if event and EVENT_RANK.get(event, -1) > EVENT_RANK.get(current.get("state", ""), -1):
             updates["state"] = event
             await _record_event(campaign, row["email"], event)
+            if event in ("clicked", "submitted"):
+                try:
+                    from services.remediation import on_live_fail
+
+                    await on_live_fail(campaign, row["email"], event)
+                except Exception as exc:
+                    logger.warning(f"Remediation (live {event}) failed: {exc}")
         if reported and not current.get("reported"):
             updates["reported"] = True
             await _record_event(campaign, row["email"], "reported")

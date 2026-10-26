@@ -348,6 +348,12 @@ class Assignment(BaseModel):
     # Status tracking
     status: str = "active"  # active | completed | expired | cancelled
 
+    # Remediation loop: why this was assigned, and what it targets
+    source: str = "manual"  # manual | remediation | retest
+    reason: str | None = None  # human-readable explanation shown to the trainee
+    principle: str | None = None  # the Cialdini principle being remediated
+    retest_of: str | None = None  # the remediation assignment this re-tests
+
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 

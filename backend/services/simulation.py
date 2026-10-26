@@ -177,6 +177,14 @@ async def _on_simulation_complete(sim: dict, user_id: str) -> None:
     except Exception as e:
         logger.warning(f"Assignment result recording failed: {e}")
 
+    # 4. Remediation loop: a failed lab result assigns targeted practice
+    try:
+        from services.remediation import on_lab_result
+
+        await on_lab_result(sim, user_id)
+    except Exception as e:
+        logger.warning(f"Remediation (lab) failed for user {user_id}: {e}")
+
 
 async def _record_assignment_result(sim: dict, user_id: str, score: float) -> None:
     """
@@ -256,6 +264,13 @@ async def _record_assignment_result(sim: dict, user_id: str, score: float) -> No
             {"$set": {"status": "completed"}},
         )
         logger.info(f"Assignment {assignment_id} auto-completed for user {user_id} (score={score})")
+        # Passing a remediation schedules a variant retest later.
+        try:
+            from services.remediation import on_assignment_passed
+
+            await on_assignment_passed(assignment, user_id)
+        except Exception as e:
+            logger.warning(f"Retest scheduling failed: {e}")
 
 
 def _extract_channel(sim: dict) -> str | None:
