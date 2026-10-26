@@ -35,10 +35,12 @@ async def create_simulation(data: dict, user_id: str, internal: bool = False) ->
     because their score must come from a server-held chat session, not the browser.
     """
     data = {k: v for k, v in data.items() if k not in PROTECTED_FIELDS}
-    if not internal and data.get("simulation_type") == "ai_challenge":
+    # These result types are graded on the server; clients must use the dedicated
+    # endpoints (chat session / quiz submit) rather than POSTing a self-reported score.
+    if not internal and data.get("simulation_type") in ("ai_challenge", "quiz"):
         raise HTTPException(
             status_code=409,
-            detail="AI challenge results are recorded by the server. Use the chat session API.",
+            detail="This result type is recorded by the server. Use its dedicated endpoint.",
         )
     data["id"] = str(uuid.uuid4())
     data["user_id"] = user_id
