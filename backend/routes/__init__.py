@@ -1,6 +1,7 @@
 from routes.adaptive import router as adaptive_router
 from routes.analytics import router as analytics_router
 from routes.assignments import router as assignments_router
+from routes.attack_surface import router as attack_surface_router
 from routes.auth import router as auth_router
 from routes.campaigns import router as campaigns_router
 from routes.certificates import router as certificates_router
@@ -57,4 +58,5 @@ __all__ = [
     "glossary_router",
     "live_router",
     "audit_router",
+    "attack_surface_router",
 ]

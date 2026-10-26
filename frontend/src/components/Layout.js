@@ -8,7 +8,7 @@ import {
   Terminal, LayoutDashboard, FileCode, ListChecks, Activity, Settings, LogOut,
   BookOpen, Trophy, BarChart3, Flag, Pencil, Zap, Sun, Moon, User, Globe,
   Menu, X, Users, ClipboardList, ShieldAlert, Radio, Target, Inbox, MessageSquare, PenLine,
-  Shield, UserCog, History, BookMarked,
+  Shield, UserCog, History, BookMarked, Share2,
 } from 'lucide-react';
 
 const LANGUAGES = [
@@ -29,6 +29,7 @@ function buildAdminNav(t) {
         { name: t('instructor.assignments'), path: '/trainer/assignments', icon: ClipboardList },
         { name: t('instructor.reports'), path: '/trainer/reports', icon: ShieldAlert },
         { name: 'Riwayat User', path: '/trainer/user-history', icon: History },
+        { name: 'Peta Serangan', path: '/attack-surface', icon: Share2 },
       ],
     },
     {
@@ -71,6 +72,7 @@ function buildTrainerNav(t) {
         { name: t('instructor.assignments'), path: '/trainer/assignments', icon: ClipboardList },
         { name: t('instructor.reports'), path: '/trainer/reports', icon: ShieldAlert },
         { name: 'Riwayat User', path: '/trainer/user-history', icon: History },
+        { name: 'Peta Serangan', path: '/attack-surface', icon: Share2 },
       ],
     },
     {

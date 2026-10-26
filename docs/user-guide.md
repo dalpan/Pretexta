@@ -171,12 +171,50 @@ The **Reply Review** queue is where you approve, edit, or discard each AI reply.
 
 ---
 
+## 5b. Human Attack Surface Map (admin / trainer)
+
+**Peta Serangan** (COMMAND section) is an attacker's-eye view of your
+organization: people, the trust relationships between them, and the short social-
+engineering paths that lead from *anyone's* inbox to a crown jewel (a payment
+approval, the domain admin console, a customer database). Think "BloodHound, but
+for the human layer."
+
+**How to use it:**
+
+1. Open **Peta Serangan**. On an empty map, click **Muat Organisasi Contoh** to
+   load a realistic sample org and see the model working, then replace it with
+   your own people and assets (or wire it to real users via `user_id`).
+2. **Read the graph.** Each person is a circle coloured by *susceptibility*
+   (green = resistant, amber = medium, red = highly susceptible); the number is
+   their score out of 100. Diamonds are crown-jewel assets. Arrows show who can
+   credibly reach whom.
+3. **Pick an attack path** on the right to light up the easiest route an attacker
+   could walk to that asset, with its modelled success probability.
+4. **Train Lebih Dulu** ranks the highest-leverage people to harden — measured by
+   how much training *that one person* cuts total modelled exposure. A quiet
+   result worth noting: a low-susceptibility person can top this list if they are
+   the sole gatekeeper to an asset.
+5. **Readiness posture** (top banner) is a DEFCON-style condition from the single
+   easiest route; the **After-Action** panel summarises it in plain language.
+
+Where does susceptibility come from? Real behaviour first — live-campaign outcomes
+(a click or a submitted credential moves someone straight into the red band),
+then lab scores, then the risk profile. People with no data yet are flagged
+*estimated*.
+
+**Privacy (G13):** this maps *organizational risk*, not a hit-list. The page is
+staff-only, scores are shown as bands, and the raw number and its evidence are
+only revealed on a node click — to the same staff who already see risk profiles.
+
+---
+
 ## 6. Menu reference
 
 | Menu | Section | Roles | What it does |
 |------|---------|-------|--------------|
 | Command Center / Dashboard | top | all | Overview + quick actions |
 | All Users | Command | trainer/admin | Manage accounts |
+| Peta Serangan (Attack Surface Map) | Command | trainer/admin | Social-engineering paths to crown jewels + choke points |
 | Training Groups | Command | trainer/admin | Cohorts |
 | Assignments | Command | trainer/admin | Assign exercises |
 | Assessment Reports | Command | trainer/admin | Trainee results & risk |

@@ -593,6 +593,15 @@ class OrgNode(BaseModel):
     simulations_completed: int = 0
     last_training: str | None = None
 
+    # Human Attack Surface Map (docs/roadmap.md #4)
+    # An asset node is a "crown jewel" (money, admin, data) — the goal of an
+    # attack path, not a person who can be phished.
+    is_asset: bool = False
+    asset_kind: str | None = None  # money | admin | data | credentials
+    # Cached susceptibility 0-100 (100 = most likely to be social-engineered).
+    # None until computed; always None for asset nodes.
+    susceptibility: float | None = None
+
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
@@ -621,6 +630,23 @@ class TrustEdge(BaseModel):
     channels: list[str] = Field(default_factory=lambda: ["email"])
 
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+# Edge semantics: source_id can credibly influence / reach target_id, so if the
+# source is compromised an attacker can pivot to the target. `approves`,
+# `has_access` and `admin_of` point a person at an asset node.
+TRUST_RELATIONSHIPS = (
+    "reports_to",  # target is source's manager — authority pressure flows down
+    "peer",  # trusted colleague
+    "it_support",  # help-desk relationship (very phishable)
+    "vendor",  # external supplier
+    "customer",
+    "external",
+    "approves",  # source approves transactions on the asset
+    "has_access",  # source can read/use the asset
+    "admin_of",  # source administers the asset
+)
+ASSET_KINDS = ("money", "admin", "data", "credentials")
 
 
 # ==================== LIVE CAMPAIGNS ====================

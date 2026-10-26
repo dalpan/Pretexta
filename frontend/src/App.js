@@ -39,6 +39,7 @@ const UserHistoryPage      = lazy(() => import('./pages/UserHistoryPage'));
 const ScenarioBuilderPage  = lazy(() => import('./pages/ScenarioBuilderPage'));
 const LiveCampaignsPage    = lazy(() => import('./pages/LiveCampaignsPage'));
 const LiveReviewPage       = lazy(() => import('./pages/LiveReviewPage'));
+const AttackSurfaceMapPage = lazy(() => import('./pages/AttackSurfaceMapPage'));
 const TriageInboxPage      = lazy(() => import('./pages/TriageInboxPage'));
 const FreeTextPage         = lazy(() => import('./pages/FreeTextPage'));
 const UsersPage            = lazy(() => import('./pages/UsersPage'));
@@ -70,6 +71,7 @@ function AdminRoutes() {
       <Route path="/scenarios"               element={<ScenariosPage />} />
       <Route path="/live"                    element={<LiveCampaignsPage />} />
       <Route path="/live/review"             element={<LiveReviewPage />} />
+      <Route path="/attack-surface"          element={<AttackSurfaceMapPage />} />
       <Route path="/quizzes"                 element={<QuizzesPage />} />
       <Route path="/quizzes/:quizId/play"    element={<QuizPlayerPage />} />
       <Route path="/ai-challenge"            element={<AIChatPage />} />
@@ -107,6 +109,7 @@ function TrainerRoutes() {
       <Route path="/scenarios"               element={<ScenariosPage />} />
       <Route path="/live"                    element={<LiveCampaignsPage />} />
       <Route path="/live/review"             element={<LiveReviewPage />} />
+      <Route path="/attack-surface"          element={<AttackSurfaceMapPage />} />
       <Route path="/quizzes"                 element={<QuizzesPage />} />
       <Route path="/quizzes/:quizId/play"    element={<QuizPlayerPage />} />
       <Route path="/ai-challenge"            element={<AIChatPage />} />

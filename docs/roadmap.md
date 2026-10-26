@@ -57,35 +57,48 @@ as an optional advanced layer, not the headline.
 
 ## Priorities (in order)
 
-1. **Remediation loop** *(the missing core)* — a failed live outcome auto-assigns
-   the relevant lab exercise (by the Cialdini principle / channel the person fell
-   for), then schedules a variant retest. This is what makes Pretexta a product
-   with a thesis rather than a set of features.
+1. **Remediation loop** *(the missing core)* — ✅ **DONE**. A failed live outcome
+   auto-assigns the relevant lab exercise (by the Cialdini principle the person
+   fell for), then schedules a variant retest. `services/remediation.py`.
 2. **Click campaigns as the primary flow** — report rate as the headline metric;
-   demote the conversational layer in the UI.
-3. **Prune** — remove certificates, the quiz generator and lab training-campaigns
-   from the UI; gamification already never reads live data — keep it that way (G15).
+   demote the conversational layer in the UI. *(pending)*
+3. **Prune** — ✅ **DONE**. Removed certificates, the standalone AI-challenge menu
+   and lab "Campaigns"; gamification still never reads live data (G15).
 4. **Human Attack Surface Map** *(differentiator; fits the military theme)* —
-   see below.
+   ✅ **DONE**. `services/attack_surface.py`, `routes/attack_surface.py`, and the
+   "Peta Serangan" command page. See below for the model as built.
 
-## Human Attack Surface Map (design sketch)
+## Human Attack Surface Map (as built)
 
-The schema already has the unused building blocks (`OrgNode`, `TrustEdge`).
+The previously-unused `OrgNode` / `TrustEdge` schema is now the backbone.
 
 Model the organization as people and trust relationships: who can instruct whom,
 who approves payments, whose compromise opens a path to money or admin access.
 Overlay live-campaign outcomes to show **which real paths an attacker could walk
 through the human layer** — a defensive "BloodHound for people".
 
-- Nodes: people / roles, with their susceptibility from campaign + lab results.
-- Edges: trust/authority (A can instruct B), approval chains, access.
-- Analysis: shortest social-engineering path to a crown-jewel (e.g. finance
-  approval), and which single person's training most reduces that risk.
-- Military framing: a readiness posture and an after-action report per campaign.
+- **Nodes**: people / roles plus a few *asset* nodes — the crown jewels (money,
+  admin, data). Each person's **susceptibility** (0–100) is computed by blending,
+  in weight order, their real live-campaign behaviour (0.45), lab scores (0.30)
+  and risk profile (0.25); a clicked/submitted live outcome moves them straight
+  into the high band. No data → flagged "estimated".
+- **Edges**: directed trust relationships. `A → B` means a compromised A can
+  credibly reach B (authority pressure, a help-desk relationship, approval or
+  access to an asset). `approves` / `has_access` / `admin_of` point at an asset.
+- **Analysis**: an attacker enters by phishing any one person, then pivots along
+  edges; each hop succeeds with `p = susceptibility(target) × trust_weight`. The
+  best attack path to each crown jewel is the max-probability path from the
+  internet (Dijkstra over `-log p`). **Choke points** are ranked by how much
+  hardening one person cuts *total* modelled exposure across all assets — which
+  correctly surfaces a low-susceptibility sole-gatekeeper (e.g. the domain admin)
+  over a highly-susceptible person who leads nowhere.
+- **Military framing**: a DEFCON-style readiness posture (1 SEVERE … 5 SECURE)
+  from the single easiest route, plus an after-action summary.
 
-Hard requirement: strict privacy framing — this maps *organizational risk*, not
-a hit-list of individuals. Aggregate views by default; individual detail only to
-the person and their trainer (guardrail G13).
+Hard requirement (met): strict privacy framing — this maps *organizational risk*,
+not a hit-list. The page is staff-only (admin/trainer who own the remediation),
+susceptibility is shown as a band, and the raw number + its evidence sit behind a
+node click for the same staff who already see risk profiles (guardrail G13).
 
 ## Deferred (real product, later)
 
