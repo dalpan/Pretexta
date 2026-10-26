@@ -46,7 +46,9 @@ dependencies. Notable groups: `auth`, `challenges`, `quizzes`, `scenarios`,
 | `simulation.py` | Create/own/update simulations; XP + risk + assignment side-effects on completion; blocks client-scored result types |
 | `lab_chat.py` | Server-held AI chat sessions; outcome + score decided server-side |
 | `scenario_runner.py` | Server-held branching-scenario sessions; score applied per choice |
-| `scoring.py`, `gamification.py`, `risk_engine.py`, `adaptive.py` | Susceptibility scoring, XP/badges, risk vector, adaptive difficulty |
+| `scoring.py`, `gamification.py`, `risk_engine.py` | Susceptibility scoring, XP/badges, risk vector |
+| `remediation.py` | Closes the loop: a failure assigns targeted practice, then a retest |
+| `attack_surface.py` | Human Attack Surface Map: susceptibility, trust graph, attack-path analysis |
 | `ai_gateway.py` | Single entry point for LLM calls (persona replies, compliance judge, generation, analysis) |
 | `llm.py` | Provider dispatch (Groq, Gemini, Anthropic, OpenAI, OpenRouter, local) |
 | `persona_engine.py` | Persona catalog (22 personas) + defense-signal detection |

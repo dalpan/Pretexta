@@ -59,10 +59,6 @@ function AssignmentCard({ assignment }) {
           // Navigate directly to quiz player
           navigate(`/quizzes/${assignment.content_id}/play`);
           break;
-        case 'campaign':
-          // Navigate to campaign page — campaign progress is managed there
-          navigate(`/campaigns?active=${assignment.content_id}`);
-          break;
         case 'ai_persona':
           // Navigate to AI challenge with persona pre-selected
           navigate(`/ai-challenge?persona=${assignment.content_id}`);
@@ -107,6 +103,11 @@ function AssignmentCard({ assignment }) {
             {isPassed && (
               <span className="text-[9px] font-mono text-emerald-400 border border-emerald-400/30 px-1.5 py-0.5 uppercase flex-shrink-0">
                 Lulus {score !== null ? `· ${Math.round(score)}%` : ''}
+              </span>
+            )}
+            {(assignment.source === 'remediation' || assignment.source === 'retest') && (
+              <span className="text-[9px] font-mono text-amber-400 border border-amber-400/30 px-1.5 py-0.5 uppercase flex-shrink-0">
+                {assignment.source === 'retest' ? 'Tes ulang' : 'Remediasi'}
               </span>
             )}
           </div>

@@ -1,9 +1,8 @@
-from routes.adaptive import router as adaptive_router
 from routes.analytics import router as analytics_router
 from routes.assignments import router as assignments_router
+from routes.attack_surface import router as attack_surface_router
 from routes.auth import router as auth_router
 from routes.campaigns import router as campaigns_router
-from routes.certificates import router as certificates_router
 from routes.challenges import router as challenges_router
 from routes.debrief import router as debrief_router
 from routes.freetext import router as freetext_router
@@ -47,8 +46,6 @@ __all__ = [
     "webhooks_router",
     "scenario_builder_router",
     "debrief_router",
-    "certificates_router",
-    "adaptive_router",
     # v3 platform services
     "personas_router",
     "risk_profile_router",
@@ -57,4 +54,5 @@ __all__ = [
     "glossary_router",
     "live_router",
     "audit_router",
+    "attack_surface_router",
 ]

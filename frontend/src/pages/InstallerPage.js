@@ -46,7 +46,6 @@ export default function InstallerPage({ onComplete }) {
 
           <Button
             onClick={() => {
-              console.log('BEGIN SETUP clicked');
               setShowIntro(false);
             }}
             className="uppercase tracking-wider"
@@ -108,7 +107,6 @@ export default function InstallerPage({ onComplete }) {
 
             <Button
               onClick={() => {
-                console.log('Next step clicked, current step:', step);
                 setStep(2);
               }}
               className="w-full"
@@ -162,7 +160,6 @@ export default function InstallerPage({ onComplete }) {
               </Button>
               <Button
                 onClick={() => {
-                  console.log('Accept ethics clicked, consent:', consentGiven);
                   if (consentGiven) {
                     setStep(3);
                   } else {
@@ -196,7 +193,6 @@ export default function InstallerPage({ onComplete }) {
 
             <Button
               onClick={() => {
-                console.log('Complete setup clicked');
                 handleComplete();
               }}
               className="w-full uppercase tracking-wider"

@@ -13,6 +13,7 @@ from services.database import db
 from services.llm import (
     LOCAL_DEFAULTS,
     PROVIDER_MODELS,
+    content_text,
     fetch_local_models,
     fetch_openrouter_models,
     get_llm_generate_model,
@@ -229,7 +230,7 @@ async def generate_pretext(request: dict[str, Any], current_user: User = Depends
 
     try:
         response = await get_llm_generate_model(config, prompt, context)
-        sanitized = repair_json(response.content)
+        sanitized = repair_json(content_text(response))
         return {
             "generated_text": sanitized,
             "provider": config["provider"],

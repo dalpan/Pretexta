@@ -43,8 +43,8 @@ Scenarios — `/api/scenarios`:
 | POST | `/resume` | U | Resume/begin a session by `simulation_id` |
 | GET | `/session/{id}` | U | Current session state |
 
-Simulations, debrief, reports, certificates — `/api/simulations`,
-`/api/debrief`, `/api/reports`, `/api/certificates`: read your own
+Simulations, debrief, reports — `/api/simulations`, `/api/debrief`,
+`/api/reports`: read your own
 (staff may review trainees). Clients **cannot** create graded simulation types
 directly (409).
 
@@ -94,8 +94,10 @@ Audit — `/api/audit` (admin): `GET /` (entries), `GET /verify` (chain integrit
 - `/api/campaigns` — lab multi-stage "Training Campaigns".
 - `/api/instructor`, `/api/assignments` — groups, assignments, cohort analytics.
 - `/api/organizations` — create/join/leave; `/api/leaderboard`, `/api/analytics`.
-- `/api/personas`, `/api/glossary`, `/api/adaptive`, `/api/risk-profile`,
+- `/api/personas`, `/api/glossary`, `/api/risk-profile`,
   `/api/notifications`, `/api/webhooks`, `/api/settings`, `/api/import`.
+- `/api/attack-surface` — Human Attack Surface Map (staff only): graph,
+  analysis, node/edge CRUD.
 
 ## Health
 

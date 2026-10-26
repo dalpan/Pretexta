@@ -165,6 +165,12 @@ def _public(doc: dict) -> dict:
     return {**doc, "recipient_count": len(doc.get("recipients", []))}
 
 
+@router.get("/templates")
+async def list_templates(current_user: User = Depends(require_trainer)):
+    """Built-in phishing templates to start a campaign from."""
+    return await db.live_templates.find({}, {"_id": 0}).sort("name", 1).to_list(100)
+
+
 @router.get("/campaigns")
 async def list_campaigns(current_user: User = Depends(require_trainer)):
     # List view omits the heavy fields (body, full recipient list) and keeps a count.
@@ -487,7 +493,10 @@ async def poll_inbox(current_user: User = Depends(require_admin)):
 
 @router.put("/config")
 async def set_config(data: LiveConfig, current_user: User = Depends(require_admin)):
-    doc = {"id": "live_config", **data.model_dump()}
+    # Only persist the fields that were actually sent, so a form that omits a
+    # field (e.g. an older client without the IMAP-SSL toggle) does not reset it
+    # to the model default.
+    doc = {"id": "live_config", **data.model_dump(exclude_unset=True)}
     # A resubmitted mask ("***") means "keep the stored secret", not overwrite it.
     existing = await db.live_config.find_one({"id": "live_config"}, {"_id": 0})
     for secret in ("gophish_api_key", "smtp_password", "imap_password"):

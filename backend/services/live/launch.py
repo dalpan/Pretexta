@@ -155,6 +155,13 @@ async def sync_results(campaign: dict) -> dict:
         if event and EVENT_RANK.get(event, -1) > EVENT_RANK.get(current.get("state", ""), -1):
             updates["state"] = event
             await _record_event(campaign, row["email"], event)
+            if event in ("clicked", "submitted"):
+                try:
+                    from services.remediation import on_live_fail
+
+                    await on_live_fail(campaign, row["email"], event)
+                except Exception as exc:
+                    logger.warning(f"Remediation (live {event}) failed: {exc}")
         if reported and not current.get("reported"):
             updates["reported"] = True
             await _record_event(campaign, row["email"], "reported")
@@ -199,7 +206,8 @@ async def stop_campaign(campaign: dict) -> None:
 
 
 async def report_rate(campaign_id: str) -> dict[str, Any]:
-    """Primary metric: share of recipients who reported, and median time-to-report."""
+    """Primary metric: share of recipients who reported, who clicked, and the
+    median time-to-report. Report rate is the headline — the behaviour we want."""
     recipients = await db.live_recipients.count_documents({"campaign_id": campaign_id})
     reported = await db.live_recipients.count_documents(
         {"campaign_id": campaign_id, "reported": True}
@@ -212,7 +220,36 @@ async def report_rate(campaign_id: str) -> dict[str, Any]:
         "reported": reported,
         "clicked": clicked,
         "report_rate": round(reported / recipients, 3) if recipients else None,
+        "click_rate": round(clicked / recipients, 3) if recipients else None,
+        "median_time_to_report_min": await _median_time_to_report(campaign_id),
     }
+
+
+async def _median_time_to_report(campaign_id: str) -> float | None:
+    """Median minutes from launch to a recipient reporting the phish."""
+    campaign = await db.live_campaigns.find_one({"id": campaign_id}, {"_id": 0, "launched_at": 1})
+    launched = (campaign or {}).get("launched_at")
+    if not launched:
+        return None
+
+    # Compare as naive UTC: Mongo returns `at` tz-naive, launched_at is tz-aware.
+    def _naive_utc(dt: datetime) -> datetime:
+        return dt.astimezone(UTC).replace(tzinfo=None) if dt.tzinfo else dt
+
+    launch_dt = _naive_utc(datetime.fromisoformat(launched))
+    events = await db.live_events.find(
+        {"campaign_id": campaign_id, "type": "reported"}, {"_id": 0, "at": 1}
+    ).to_list(1000)
+    deltas = sorted(
+        (_naive_utc(e["at"]) - launch_dt).total_seconds() / 60
+        for e in events
+        if e.get("at") and (_naive_utc(e["at"]) - launch_dt).total_seconds() >= 0
+    )
+    if not deltas:
+        return None
+    mid = len(deltas) // 2
+    median = deltas[mid] if len(deltas) % 2 else (deltas[mid - 1] + deltas[mid]) / 2
+    return round(median, 1)
 
 
 __all__ = [
@@ -222,3 +259,73 @@ __all__ = [
     "report_rate",
     "get_live_config",
 ]
+
+
+# ── Built-in phishing templates ──────────────────────────────────────
+
+LIVE_TEMPLATES = [
+    {
+        "id": "tmpl-helpdesk-otp",
+        "name": "IT Helpdesk — verify your mailbox",
+        "category": "Credential / OTP",
+        "objective": "agree_to_share_otp",
+        "principles": ["authority", "scarcity"],
+        "sender_name": "IT Helpdesk",
+        "subject": "Action required: verify your mailbox",
+        "body_html": "<p>Hi,</p><p>We detected unusual sign-in activity on your account. "
+        "To keep your mailbox active, please confirm your identity within 2 hours: "
+        '<a href="{{.URL}}">verify now</a>.</p><p>IT Helpdesk</p>',
+    },
+    {
+        "id": "tmpl-ceo-wire",
+        "name": "CEO — urgent wire transfer",
+        "category": "Business Email Compromise",
+        "objective": "agree_to_approve_payment",
+        "principles": ["authority", "scarcity"],
+        "sender_name": "CEO Office",
+        "subject": "Quick favour — are you at your desk?",
+        "body_html": "<p>I'm in a meeting and can't talk. I need an urgent supplier payment "
+        "processed today. Open the secure portal and confirm: "
+        '<a href="{{.URL}}">{{.URL}}</a>. Keep this confidential.</p>',
+    },
+    {
+        "id": "tmpl-hr-policy",
+        "name": "HR — updated policy acknowledgement",
+        "category": "Click / Credential",
+        "objective": "click_link",
+        "principles": ["authority", "commitment"],
+        "sender_name": "Human Resources",
+        "subject": "Please acknowledge the updated remote-work policy",
+        "body_html": "<p>Hello,</p><p>Our remote-work policy has changed. All staff must "
+        'review and acknowledge it by Friday: <a href="{{.URL}}">open the policy</a>.</p>'
+        "<p>Thanks, HR</p>",
+    },
+    {
+        "id": "tmpl-delivery",
+        "name": "Delivery — package held",
+        "category": "Click / Credential",
+        "objective": "click_link",
+        "principles": ["scarcity", "liking"],
+        "sender_name": "Delivery Notifications",
+        "subject": "Your package could not be delivered",
+        "body_html": "<p>We attempted delivery but no one was available. Reschedule within "
+        '24 hours or the parcel is returned: <a href="{{.URL}}">reschedule delivery</a>.</p>',
+    },
+    {
+        "id": "tmpl-it-tool",
+        "name": "IT — install the new security agent",
+        "category": "Tool install",
+        "objective": "agree_to_install_tool",
+        "principles": ["authority"],
+        "sender_name": "IT Security",
+        "subject": "Required: install the new endpoint agent",
+        "body_html": "<p>As part of our security upgrade, all laptops must run the new "
+        'endpoint agent by end of week. Download and install: <a href="{{.URL}}">get the agent</a>.</p>',
+    },
+]
+
+
+async def seed_templates() -> None:
+    if await db.live_templates.count_documents({}):
+        return
+    await db.live_templates.insert_many([dict(t) for t in LIVE_TEMPLATES])

@@ -21,10 +21,9 @@ PROVIDER_MODELS = {
         {"id": "mixtral-8x7b-32768", "name": "Mixtral 8x7B", "context": 32768},
     ],
     "gemini": [
-        {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash", "context": 1000000},
-        {"id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash", "context": 1000000},
-        {"id": "gemini-1.5-pro", "name": "Gemini 1.5 Pro", "context": 2000000},
-        {"id": "gemini-pro", "name": "Gemini Pro (Legacy)", "context": 32000},
+        {"id": "gemini-3.5-flash", "name": "Gemini 3.5 Flash", "context": 1000000},
+        {"id": "gemini-3.1-flash-lite", "name": "Gemini 3.1 Flash Lite", "context": 1000000},
+        {"id": "gemini-3-flash-preview", "name": "Gemini 3 Flash (Preview)", "context": 1000000},
     ],
     "claude": [
         {"id": "claude-sonnet-4-20250514", "name": "Claude Sonnet 4", "context": 200000},
@@ -85,7 +84,7 @@ PROVIDER_MODELS = {
 
 MODEL_DEFAULTS = {
     "groq": "llama-3.3-70b-versatile",
-    "gemini": "gemini-2.0-flash",
+    "gemini": "gemini-3.5-flash",
     "claude": "claude-3-5-sonnet-20241022",
     "openai": "gpt-4o-mini",
     "openrouter": "meta-llama/llama-3.1-8b-instruct:free",
@@ -93,10 +92,9 @@ MODEL_DEFAULTS = {
 }
 
 GEMINI_FALLBACK_MODELS = [
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "models/gemini-1.5-flash",
-    "gemini-pro",
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-3-flash-preview",
 ]
 
 # OpenRouter base URL
@@ -108,6 +106,26 @@ LOCAL_DEFAULTS = {
     "lm_studio": "http://localhost:1234/v1",
     "llamacpp": "http://localhost:8080/v1",
 }
+
+
+def content_text(response) -> str:
+    """Flatten a LangChain message's content to plain text.
+
+    Newer providers (e.g. Gemini 3.x) return `content` as a list of parts rather
+    than a string; older ones return a string. This normalizes both.
+    """
+    content = getattr(response, "content", response)
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for p in content:
+            if isinstance(p, str):
+                parts.append(p)
+            elif isinstance(p, dict):
+                parts.append(p.get("text") or p.get("content") or "")
+        return "".join(parts)
+    return str(content or "")
 
 
 def sanitize_llm_output(text: str) -> str:

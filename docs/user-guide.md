@@ -148,26 +148,70 @@ Read [guardrails.md](guardrails.md) and [ethics.md](ethics.md) first.
 
 ![Live Campaigns](images/08-live-campaigns.jpg)
 
+**The primary flow is a click campaign.** You send a phishing email and measure
+behaviour: who clicks, and — the headline metric — who **reports** it. The page
+leads with the aggregate **report rate**, click rate, and median time-to-report.
+
 **Workflow:**
 
 1. **Verify a domain.** Recipients must be on a domain you control (DNS TXT).
    Reserved TLDs like `acme.test` are sandbox domains, accepted without DNS and
    safe for demos.
-2. **Create a campaign** — objective, Cialdini principles, sender, subject,
-   body, recipients, and a time window (≤ 30 days). Pre-flight checks run
-   automatically and block coercive themes and brand impersonation.
+2. **Create a campaign.** Pick the campaign type — **Kampanye Klik** (the default:
+   measure clicks and reports) or **Percakapan AI** (an advanced layer, below) —
+   then set Cialdini principles, sender, subject, body, recipients, and a time
+   window (≤ 30 days). Pre-flight checks block coercive themes and impersonation.
 3. **Submit → approve.** A *second* admin must approve it; the creator can never
    approve their own campaign.
 4. **Launch.** Pretexta creates the GoPhish objects and sends. The landing page
    is a teachable moment and never captures passwords.
-5. **Replies → Reply Review.** When a recipient replies, an AI persona drafts a
-   follow-up that is **held for a human to approve** before it is sent. If a
-   recipient types a secret (OTP, password), it is redacted before storage and
-   the conversation ends with a teachable-moment email.
-6. **Results.** Track report rate, time-to-report, clicks and per-recipient
-   state. A **kill switch** stops everything immediately.
+5. **Results.** Report rate is the headline, alongside click rate, median
+   time-to-report and per-recipient state. A **kill switch** stops everything
+   immediately. A click or a failure also feeds the remediation loop.
 
-The **Reply Review** queue is where you approve, edit, or discard each AI reply.
+**Advanced: AI conversation (optional).** Choose the *Percakapan AI* type to let
+an AI persona continue a reply thread toward one approved objective. Every persona
+reply is **held in the Reply Review queue for a human to approve** before it is
+sent; if a recipient types a secret (OTP, password) it is redacted before storage
+and the thread ends with a teachable-moment email. This layer is powerful but
+stays manual by design (G8) — it is not the headline.
+
+---
+
+## 5b. Human Attack Surface Map (admin / trainer)
+
+**Peta Serangan** (COMMAND section) is an attacker's-eye view of your
+organization: people, the trust relationships between them, and the short social-
+engineering paths that lead from *anyone's* inbox to a crown jewel (a payment
+approval, the domain admin console, a customer database). Think "BloodHound, but
+for the human layer."
+
+**How to use it:**
+
+1. Open **Peta Serangan**. On an empty map, click **Muat Organisasi Contoh** to
+   load a realistic sample org and see the model working, then replace it with
+   your own people and assets (or wire it to real users via `user_id`).
+2. **Read the graph.** Each person is a circle coloured by *susceptibility*
+   (green = resistant, amber = medium, red = highly susceptible); the number is
+   their score out of 100. Diamonds are crown-jewel assets. Arrows show who can
+   credibly reach whom.
+3. **Pick an attack path** on the right to light up the easiest route an attacker
+   could walk to that asset, with its modelled success probability.
+4. **Train Lebih Dulu** ranks the highest-leverage people to harden — measured by
+   how much training *that one person* cuts total modelled exposure. A quiet
+   result worth noting: a low-susceptibility person can top this list if they are
+   the sole gatekeeper to an asset.
+5. **Readiness posture** (top banner) is a DEFCON-style condition from the single
+   easiest route; the **After-Action** panel summarises it in plain language.
+
+Where does susceptibility come from? Real behaviour first — live-campaign outcomes
+(a click or a submitted credential moves someone straight into the red band),
+then lab scores, then the risk profile. People with no data yet are flagged
+*estimated*.
+
+**Privacy (G13):** this maps *organizational risk*, not a hit-list. The page is
+staff-only, scores are shown as bands, and the raw number and its evidence are
+only revealed on a node click — to the same staff who already see risk profiles.
 
 ---
 
@@ -177,6 +221,7 @@ The **Reply Review** queue is where you approve, edit, or discard each AI reply.
 |------|---------|-------|--------------|
 | Command Center / Dashboard | top | all | Overview + quick actions |
 | All Users | Command | trainer/admin | Manage accounts |
+| Peta Serangan (Attack Surface Map) | Command | trainer/admin | Social-engineering paths to crown jewels + choke points |
 | Training Groups | Command | trainer/admin | Cohorts |
 | Assignments | Command | trainer/admin | Assign exercises |
 | Assessment Reports | Command | trainer/admin | Trainee results & risk |

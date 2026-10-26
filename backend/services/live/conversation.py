@@ -91,6 +91,16 @@ async def _record_message(
     return doc
 
 
+async def _remediate(campaign: dict, email: str, outcome: str) -> None:
+    """Assign targeted practice to a recipient who failed a live conversation."""
+    try:
+        from services.remediation import on_live_fail
+
+        await on_live_fail(campaign, email, outcome)
+    except Exception as exc:
+        logger.warning(f"Remediation (live {outcome}) failed: {exc}")
+
+
 async def _record_event(campaign: dict, email: str, event_type: str) -> None:
     await db.live_events.insert_one(
         {
@@ -134,6 +144,7 @@ async def process_inbound(campaign: dict, email: str, raw_body: str, gateway=Non
         await _close(campaign, email, "disclosed")
         await _record_event(campaign, email, "disclosed")
         await _queue_teachable_moment(campaign, email)
+        await _remediate(campaign, email, "disclosed")
         return {"status": "disclosed", "secrets_found": secrets_found}
 
     # 2. Compliance judge: did they AGREE to the objective?
@@ -141,6 +152,7 @@ async def process_inbound(campaign: dict, email: str, raw_body: str, gateway=Non
         await _close(campaign, email, "complied")
         await _record_event(campaign, email, "complied")
         await _queue_teachable_moment(campaign, email)
+        await _remediate(campaign, email, "complied")
         return {"status": "complied"}
 
     # 3. Turn budget.

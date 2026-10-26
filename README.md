@@ -34,45 +34,33 @@ stops before any real secret is disclosed). The primary live metrics are
 
 ## Screenshots
 
-<details>
-<summary><strong>Dashboard</strong></summary>
+**Human Attack Surface Map** — a defensive "BloodHound for people." The highlighted
+route is the easiest path an attacker could walk from the outside to a crown jewel.
 
-![Dashboard](screenshots/03-dashboard.png)
+![Attack Surface Map](screenshots/01-attack-surface.png)
+
+**Live Campaigns** — report rate leads the dashboard, not click rate.
+
+![Live Campaigns](screenshots/02-live-campaigns.png)
+
+<details>
+<summary><strong>Inbox Triage</strong> — signal-detection exercise (spot phish among legitimate mail)</summary>
+
+![Inbox Triage](screenshots/03-inbox-triage.png)
 
 </details>
 
 <details>
-<summary><strong>AI Chat Simulation</strong> — Real-time roleplay with "The Urgent CEO"</summary>
+<summary><strong>Command Center</strong> — the trainer/admin operations view</summary>
 
-![AI Chat](screenshots/05-ai-chat.png)
-
-</details>
-
-<details>
-<summary><strong>AI Challenge Selection</strong> — 22 built-in social engineering personas</summary>
-
-![AI Challenge](screenshots/04-ai-challenge.png)
+![Command Center](screenshots/05-command-center.png)
 
 </details>
 
 <details>
-<summary><strong>Settings</strong> — 6 LLM providers with model selection (200+ models via OpenRouter)</summary>
+<summary><strong>Settings</strong> — GoPhish + mail-relay wiring for live mode (secrets stored masked)</summary>
 
-![Settings](screenshots/06-settings.png)
-
-</details>
-
-<details>
-<summary><strong>Leaderboard</strong> — XP, levels, streaks, and rankings</summary>
-
-![Leaderboard](screenshots/07-leaderboard.png)
-
-</details>
-
-<details>
-<summary><strong>Login</strong></summary>
-
-![Login](screenshots/02-login.png)
+![Settings](screenshots/04-settings-gophish.png)
 
 </details>
 
@@ -118,61 +106,74 @@ Backend runs at `localhost:8001` with hot-reload. Frontend runs at `localhost:30
 
 ## Features
 
-### Core Simulation
+### Live campaigns — the headline
+
+Authorized phishing in real mailboxes via **GoPhish**. The primary flow is a
+**click campaign**: send a lure and measure behaviour — who clicks, and the
+metric that actually matters, **who reports it**. Report rate, click rate and
+median time-to-report lead the dashboard.
+
+| Capability | What it does |
+|---|---|
+| **Report-rate first** | Measures the defensive behaviour that matters, not clicks alone |
+| **Two-person approval** | A second admin must approve every campaign before launch (G2) |
+| **Domain verification** | Recipients must be on a domain you control (DNS TXT) or a `.test` sandbox |
+| **Kill switch** | Stops all in-flight sending immediately (G4) |
+| **No credential capture** | Landing pages are teachable moments — never password forms (G5) |
+| **Optional AI conversation** | A persona can continue a reply thread toward one approved objective — every reply **held for human review**, secrets redacted before storage (G6–G8) |
+| **Hash-chained audit log** | Every state change is tamper-evident (G9) |
+
+See [guardrails.md](docs/guardrails.md) for the full G1–G15 set.
+
+### The remediation loop
+
+Pretexta is a closed loop, not a pile of exercises: **measure → remediate →
+retest**. When someone fails — a live click or a failed lab exercise — the server
+automatically assigns targeted practice for the exact Cialdini principle they
+fell for, then schedules a variant retest to confirm the lesson stuck.
+
+### Human Attack Surface Map
+
+A defensive **"BloodHound for people."** Model the organization as people, trust
+relationships, and crown-jewel assets (money, admin, data); overlay real
+susceptibility from campaign and lab results; then compute the easiest
+social-engineering path to each asset and the highest-leverage person to train
+first. Privacy-first — it maps organizational risk, not a hit-list (G13).
+
+### Lab exercises — all scored on the server
+
+Clients can't forge a score or read an answer key; grading is server-authoritative.
+
+| Exercise | What it measures |
+|---|---|
+| **Inbox Triage** | Signal-detection (d′) — spotting phish among legitimate mail |
+| **Write Your Reply** | A free-text reply to a lure, graded against an LLM rubric |
+| **Branching scenarios** | Decisions under pressure, scored per choice |
+| **AI chat roleplay** | Open-ended conversation with an adversarial persona |
+| **Quizzes** | Knowledge checks |
+
+### Behavioural risk profiling
+
+A per-person **risk vector** across Cialdini's six principles, updated from
+demonstrated behaviour (never auto-decremented). It feeds both the remediation
+loop and the attack-surface map.
+
+### Teams & organizations
+
+Organizations with invite codes, training groups, assignments, and aggregate
+(cohort-only) analytics for trainers and admins. Gamification (XP, badges,
+streaks, leaderboard) exists for the lab but **never reads live-campaign data** (G15).
+
+### Content tools & platform
 
 | Feature | Description |
 |---------|-------------|
-| **AI Chat Roleplay** | Real-time WhatsApp-style conversations with AI-driven social engineering personas |
-| **Adaptive Difficulty** | AI automatically adjusts attack sophistication based on your performance |
-| **Win/Loss Detection** | Automatic detection of compromise (credential sharing, link clicks) vs successful defense |
-| **Post-Sim Debrief** | Detailed psychological breakdown: which Cialdini principles were used and when you were most vulnerable |
-| **AI Deep Analysis** | LLM-powered analysis of your simulation performance with personalized tips |
-
-### Campaign Mode
-
-Multi-stage attack chains that simulate real-world scenarios:
-
-```
-Email phishing → Follow-up phone call → Social media approach → Final extraction
-```
-
-Each stage unlocks progressively. Track progress, get per-stage scoring, and receive a full campaign debrief.
-
-### Gamification
-
-| Feature | Description |
-|---------|-------------|
-| **XP & Levels** | Earn experience points for every simulation completed |
-| **12 Badges** | Achievements like "Phishing Detector", "Authority Challenger", "Iron Will" (30-day streak) |
-| **Daily Streaks** | Maintain consecutive training days for bonus XP |
-| **Leaderboard** | Global and team rankings |
-
-### Team & Organization
-
-- Create organizations with invite codes
-- Team analytics dashboard with aggregate scores
-- Identify weakest Cialdini categories across your team
-- Per-member performance tracking
-- Webhook configuration (event delivery is not wired up yet)
-
-### Content Tools
-
-| Feature | Description |
-|---------|-------------|
-| **Scenario Builder** | Visual editor to create custom social engineering scenarios |
-| **Quiz Mode** | Knowledge assessments on social engineering tactics |
-| **Certificate Export** | Printable completion certificates (Platinum / Gold / Silver) |
-| **YAML Import** | Bulk import scenarios and quizzes from YAML files |
-| **Bilingual** | Full English and Bahasa Indonesia support |
-
-### Platform
-
-- **Dark/Light theme** toggle
-- **PWA support** — installable on mobile
-- **Email renderer** — realistic Gmail-style inbox for phishing scenarios
-- **Voice simulation** — vishing practice via Web Speech API (Chrome/Edge)
-- **Notification system** — real-time alerts for badges, level-ups, and reminders
-- **Error boundary** — graceful crash recovery
+| **Scenario Builder** | Visual editor for custom branching scenarios |
+| **YAML Import** | Bulk-import scenarios and quizzes from YAML |
+| **Bilingual** | Full English and Bahasa Indonesia |
+| **Military command theme** | Dark operations-room UI |
+| **Multi-provider LLM** | Six providers — see below |
+| **Platform** | Server-authoritative scoring everywhere, notifications, error boundary, PWA-installable |
 
 ## LLM Providers
 
@@ -182,9 +183,9 @@ Pretexta supports **6 LLM providers** with model selection. Configure in **Setti
 |----------|--------|-----------|----------|
 | **OpenRouter** | 200+ (Llama, GPT, Claude, Mistral, DeepSeek, Qwen) | Yes | Best value, most models |
 | **Groq** | Llama 3.3 70B, Mixtral, Gemma | Yes | Fastest inference |
-| **Google Gemini** | Gemini 2.0 Flash, 1.5 Pro | Yes | Generous limits |
-| **OpenAI** | GPT-4o, GPT-4o Mini | No | Industry standard |
-| **Anthropic** | Claude Sonnet 4, 3.5 Sonnet/Haiku | No | Best reasoning |
+| **Google Gemini** | Gemini Flash / Pro | Yes | Generous free limits |
+| **OpenAI** | GPT-4o / GPT-4o mini / o-series | No | Industry standard |
+| **Anthropic** | Claude Sonnet / Haiku | No | Best reasoning |
 | **Local LLM** | Any model via Ollama / LM Studio / llama.cpp | N/A | Full privacy, no API key |
 
 > **Recommended**: Start with **OpenRouter** (free models available) or **Groq** (ultra-fast free tier).

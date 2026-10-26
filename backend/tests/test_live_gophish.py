@@ -283,6 +283,10 @@ async def test_results_report_rate(api, fake_gophish):
     assert metrics["recipients"] == 2
     assert metrics["reported"] == 1
     assert metrics["report_rate"] == 0.5
+    assert metrics["click_rate"] == 0.5  # alice clicked
+    # One recipient reported after launch, so a median time-to-report is available.
+    assert metrics["median_time_to_report_min"] is not None
+    assert metrics["median_time_to_report_min"] >= 0
 
 
 # ---------- kill stops GoPhish ----------
