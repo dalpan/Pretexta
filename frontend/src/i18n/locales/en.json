@@ -38,7 +38,8 @@
     "about": "About",
     "live_campaigns": "Live Campaigns",
     "reply_review": "Reply Review",
-    "triage": "Inbox Triage"
+    "triage": "Inbox Triage",
+    "write_reply": "Write Your Reply"
   },
   "dashboard": {
     "welcome": "Welcome to Pretexta",

@@ -57,14 +57,14 @@ Quizzes and branching scenarios still exist, but as **remediation and warm-up**,
 not as the headline. Their scoring is now server-authoritative, so they cannot
 be gamed, but they remain lower-signal than the two surfaces above by design.
 
-The roadmap moves their *content* toward higher signal too:
+Two higher-signal exercises already sit alongside them:
 
 - **Inbox triage** — a realistic inbox mixing mostly legitimate mail with a few
-  pretexts, under time pressure, where flagging a legitimate message costs
-  points. This measures *discrimination* (signal detection), not recall.
+  pretexts, where flagging a legitimate message costs points. Measures
+  *discrimination* (d′), not recall. Deterministic, so it runs offline.
 - **Free-text response** — "what would you reply?" graded by an LLM against a
   rubric (did they verify through an independent channel, or ask the attacker
-  "is this really you?"). This reuses the server-side scoring infrastructure.
+  "is this really you?"), scored server-side.
 - **Consequence-driven scenarios** — branches with no obviously-correct option
   and escalating pressure (the persona engine already tracks `pressure_level`).
 

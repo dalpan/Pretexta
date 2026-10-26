@@ -76,13 +76,17 @@ fires (all best-effort, never blocking the response):
 3. **Assignment linkage** — if an active assignment matches the content, an
    `assignment_results` row is recorded and the assignment completed on a pass.
 
-## Roadmap: higher-signal scoring
+## Higher-signal exercises (implemented)
 
-The current quiz/scenario scoring is honest but low-signal (see
-[concept.md](concept.md)). Planned additions, reusing this same
-server-authoritative pattern:
+Beyond quizzes and scenarios, two higher-signal exercises use the same
+server-authoritative pattern (see [concept.md](concept.md)):
 
-- **Inbox triage** — signal-detection metrics (hits, false alarms, d′) instead
-  of a single 0–100.
-- **Free-text response** — an LLM graded against a rubric (independent-channel
-  verification vs asking the attacker), via `ai_gateway`.
+- **Inbox triage** (`services/triage.py`) — a realistic inbox of mostly
+  legitimate mail with a few pretexts. Scored with signal-detection theory:
+  d′ (discrimination) and criterion (bias), with a false-alarm penalty so
+  "report everything" does not win. Deterministic — no LLM needed.
+- **Free-text response** (`services/freetext.py`) — the trainee writes how they
+  would reply to a pretext; an LLM judges it against a fixed rubric (did they
+  refuse, verify through an independent channel, report?). The rubric booleans
+  are turned into a score **server-side**, not taken from the model's own
+  number. Requires a configured LLM provider.

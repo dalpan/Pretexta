@@ -212,6 +212,43 @@ class AIGateway:
         )
         return raw.content.strip().upper().startswith("YES")
 
+    async def grade_freetext(self, *, scenario: str, response: str, language: str = "en") -> dict:
+        """Grade a trainee's free-text reply to a social-engineering message
+        against a fixed rubric. Returns a dict of booleans plus short feedback."""
+        import json
+
+        lang = "Write feedback in Indonesian." if language == "id" else "Write feedback in English."
+        system = SystemMessage(
+            content=(
+                "You grade how a person replied to a suspected social-engineering "
+                "message, for security-awareness training. Judge ONLY their reply.\n"
+                "Return strict JSON with these keys and no prose outside it:\n"
+                '{"complied": bool,            // did they give the requested secret/action, or agree to\n'
+                ' "verified_independently": bool, // did they say they would verify via a TRUSTED channel '
+                "(call the official number, check with IT) rather than trusting the message\n"
+                ' "asked_the_sender": bool,     // weak move: they ask the sender "is this really you?" '
+                "instead of an independent channel\n"
+                ' "would_report": bool,         // would they report/escalate it\n'
+                ' "feedback": "one or two sentences of coaching"}\n'
+                f"{lang}"
+            )
+        )
+        user = HumanMessage(
+            content=f"The suspicious message was:\n{scenario}\n\nTheir reply was:\n{response}"
+        )
+        raw = await _invoke_provider(self._config, [system, user], temperature=0.0)
+        try:
+            data = json.loads(repair_json(raw.content))
+        except Exception:
+            data = {}
+        return {
+            "complied": bool(data.get("complied")),
+            "verified_independently": bool(data.get("verified_independently")),
+            "asked_the_sender": bool(data.get("asked_the_sender")),
+            "would_report": bool(data.get("would_report")),
+            "feedback": str(data.get("feedback", ""))[:600],
+        }
+
     @classmethod
     async def from_db(cls) -> "AIGateway | None":
         """

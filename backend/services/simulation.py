@@ -43,6 +43,7 @@ async def create_simulation(data: dict, user_id: str, internal: bool = False) ->
         "simulation",
         "challenge",
         "triage",
+        "freetext",
     ):
         raise HTTPException(
             status_code=409,

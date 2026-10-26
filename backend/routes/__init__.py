@@ -6,6 +6,7 @@ from routes.campaigns import router as campaigns_router
 from routes.certificates import router as certificates_router
 from routes.challenges import router as challenges_router
 from routes.debrief import router as debrief_router
+from routes.freetext import router as freetext_router
 from routes.glossary import router as glossary_router
 from routes.imports import router as imports_router
 from routes.instructor import router as instructor_router
@@ -32,6 +33,7 @@ __all__ = [
     "quizzes_router",
     "scenarios_router",
     "triage_router",
+    "freetext_router",
     "simulations_router",
     "llm_router",
     "settings_router",

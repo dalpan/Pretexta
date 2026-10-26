@@ -43,6 +43,7 @@ const AIChallengePage      = lazy(() => import('./pages/AIChallengePage'));
 const LiveCampaignsPage    = lazy(() => import('./pages/LiveCampaignsPage'));
 const LiveReviewPage       = lazy(() => import('./pages/LiveReviewPage'));
 const TriageInboxPage      = lazy(() => import('./pages/TriageInboxPage'));
+const FreeTextPage         = lazy(() => import('./pages/FreeTextPage'));
 const UsersPage            = lazy(() => import('./pages/UsersPage'));
 
 function PageLoader() {
@@ -79,6 +80,7 @@ function AdminRoutes() {
       <Route path="/ai-generate"             element={<AIChallengePage />} />
       <Route path="/scenario-builder"        element={<ScenarioBuilderPage />} />
       <Route path="/triage"                  element={<TriageInboxPage />} />
+      <Route path="/write-reply"             element={<FreeTextPage />} />
       <Route path="/simulations"             element={<SimulationsPage />} />
       <Route path="/simulations/:simulationId/play"    element={<ProtectedRoute><SimulationPlayerPage /></ProtectedRoute>} />
       <Route path="/simulations/:simulationId/debrief" element={<DebriefPage />} />
@@ -117,6 +119,7 @@ function TrainerRoutes() {
       <Route path="/ai-challenge"            element={<AIChatPage />} />
       <Route path="/scenario-builder"        element={<ScenarioBuilderPage />} />
       <Route path="/triage"                  element={<TriageInboxPage />} />
+      <Route path="/write-reply"             element={<FreeTextPage />} />
       <Route path="/simulations"             element={<SimulationsPage />} />
       <Route path="/simulations/:simulationId/play"    element={<ProtectedRoute><SimulationPlayerPage /></ProtectedRoute>} />
       <Route path="/simulations/:simulationId/debrief" element={<DebriefPage />} />
@@ -147,6 +150,7 @@ function UserRoutes() {
       <Route path="/campaigns"               element={<CampaignsPage />} />
       <Route path="/ai-challenge"            element={<AIChatPage />} />
       <Route path="/triage"                  element={<TriageInboxPage />} />
+      <Route path="/write-reply"             element={<FreeTextPage />} />
       <Route path="/simulations"             element={<SimulationsPage />} />
       <Route path="/simulations/:simulationId/play"    element={<ProtectedRoute><SimulationPlayerPage /></ProtectedRoute>} />
       <Route path="/simulations/:simulationId/debrief" element={<DebriefPage />} />
