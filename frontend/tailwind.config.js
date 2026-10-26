@@ -4,45 +4,47 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Military / tactical palette: olive drab + brass on dark olive.
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
-        ring: 'hsl(142, 70%, 50%)', // Neon Green ring
-        background: 'hsl(240, 10%, 3.9%)', // Almost black
-        foreground: 'hsl(0, 0%, 98%)',
+        ring: 'hsl(79, 45%, 42%)', // Olive drab
+        background: 'hsl(80, 10%, 6%)', // Dark olive black
+        foreground: 'hsl(60, 8%, 90%)',
         primary: {
-          DEFAULT: 'hsl(142, 70%, 50%)', // Hacker Green
-          foreground: 'hsl(240, 10%, 3.9%)'
+          DEFAULT: 'hsl(79, 45%, 42%)', // Olive drab green
+          foreground: 'hsl(80, 12%, 7%)'
         },
         secondary: {
-          DEFAULT: 'hsl(240, 3.7%, 15.9%)', // Dark Gray
-          foreground: 'hsl(0, 0%, 98%)'
+          DEFAULT: 'hsl(80, 8%, 16%)', // Field gray
+          foreground: 'hsl(60, 8%, 90%)'
         },
         destructive: {
-          DEFAULT: 'hsl(0, 62.8%, 30.6%)',
+          DEFAULT: 'hsl(2, 60%, 42%)', // Alert red
           foreground: 'hsl(0, 0%, 98%)'
         },
         muted: {
-          DEFAULT: 'hsl(240, 3.7%, 15.9%)',
-          foreground: 'hsl(240, 5%, 64.9%)'
+          DEFAULT: 'hsl(80, 8%, 16%)',
+          foreground: 'hsl(80, 6%, 60%)'
         },
         accent: {
-          DEFAULT: 'hsl(180, 100%, 50%)', // Cyan
-          foreground: 'hsl(240, 10%, 3.9%)'
+          DEFAULT: 'hsl(43, 74%, 49%)', // Brass / amber
+          foreground: 'hsl(80, 12%, 7%)'
         },
         popover: {
-          DEFAULT: 'hsl(240, 10%, 3.9%)',
-          foreground: 'hsl(0, 0%, 98%)'
+          DEFAULT: 'hsl(80, 10%, 7%)',
+          foreground: 'hsl(60, 8%, 90%)'
         },
         card: {
-          DEFAULT: 'hsla(240, 10%, 3.9%, 0.7)', // Semi-transparent dark
-          foreground: 'hsl(0, 0%, 98%)'
+          DEFAULT: 'hsla(80, 10%, 8%, 0.72)', // Semi-transparent dark olive
+          foreground: 'hsl(60, 8%, 90%)'
         },
-        success: 'hsl(142, 71%, 45%)',
-        warning: 'hsl(48, 96%, 53%)',
-        info: 'hsl(180, 100%, 50%)'
+        tertiary: 'hsl(95, 40%, 45%)', // Field green (used on result screens)
+        success: 'hsl(95, 40%, 45%)',
+        warning: 'hsl(43, 90%, 52%)',
+        info: 'hsl(43, 55%, 58%)' // Khaki
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Oswald', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace']
       },
       borderRadius: {

@@ -1,7 +1,7 @@
 /* Global styles */
 .App {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0b0f14 0%, #161b22 100%);
+  background: linear-gradient(135deg, #10120c 0%, #181b12 100%);
 }
 
 /* Glitch effect for logos/titles */
@@ -37,7 +37,7 @@
 /* Terminal typing effect */
 .terminal-typing {
   overflow: hidden;
-  border-right: 0.15em solid #00e5ff;
+  border-right: 0.15em solid #b08d2b;
   white-space: nowrap;
   animation: typing 2s steps(40, end), blink-caret 0.75s step-end infinite;
 }
@@ -57,7 +57,7 @@
     border-color: transparent;
   }
   50% {
-    border-color: #00e5ff;
+    border-color: #b08d2b;
   }
 }
 
@@ -72,17 +72,17 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #00e5ff30;
+  background: #b08d2b30;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00e5ff60;
+  background: #b08d2b60;
 }
 
 /* Focus ring for accessibility */
 *:focus-visible {
-  outline: 2px solid #00e5ff;
+  outline: 2px solid #b08d2b;
   outline-offset: 2px;
 }
 
@@ -100,16 +100,16 @@
 /* Grid background pattern */
 .grid-bg {
   background-image:
-    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(140, 150, 70, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(140, 150, 70, 0.05) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
 /* Neon glow effect */
 .neon-glow {
-  box-shadow: 0 0 5px #00e5ff, 0 0 10px #00e5ff, 0 0 15px #00e5ff;
+  box-shadow: 0 0 5px #b08d2b, 0 0 10px #b08d2b, 0 0 15px #b08d2b;
 }
 
 .neon-text {
-  text-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff, 0 0 30px #00e5ff;
+  text-shadow: 0 0 10px #b08d2b, 0 0 20px #b08d2b, 0 0 30px #b08d2b;
 }
