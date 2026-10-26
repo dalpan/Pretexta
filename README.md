@@ -331,6 +331,7 @@ Or use the **Scenario Builder** in the UI for a visual editor.
 
 Full documentation lives in [`docs/`](docs/):
 
+- [User Guide / Rule Book](docs/user-guide.md) — install, usage (admin & trainee), every menu with screenshots
 - [Concept](docs/concept.md) — why Pretexta measures behavior, not knowledge
 - [Architecture](docs/architecture.md) · [Scoring & anti-cheat](docs/scoring.md) · [Guardrails](docs/guardrails.md)
 - [Live campaigns design](docs/design/live-campaigns.md) · [API](docs/api.md) · [Deployment](docs/deployment.md)
