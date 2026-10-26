@@ -34,45 +34,33 @@ stops before any real secret is disclosed). The primary live metrics are
 
 ## Screenshots
 
-<details>
-<summary><strong>Dashboard</strong></summary>
+**Human Attack Surface Map** — a defensive "BloodHound for people." The highlighted
+route is the easiest path an attacker could walk from the outside to a crown jewel.
 
-![Dashboard](screenshots/03-dashboard.png)
+![Attack Surface Map](screenshots/01-attack-surface.png)
+
+**Live Campaigns** — report rate leads the dashboard, not click rate.
+
+![Live Campaigns](screenshots/02-live-campaigns.png)
+
+<details>
+<summary><strong>Inbox Triage</strong> — signal-detection exercise (spot phish among legitimate mail)</summary>
+
+![Inbox Triage](screenshots/03-inbox-triage.png)
 
 </details>
 
 <details>
-<summary><strong>AI Chat Simulation</strong> — Real-time roleplay with "The Urgent CEO"</summary>
+<summary><strong>Command Center</strong> — the trainer/admin operations view</summary>
 
-![AI Chat](screenshots/05-ai-chat.png)
-
-</details>
-
-<details>
-<summary><strong>AI Challenge Selection</strong> — 22 built-in social engineering personas</summary>
-
-![AI Challenge](screenshots/04-ai-challenge.png)
+![Command Center](screenshots/05-command-center.png)
 
 </details>
 
 <details>
-<summary><strong>Settings</strong> — 6 LLM providers with model selection (200+ models via OpenRouter)</summary>
+<summary><strong>Settings</strong> — GoPhish + mail-relay wiring for live mode (secrets stored masked)</summary>
 
-![Settings](screenshots/06-settings.png)
-
-</details>
-
-<details>
-<summary><strong>Leaderboard</strong> — XP, levels, streaks, and rankings</summary>
-
-![Leaderboard](screenshots/07-leaderboard.png)
-
-</details>
-
-<details>
-<summary><strong>Login</strong></summary>
-
-![Login](screenshots/02-login.png)
+![Settings](screenshots/04-settings-gophish.png)
 
 </details>
 
