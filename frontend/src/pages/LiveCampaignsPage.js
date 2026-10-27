@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Radio, Plus, ShieldCheck, Send, Play, Octagon, CheckCircle2, XCircle,
   AlertTriangle, Info, RefreshCw, Globe, Inbox, MousePointerClick, Flag,
-  MessageSquare, Clock,
+  MessageSquare, Clock, Trash2, ShieldOff, X,
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -130,6 +130,53 @@ function DomainsCard() {
             </div>
           </div>
         ))}
+      </div>
+    </Card>
+  );
+}
+
+function ExclusionsCard() {
+  const [rows, setRows] = useState([]);
+  const [emails, setEmails] = useState('');
+  const load = useCallback(async () => {
+    try { setRows((await api.get('/live/exclusions')).data); } catch { /* noop */ }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const add = async () => {
+    const list = emails.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+    if (!list.length) return;
+    try {
+      const res = await api.post('/live/exclusions', { emails: list, reason: 'Added from UI' });
+      toast.success(`${res.data.added} ditambahkan ke daftar kecuali`);
+      setEmails(''); load();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Gagal'); }
+  };
+  const remove = async (email) => {
+    try { await api.delete(`/live/exclusions/${encodeURIComponent(email)}`); load(); }
+    catch (e) { toast.error(e.response?.data?.detail || 'Gagal'); }
+  };
+
+  return (
+    <Card className="p-5 space-y-3">
+      <h3 className="font-bold flex items-center gap-2"><ShieldOff className="w-5 h-5 text-amber-400" /> Daftar kecuali</h3>
+      <p className="text-xs text-muted-foreground">Alamat di sini <strong>tidak akan pernah</strong> dikirimi simulasi — mis. eksekutif yang opt-out, mailbox bersama, atau orang yang sedang cuti.</p>
+      <div className="flex gap-2">
+        <Input placeholder="ceo@acme.test" value={emails} onChange={(e) => setEmails(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()} />
+        <Button onClick={add} size="sm"><Plus className="w-4 h-4" /></Button>
+      </div>
+      <div className="space-y-1 max-h-40 overflow-auto">
+        {rows.length === 0
+          ? <p className="text-xs text-muted-foreground font-mono">Belum ada pengecualian.</p>
+          : rows.map((r) => (
+            <div key={r.email} className="flex items-center justify-between text-sm border-b border-border py-1.5">
+              <span className="font-mono">{r.email}</span>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400" onClick={() => remove(r.email)}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          ))}
       </div>
     </Card>
   );
@@ -287,7 +334,7 @@ function CreateForm({ onClose, onCreated }) {
   );
 }
 
-function Detail({ id, onChanged }) {
+function Detail({ id, onChanged, onDeleted }) {
   const [c, setC] = useState(null);
   const [results, setResults] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -315,6 +362,17 @@ function Detail({ id, onChanged }) {
       if (d?.preflight) toast.error('Pre-flight blocked submission');
       else toast.error(typeof d === 'string' ? d : `${verb} failed`);
       load();
+    }
+  };
+
+  const remove = async () => {
+    if (!window.confirm(`Hapus kampanye "${c.name}"? Semua data penerima & pesannya ikut terhapus.`)) return;
+    try {
+      await api.delete(`/live/campaigns/${id}`);
+      toast.success('Kampanye dihapus');
+      onDeleted?.();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Gagal menghapus');
     }
   };
 
@@ -357,6 +415,10 @@ function Detail({ id, onChanged }) {
         {c.status === 'running' && <Button size="sm" variant="outline" onClick={() => act('sync')}><RefreshCw className="w-4 h-4 mr-1" /> Sync results</Button>}
         {!['killed', 'closed'].includes(c.status) && (
           <Button size="sm" variant="destructive" onClick={() => act('kill')}><Octagon className="w-4 h-4 mr-1" /> Kill</Button>
+        )}
+        {!['pending_approval', 'approved', 'launching', 'running'].includes(c.status) && (
+          <Button size="sm" variant="outline" onClick={remove}
+            className="text-red-400 border-red-400/30"><Trash2 className="w-4 h-4 mr-1" /> Hapus</Button>
         )}
       </div>
 
@@ -508,6 +570,7 @@ export default function LiveCampaignsPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="space-y-4">
           <DomainsCard />
+          <ExclusionsCard />
           <Card className="p-5">
             <h3 className="font-bold mb-3">Campaigns</h3>
             {campaigns.length === 0
@@ -532,7 +595,8 @@ export default function LiveCampaignsPage() {
         <div className="lg:col-span-2">
           {creating && <CreateForm onClose={() => setCreating(false)}
             onCreated={(id) => { setCreating(false); setSelected(id); load(); }} />}
-          {!creating && selected && <Detail id={selected} onChanged={load} />}
+          {!creating && selected && <Detail id={selected} onChanged={load}
+            onDeleted={() => { setSelected(null); load(); }} />}
           {!creating && !selected && (
             <EmptyState icon={Radio} title="Select a campaign" description="Pick one on the left, or create a new campaign." />
           )}
