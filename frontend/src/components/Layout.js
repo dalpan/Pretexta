@@ -6,7 +6,7 @@ import NotificationBell from './NotificationBell';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Terminal, LayoutDashboard, FileCode, ListChecks, Activity, Settings, LogOut,
-  BookOpen, Trophy, BarChart3, Flag, Pencil, Zap, Sun, Moon, User, Globe,
+  BookOpen, Trophy, BarChart3, Flag, Pencil, Sun, Moon, User, Globe,
   Menu, X, Users, ClipboardList, ShieldAlert, Radio, Target, Inbox, MessageSquare, PenLine,
   Shield, UserCog, History, BookMarked, Share2,
 } from 'lucide-react';
@@ -37,7 +37,6 @@ function buildAdminNav(t) {
       items: [
         { name: t('nav.scenarios'), path: '/scenarios', icon: FileCode },
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
-        { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
         { name: t('nav.triage'), path: '/triage', icon: Inbox },
         { name: t('nav.write_reply'), path: '/write-reply', icon: PenLine },
@@ -49,6 +48,7 @@ function buildAdminNav(t) {
         { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
         { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
         { name: 'Laporan Phishing', path: '/live/reports', icon: ShieldAlert },
+        { name: 'Analitik Live', path: '/live/analytics', icon: BarChart3 },
       ],
     },
     {
@@ -81,7 +81,6 @@ function buildTrainerNav(t) {
       items: [
         { name: t('nav.scenarios'), path: '/scenarios', icon: FileCode },
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
-        { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.scenario_builder'), path: '/scenario-builder', icon: Pencil },
         { name: t('nav.triage'), path: '/triage', icon: Inbox },
         { name: t('nav.write_reply'), path: '/write-reply', icon: PenLine },
@@ -93,6 +92,7 @@ function buildTrainerNav(t) {
         { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
         { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
         { name: 'Laporan Phishing', path: '/live/reports', icon: ShieldAlert },
+        { name: 'Analitik Live', path: '/live/analytics', icon: BarChart3 },
       ],
     },
     {
@@ -115,7 +115,6 @@ function buildUserNav(t) {
         { name: 'My Assignments', path: '/my-assignments', icon: Inbox },
         { name: t('nav.scenarios'), path: '/scenarios', icon: Target },
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
-        { name: t('nav.ai_challenge'), path: '/ai-challenge', icon: Zap },
         { name: t('nav.triage'), path: '/triage', icon: Inbox },
         { name: t('nav.write_reply'), path: '/write-reply', icon: PenLine },
       ],

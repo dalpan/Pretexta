@@ -365,3 +365,36 @@ async def test_killed_campaign_can_be_deleted(api):
 async def test_delete_campaign_requires_staff(api):
     _, h = await make_user("user")
     assert (await api.delete("/api/live/campaigns/whatever", headers=h)).status_code == 403
+
+
+# ---------- live analytics ----------
+
+
+async def test_live_analytics(api):
+    _, h = await make_user("admin")
+    for cid, launched in [("a1", "2026-01-01T00:00:00+00:00"), ("a2", "2026-02-01T00:00:00+00:00")]:
+        await db.live_campaigns.insert_one(
+            {"id": cid, "organization_id": None, "status": "closed", "name": cid,
+             "launched_at": launched, "objective": "click_link"}
+        )
+    await db.live_recipients.insert_many([
+        {"campaign_id": "a1", "email": "x@acme.test", "state": "email_opened", "reported": True},
+        {"campaign_id": "a1", "email": "repeat@acme.test", "state": "clicked", "reported": False},
+        {"campaign_id": "a2", "email": "repeat@acme.test", "state": "clicked", "reported": False},
+        {"campaign_id": "a2", "email": "y@acme.test", "state": "email_opened", "reported": True},
+    ])
+    d = (await api.get("/api/live/analytics", headers=h)).json()
+    assert d["overall"]["campaigns"] == 2
+    assert d["overall"]["recipients"] == 4 and d["overall"]["reported"] == 2
+    assert d["overall"]["report_rate"] == 0.5
+    # campaigns sorted oldest -> newest (the trend)
+    assert [c["id"] for c in d["campaigns"]] == ["a1", "a2"]
+    # repeat@ clicked in both campaigns -> the one repeat offender
+    assert len(d["repeat_offenders"]) == 1
+    assert d["repeat_offenders"][0]["email"] == "repeat@acme.test"
+    assert d["repeat_offenders"][0]["count"] == 2
+
+
+async def test_live_analytics_requires_staff(api):
+    _, h = await make_user("user")
+    assert (await api.get("/api/live/analytics", headers=h)).status_code == 403

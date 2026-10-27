@@ -101,6 +101,8 @@ Audit — `/api/audit` (admin): `GET /` (entries), `GET /verify` (chain integrit
 - `/api/report-inbox` — Report-Phish mailbox (staff only): list/stats/leaderboard,
   `POST /ingest` (classify a reported message; credits the reporter if it's ours),
   `PATCH /{id}` (triage). `DELETE /api/live/campaigns/{id}` removes a finished campaign.
+- `GET /api/live/analytics` — historical behaviour across launched campaigns:
+  report-rate trend, per-campaign comparison, and repeat offenders.
 
 ## Health
 

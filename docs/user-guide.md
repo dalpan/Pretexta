@@ -115,10 +115,12 @@ You get a per-criterion breakdown and coaching. (Needs an LLM configured.)
 
 ![Write Your Reply](images/04-write-reply.jpg)
 
-**AI Challenge** — open-ended roleplay against an adversarial persona (22 built
-in). Hold the line in a live chat; leaking a secret or agreeing to the demand
-is a compromise, resisting under escalating pressure is a win. The outcome and
-score are decided server-side from what you type. (Needs an LLM configured.)
+**AI Challenge** — open-ended roleplay against an adversarial persona. Hold the
+line in a live chat; leaking a secret or agreeing to the demand is a compromise,
+resisting under escalating pressure is a win. The outcome and score are decided
+server-side from what you type. (Needs an LLM configured.) This is no longer a
+headline menu — it is reached when a trainer **assigns** it, so it works as a
+targeted practice / remediation exercise rather than self-serve browsing.
 
 ![AI Challenge](images/05-ai-challenge.jpg)
 
@@ -229,13 +231,14 @@ only revealed on a node click — to the same staff who already see risk profile
 | Scenarios | Training | all | Branching simulations |
 | Inbox Triage | Training | all | Signal-detection exercise |
 | Write Your Reply | Training | all | LLM-graded free-text |
-| AI Challenge | Training | all | Persona roleplay |
+| AI Challenge | (assignment only) | all | Persona roleplay — launched from an assignment, not a menu |
 | Quizzes | Training | all | Knowledge checks |
 | Training Campaigns | Training | all | Multi-stage practice |
 | Scenario Builder | Training | trainer/admin | Author scenarios |
 | Live Campaigns | Live Ops | trainer/admin | Real phishing simulations |
 | Reply Review | Live Ops | trainer/admin | Approve AI replies |
 | Laporan Phishing (Report-Phish inbox) | Live Ops | trainer/admin | Reported phish, auto-classified; credits reporters, flags real threats |
+| Analitik Live | Live Ops | trainer/admin | Report-rate trend across campaigns + repeat offenders |
 | History / Analytics / Leaderboard / Glossary | Progress | all | Your progress + reference |
 | Settings | Account | all (admin extras) | Preferences; LLM + GoPhish (admin) |
 

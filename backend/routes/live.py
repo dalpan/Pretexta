@@ -343,6 +343,69 @@ async def campaign_results(campaign_id: str, current_user: User = Depends(requir
     return {"metrics": await launch_svc.report_rate(campaign_id), "recipients": recipients}
 
 
+@router.get("/analytics")
+async def live_analytics(current_user: User = Depends(require_trainer)):
+    """Historical behaviour across all launched campaigns: the report-rate trend,
+    per-campaign comparison, and repeat offenders (who failed more than once —
+    the people the remediation loop should be hardening)."""
+    scope = _scope(current_user)
+    campaigns = (
+        await db.live_campaigns.find(
+            {**scope, "launched_at": {"$ne": None}},
+            {"_id": 0, "id": 1, "name": 1, "launched_at": 1, "objective": 1},
+        )
+        .sort("launched_at", 1)
+        .to_list(500)
+    )
+    cids = [c["id"] for c in campaigns]
+
+    per, t_recip, t_rep, t_click = [], 0, 0, 0
+    for c in campaigns:
+        m = await launch_svc.report_rate(c["id"])
+        per.append(
+            {
+                "id": c["id"],
+                "name": c["name"],
+                "launched_at": c["launched_at"],
+                "objective": c.get("objective"),
+                "recipients": m["recipients"],
+                "reported": m["reported"],
+                "clicked": m["clicked"],
+                "report_rate": m["report_rate"],
+                "click_rate": m["click_rate"],
+            }
+        )
+        t_recip += m["recipients"]
+        t_rep += m["reported"]
+        t_click += m["clicked"]
+
+    repeat_offenders = []
+    if cids:
+        repeat_offenders = await db.live_recipients.aggregate(
+            [
+                {"$match": {"campaign_id": {"$in": cids}, "state": {"$in": ["clicked", "submitted"]}}},
+                {"$group": {"_id": "$email", "campaigns": {"$addToSet": "$campaign_id"}}},
+                {"$project": {"_id": 0, "email": "$_id", "count": {"$size": "$campaigns"}}},
+                {"$match": {"count": {"$gte": 2}}},
+                {"$sort": {"count": -1}},
+                {"$limit": 20},
+            ]
+        ).to_list(20)
+
+    return {
+        "overall": {
+            "campaigns": len(campaigns),
+            "recipients": t_recip,
+            "reported": t_rep,
+            "clicked": t_click,
+            "report_rate": round(t_rep / t_recip, 3) if t_recip else None,
+            "click_rate": round(t_click / t_recip, 3) if t_recip else None,
+        },
+        "campaigns": per,
+        "repeat_offenders": repeat_offenders,
+    }
+
+
 # ==================== CONVERSATION & REVIEW QUEUE (P3) ====================
 
 
