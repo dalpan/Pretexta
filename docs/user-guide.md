@@ -238,6 +238,7 @@ only revealed on a node click — to the same staff who already see risk profile
 | Live Campaigns | Live Ops | trainer/admin | Real phishing simulations |
 | Reply Review | Live Ops | trainer/admin | Approve AI replies |
 | Laporan Phishing (Report-Phish inbox) | Live Ops | trainer/admin | Reported phish, auto-classified; credits reporters, flags real threats |
+| Analitik Live | Live Ops | trainer/admin | Report-rate trend across campaigns + repeat offenders |
 | History / Analytics / Leaderboard / Glossary | Progress | all | Your progress + reference |
 | Settings | Account | all (admin extras) | Preferences; LLM + GoPhish (admin) |
 

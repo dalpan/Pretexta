@@ -48,6 +48,7 @@ function buildAdminNav(t) {
         { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
         { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
         { name: 'Laporan Phishing', path: '/live/reports', icon: ShieldAlert },
+        { name: 'Analitik Live', path: '/live/analytics', icon: BarChart3 },
       ],
     },
     {
@@ -91,6 +92,7 @@ function buildTrainerNav(t) {
         { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
         { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
         { name: 'Laporan Phishing', path: '/live/reports', icon: ShieldAlert },
+        { name: 'Analitik Live', path: '/live/analytics', icon: BarChart3 },
       ],
     },
     {

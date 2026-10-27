@@ -113,6 +113,11 @@ node click for the same staff who already see risk profiles (guardrail G13).
 - **Delete campaigns** + **exclusion (allowlist) UI** — close two gaps: finished
   campaigns can be removed (an active one must be killed first, G4), and the
   people who must never be phished can be managed in the UI.
+- **Live analytics** (`GET /live/analytics`) — report-rate trend across launched
+  campaigns, per-campaign comparison, and **repeat offenders** (people who failed
+  more than once — the ones the remediation loop should be hardening).
+- **AI Challenge demoted** — still server-scored and assignable, but removed from
+  the headline nav; it now serves as a targeted practice / remediation exercise.
 
 ## Deferred (real product, later)
 
