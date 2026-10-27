@@ -98,6 +98,9 @@ Audit — `/api/audit` (admin): `GET /` (entries), `GET /verify` (chain integrit
   `/api/notifications`, `/api/webhooks`, `/api/settings`, `/api/import`.
 - `/api/attack-surface` — Human Attack Surface Map (staff only): graph,
   analysis, node/edge CRUD.
+- `/api/report-inbox` — Report-Phish mailbox (staff only): list/stats/leaderboard,
+  `POST /ingest` (classify a reported message; credits the reporter if it's ours),
+  `PATCH /{id}` (triage). `DELETE /api/live/campaigns/{id}` removes a finished campaign.
 
 ## Health
 

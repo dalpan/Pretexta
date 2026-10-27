@@ -17,6 +17,7 @@ from routes.notifications import router as notifications_router
 from routes.organizations import router as organizations_router
 from routes.personas import router as personas_router
 from routes.quizzes import router as quizzes_router
+from routes.report_inbox import router as report_inbox_router
 from routes.reports import router as reports_router
 from routes.risk_profile import router as risk_profile_router
 from routes.scenario_builder import router as scenario_builder_router
@@ -55,4 +56,5 @@ __all__ = [
     "live_router",
     "audit_router",
     "attack_surface_router",
+    "report_inbox_router",
 ]

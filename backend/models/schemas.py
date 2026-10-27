@@ -691,6 +691,32 @@ class VerifiedDomain(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
+# Report-Phish mailbox (abuse inbox) — the defensive mirror of a campaign.
+# A reporter forwarding a lure is the behaviour we actually want to see.
+REPORT_VERDICTS = (
+    "simulation",  # it was one of our own simulated lures -> credit the reporter
+    "needs_review",  # not ours; a human should decide if it is a real threat
+    "threat",  # triaged as a genuine malicious email
+    "benign",  # legitimate mail reported by mistake
+)
+
+
+class PhishReport(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str | None = None
+    reporter_email: str
+    reporter_user_id: str | None = None
+    subject: str = ""
+    from_address: str = ""  # the claimed sender of the reported message
+    verdict: str = "needs_review"
+    campaign_id: str | None = None  # set when verdict == "simulation"
+    body_excerpt: str = ""  # secret-scrubbed, truncated
+    credited: bool = False  # reporter was matched to a campaign recipient and credited
+    triaged_by: str | None = None
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
 class LiveCampaignCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=1, max_length=120)
