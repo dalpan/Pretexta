@@ -48,6 +48,7 @@ function buildAdminNav(t) {
       items: [
         { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
         { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
+        { name: 'Laporan Phishing', path: '/live/reports', icon: ShieldAlert },
       ],
     },
     {
@@ -91,6 +92,7 @@ function buildTrainerNav(t) {
       items: [
         { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
         { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
+        { name: 'Laporan Phishing', path: '/live/reports', icon: ShieldAlert },
       ],
     },
     {

@@ -289,6 +289,22 @@ async def kill_campaign(campaign_id: str, current_user: User = Depends(require_t
     return {"status": "killed"}
 
 
+@router.delete("/campaigns/{campaign_id}")
+async def delete_campaign(campaign_id: str, current_user: User = Depends(require_trainer)):
+    """Remove a finished campaign and its data. An in-flight campaign must be
+    killed first, so deleting can never silently stop live mail (G4)."""
+    campaign = await _get_campaign(campaign_id, current_user)
+    if campaign["status"] in ACTIVE_STATUSES:
+        raise HTTPException(status_code=409, detail="Kill the campaign before deleting it")
+    cid = campaign["id"]
+    await db.live_campaigns.delete_one({"id": cid})
+    await db.live_recipients.delete_many({"campaign_id": cid})
+    await db.live_events.delete_many({"campaign_id": cid})
+    await db.live_messages.delete_many({"campaign_id": cid})
+    await audit.record(current_user.id, "live.campaign.delete", cid, {"name": campaign.get("name")})
+    return {"deleted": cid}
+
+
 # ==================== LAUNCH & RESULTS (P2) ====================
 
 

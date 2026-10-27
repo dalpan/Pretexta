@@ -32,6 +32,7 @@ from routes import (
     organizations_router,
     personas_router,
     quizzes_router,
+    report_inbox_router,
     reports_router,
     risk_profile_router,
     scenario_builder_router,
@@ -364,6 +365,9 @@ async def lifespan(app: FastAPI):
     await db.org_nodes.create_index("id", unique=True)
     await db.trust_edges.create_index([("org_id", 1)])
     await db.trust_edges.create_index("id", unique=True)
+    await db.phish_reports.create_index("id", unique=True)
+    await db.phish_reports.create_index([("organization_id", 1), ("created_at", -1)])
+    await db.phish_reports.create_index([("organization_id", 1), ("verdict", 1)])
     # G14: live campaign telemetry expires after 180 days
     await db.live_events.create_index("at", expireAfterSeconds=180 * 24 * 3600)
     await db.live_events.create_index([("campaign_id", 1), ("type", 1)])
@@ -476,6 +480,7 @@ api_router.include_router(glossary_router)
 api_router.include_router(live_router)
 api_router.include_router(audit_router)
 api_router.include_router(attack_surface_router)
+api_router.include_router(report_inbox_router)
 
 app.include_router(api_router)
 

@@ -103,8 +103,20 @@ not a hit-list. The page is staff-only (admin/trainer who own the remediation),
 susceptibility is shown as a band, and the raw number + its evidence sit behind a
 node click for the same staff who already see risk profiles (guardrail G13).
 
+## LIVE OPS additions (shipped)
+
+- **Report-Phish mailbox** (`services/report_inbox.py`) — the defensive mirror of
+  a campaign. A forwarded lure is classified; if it's ours the reporter is
+  credited into report rate, otherwise it's queued for threat triage. Reporter
+  leaderboard included. Integration point: `POST /report-inbox/ingest` (a mail
+  poller or forwarding rule feeds it in production).
+- **Delete campaigns** + **exclusion (allowlist) UI** — close two gaps: finished
+  campaigns can be removed (an active one must be killed first, G4), and the
+  people who must never be phished can be managed in the UI.
+
 ## Deferred (real product, later)
 
 TLS/public deployment and multi-worker rate limiting; management reporting and
 export; recurring/scheduled campaigns; supervised auto-send; prompt-quality
-evaluation for the AI personas.
+evaluation for the AI personas; IMAP auto-ingest for the report mailbox and an
+end-user "Report Phish" button.

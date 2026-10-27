@@ -321,3 +321,47 @@ async def test_live_templates_seeded_and_listed(api):
 async def test_templates_require_trainer(api):
     _, h = await make_user("user")
     assert (await api.get("/api/live/templates", headers=h)).status_code == 403
+
+
+# ---------- delete campaign ----------
+
+
+async def test_delete_draft_campaign_cascades(api):
+    _, h = await make_user("trainer")
+    await _add_sandbox_domain(api, h)
+    cid = (await api.post("/api/live/campaigns", json=_campaign(), headers=h)).json()["id"]
+    # leave a recipient + event behind to prove the cascade
+    await db.live_recipients.insert_one({"campaign_id": cid, "email": "x@acme.test"})
+    await db.live_events.insert_one(
+        {"campaign_id": cid, "type": "clicked", "at": datetime.now(UTC)}
+    )
+
+    r = await api.delete(f"/api/live/campaigns/{cid}", headers=h)
+    assert r.status_code == 200 and r.json()["deleted"] == cid
+    assert await db.live_campaigns.find_one({"id": cid}) is None
+    assert await db.live_recipients.count_documents({"campaign_id": cid}) == 0
+    assert await db.live_events.count_documents({"campaign_id": cid}) == 0
+
+
+async def test_cannot_delete_active_campaign(api):
+    _, h = await make_user("trainer")
+    await _add_sandbox_domain(api, h)
+    cid = (await api.post("/api/live/campaigns", json=_campaign(), headers=h)).json()["id"]
+    await api.post(f"/api/live/campaigns/{cid}/submit", headers=h)  # -> pending_approval
+    r = await api.delete(f"/api/live/campaigns/{cid}", headers=h)
+    assert r.status_code == 409
+    assert await db.live_campaigns.find_one({"id": cid}) is not None  # still there
+
+
+async def test_killed_campaign_can_be_deleted(api):
+    _, h = await make_user("trainer")
+    await _add_sandbox_domain(api, h)
+    cid = (await api.post("/api/live/campaigns", json=_campaign(), headers=h)).json()["id"]
+    await api.post(f"/api/live/campaigns/{cid}/submit", headers=h)
+    await api.post(f"/api/live/campaigns/{cid}/kill", headers=h)
+    assert (await api.delete(f"/api/live/campaigns/{cid}", headers=h)).status_code == 200
+
+
+async def test_delete_campaign_requires_staff(api):
+    _, h = await make_user("user")
+    assert (await api.delete("/api/live/campaigns/whatever", headers=h)).status_code == 403

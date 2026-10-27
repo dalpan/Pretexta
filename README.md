@@ -58,6 +58,13 @@ route is the easiest path an attacker could walk from the outside to a crown jew
 </details>
 
 <details>
+<summary><strong>Report-Phish Inbox</strong> — forwarded phish, auto-classified; reporters credited</summary>
+
+![Report-Phish Inbox](screenshots/06-report-inbox.png)
+
+</details>
+
+<details>
 <summary><strong>Settings</strong> — GoPhish + mail-relay wiring for live mode (secrets stored masked)</summary>
 
 ![Settings](screenshots/04-settings-gophish.png)
@@ -124,6 +131,15 @@ median time-to-report lead the dashboard.
 | **Hash-chained audit log** | Every state change is tamper-evident (G9) |
 
 See [guardrails.md](docs/guardrails.md) for the full G1–G15 set.
+
+### Report-Phish inbox (the defensive mirror)
+
+Reporting a phish is the behaviour we actually want — so Pretexta measures it on
+both sides. When someone forwards a suspicious email to the abuse mailbox, the
+server classifies it: if it's one of **our** simulations it **credits the
+reporter** (which flows straight into that campaign's report rate); if it isn't,
+it's queued as *needs review* so the security team can flag a genuine threat.
+A reporter leaderboard surfaces the people actively defending the organization.
 
 ### The remediation loop
 
