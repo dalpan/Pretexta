@@ -746,4 +746,44 @@ class LiveCampaign(LiveCampaignCreate):
     gophish_campaign_id: int | None = None
     # Opaque token in the Reply-To address, used to match inbound replies (P3).
     reply_token: str = Field(default_factory=lambda: secrets.token_urlsafe(12))
+    # QR / "quishing" variant: the lure is a QR code that encodes the tracked URL.
+    use_qr: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+class CampaignTemplate(BaseModel):
+    """The content of a campaign, without the per-run time window. Used as the
+    body that a schedule materialises into a fresh campaign each cycle."""
+
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=120)
+    objective: str
+    principles: list[str] = Field(min_length=1)
+    sender_name: str = Field(min_length=1, max_length=80)
+    sender_email: str = Field(min_length=3, max_length=254)
+    subject: str = Field(min_length=1, max_length=200)
+    body_html: str = Field(min_length=1, max_length=20000)
+    recipients: list[str] = Field(min_length=1, max_length=5000)
+    max_turns: int = Field(default=4, ge=0, le=6)
+    language: str = "en"
+    use_qr: bool = False
+
+
+class CampaignSchedule(BaseModel):
+    """A recurring campaign. Each cycle it materialises a fresh campaign in
+    `pending_approval` — never auto-sent, so the two-person approval guardrail
+    (G2) still holds; the schedule only automates the drafting cadence."""
+
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str | None = None
+    name: str = Field(min_length=1, max_length=120)
+    interval_days: int = Field(ge=1, le=365)
+    window_days: int = Field(default=5, ge=1, le=30)  # active window of each run
+    next_run: str  # ISO timestamp of the next materialisation
+    active: bool = True
+    template: dict  # a CampaignTemplate
+    created_by: str
+    last_run_at: str | None = None
+    last_campaign_id: str | None = None
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
