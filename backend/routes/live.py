@@ -383,7 +383,12 @@ async def live_analytics(current_user: User = Depends(require_trainer)):
     if cids:
         repeat_offenders = await db.live_recipients.aggregate(
             [
-                {"$match": {"campaign_id": {"$in": cids}, "state": {"$in": ["clicked", "submitted"]}}},
+                {
+                    "$match": {
+                        "campaign_id": {"$in": cids},
+                        "state": {"$in": ["clicked", "submitted"]},
+                    }
+                },
                 {"$group": {"_id": "$email", "campaigns": {"$addToSet": "$campaign_id"}}},
                 {"$project": {"_id": 0, "email": "$_id", "count": {"$size": "$campaigns"}}},
                 {"$match": {"count": {"$gte": 2}}},

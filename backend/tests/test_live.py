@@ -374,15 +374,43 @@ async def test_live_analytics(api):
     _, h = await make_user("admin")
     for cid, launched in [("a1", "2026-01-01T00:00:00+00:00"), ("a2", "2026-02-01T00:00:00+00:00")]:
         await db.live_campaigns.insert_one(
-            {"id": cid, "organization_id": None, "status": "closed", "name": cid,
-             "launched_at": launched, "objective": "click_link"}
+            {
+                "id": cid,
+                "organization_id": None,
+                "status": "closed",
+                "name": cid,
+                "launched_at": launched,
+                "objective": "click_link",
+            }
         )
-    await db.live_recipients.insert_many([
-        {"campaign_id": "a1", "email": "x@acme.test", "state": "email_opened", "reported": True},
-        {"campaign_id": "a1", "email": "repeat@acme.test", "state": "clicked", "reported": False},
-        {"campaign_id": "a2", "email": "repeat@acme.test", "state": "clicked", "reported": False},
-        {"campaign_id": "a2", "email": "y@acme.test", "state": "email_opened", "reported": True},
-    ])
+    await db.live_recipients.insert_many(
+        [
+            {
+                "campaign_id": "a1",
+                "email": "x@acme.test",
+                "state": "email_opened",
+                "reported": True,
+            },
+            {
+                "campaign_id": "a1",
+                "email": "repeat@acme.test",
+                "state": "clicked",
+                "reported": False,
+            },
+            {
+                "campaign_id": "a2",
+                "email": "repeat@acme.test",
+                "state": "clicked",
+                "reported": False,
+            },
+            {
+                "campaign_id": "a2",
+                "email": "y@acme.test",
+                "state": "email_opened",
+                "reported": True,
+            },
+        ]
+    )
     d = (await api.get("/api/live/analytics", headers=h)).json()
     assert d["overall"]["campaigns"] == 2
     assert d["overall"]["recipients"] == 4 and d["overall"]["reported"] == 2
