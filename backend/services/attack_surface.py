@@ -166,6 +166,32 @@ async def build_graph(org_id: str, *, refresh: bool = True) -> dict:
     return {"nodes": nodes, "edges": edges}
 
 
+async def targets(org_id: str) -> list[dict]:
+    """People on the map who have a reachable email, ranked most-susceptible first
+    — the recipient list for a campaign aimed at the human weak points."""
+    graph = await build_graph(org_id)
+    out: list[dict] = []
+    for n in graph["nodes"]:
+        if n.get("is_asset"):
+            continue
+        email = n.get("email")
+        if not email and n.get("user_id"):
+            user = await db.users.find_one({"id": n["user_id"]}, {"_id": 0, "email": 1})
+            email = (user or {}).get("email")
+        if email:
+            out.append(
+                {
+                    "name": n["name"],
+                    "role": n.get("role"),
+                    "email": email,
+                    "susceptibility": n.get("susceptibility"),
+                    "band": n.get("band"),
+                }
+            )
+    out.sort(key=lambda x: x["susceptibility"] or 0, reverse=True)
+    return out
+
+
 # ============================ pathfinding ==================================
 
 INTERNET = "__internet__"  # virtual source: an attacker outside the org
@@ -401,6 +427,7 @@ async def seed_demo_org(org_id: str) -> dict:
         node = OrgNode(
             org_id=org_id,
             name=name,
+            email=None if is_asset else f"{key}@acme.test",  # sandbox planning address
             role=role,
             department=dept,
             hierarchy_level=level,

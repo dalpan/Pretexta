@@ -582,6 +582,7 @@ class OrgNode(BaseModel):
 
     # Identity
     name: str
+    email: str | None = None  # planning address; used to target a campaign at this person
     role: str  # job title
     department: str
     hierarchy_level: int = 0  # 0 = individual contributor, higher = more authority

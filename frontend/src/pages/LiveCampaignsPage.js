@@ -243,8 +243,8 @@ const BLANK = {
   recipients: '', starts_at: '', ends_at: '', max_turns: 0, use_qr: false,
 };
 
-function CreateForm({ onClose, onCreated, onScheduled }) {
-  const [f, setF] = useState(BLANK);
+function CreateForm({ onClose, onCreated, onScheduled, initial }) {
+  const [f, setF] = useState({ ...BLANK, ...(initial || {}) });
   const [templates, setTemplates] = useState([]);
   const [aiMode, setAiMode] = useState(false); // click campaign by default
   const [recurring, setRecurring] = useState(false);
@@ -657,12 +657,26 @@ export default function LiveCampaignsPage() {
   const [campaigns, setCampaigns] = useState([]);
   const [selected, setSelected] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [prefill, setPrefill] = useState(null);
   const schedRef = useRef(null);
 
   const load = useCallback(async () => {
     try { setCampaigns((await api.get('/live/campaigns')).data); } catch { /* noop */ }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Recipients handed over from the Attack Surface Map ("launch to weak points").
+  useEffect(() => {
+    let recipients = null;
+    try {
+      recipients = sessionStorage.getItem('pretexta_prefill_recipients');
+      if (recipients) sessionStorage.removeItem('pretexta_prefill_recipients');
+    } catch { /* noop */ }
+    if (recipients) {
+      setPrefill({ recipients, name: 'Kampanye titik rawan' });
+      setCreating(true); setSelected(null);
+    }
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-6">
@@ -702,9 +716,10 @@ export default function LiveCampaignsPage() {
         </div>
 
         <div className="lg:col-span-2">
-          {creating && <CreateForm onClose={() => setCreating(false)}
-            onCreated={(id) => { setCreating(false); setSelected(id); load(); }}
-            onScheduled={() => schedRef.current?.reload()} />}
+          {creating && <CreateForm onClose={() => { setCreating(false); setPrefill(null); }}
+            initial={prefill}
+            onCreated={(id) => { setCreating(false); setPrefill(null); setSelected(id); load(); }}
+            onScheduled={() => { schedRef.current?.reload(); setPrefill(null); }} />}
           {!creating && selected && <Detail id={selected} onChanged={load}
             onDeleted={() => { setSelected(null); load(); }} />}
           {!creating && !selected && (
