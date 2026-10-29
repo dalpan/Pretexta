@@ -178,6 +178,18 @@ sent; if a recipient types a secret (OTP, password) it is redacted before storag
 and the thread ends with a teachable-moment email. This layer is powerful but
 stays manual by design (G8) — it is not the headline.
 
+**More controls on the Live Campaigns page:**
+
+- **Jadwalkan berulang** — turn the create form into a recurring schedule; each
+  cycle materialises a campaign in *pending_approval* (never auto-sent, G2). Manage
+  schedules in the "Kampanye terjadwal" card (run-now / pause / delete).
+- **Quishing (kode QR)** — tick this to deliver the lure as a QR code that encodes
+  the tracked link; a scan is attributed like a click. Set the app's **Public base
+  URL** in Settings first so mail clients can load the QR image.
+- **Daftar kecuali** — the allowlist of people who must never be phished.
+- **Luncurkan ke titik rawan** — from the Attack Surface Map, one click pre-fills a
+  campaign with the most-susceptible, emailable people.
+
 ---
 
 ## 5b. Human Attack Surface Map (admin / trainer)

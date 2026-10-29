@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Share2, ShieldAlert, Crosshair, Target, RefreshCw, Trash2, Database,
-  Banknote, KeyRound, Server, Loader2, TriangleAlert, Lock,
+  Banknote, KeyRound, Server, Loader2, TriangleAlert, Lock, Radio,
 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import SectionCard from '../components/SectionCard';
@@ -193,8 +194,27 @@ export default function AttackSurfaceMapPage() {
   const [selectedPath, setSelectedPath] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
 
   const refresh = () => { refetchGraph(); refetchAnalysis(); };
+
+  // Hand the emailable, most-susceptible people to a new campaign.
+  const launchToWeakPoints = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.get('/attack-surface/targets');
+      const emails = (data.targets || []).map((t) => t.email);
+      if (emails.length === 0) {
+        toast.error('Tidak ada node dengan email. Tautkan node ke user atau isi emailnya.');
+        return;
+      }
+      try { sessionStorage.setItem('pretexta_prefill_recipients', emails.join('\n')); } catch { /* noop */ }
+      toast.success(`${emails.length} target disiapkan untuk kampanye`);
+      navigate('/live');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Gagal');
+    } finally { setBusy(false); }
+  };
 
   const act = async (fn, msg) => {
     setBusy(true);
@@ -218,6 +238,12 @@ export default function AttackSurfaceMapPage() {
           className="text-[10px] uppercase tracking-widest">
           <RefreshCw className="w-3 h-3 mr-1" /> Segarkan
         </Button>
+        {!empty && (
+          <Button variant="default" size="sm" disabled={busy} onClick={launchToWeakPoints}
+            className="text-[10px] uppercase tracking-widest">
+            <Radio className="w-3 h-3 mr-1" /> Luncurkan ke titik rawan
+          </Button>
+        )}
         {!empty && (
           <Button variant="outline" size="sm" disabled={busy}
             onClick={() => act(() => api.delete('/attack-surface/reset'), 'Peta dikosongkan')}

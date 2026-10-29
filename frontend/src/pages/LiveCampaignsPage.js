@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Radio, Plus, ShieldCheck, Send, Play, Octagon, CheckCircle2, XCircle,
   AlertTriangle, Info, RefreshCw, Globe, Inbox, MousePointerClick, Flag,
-  MessageSquare, Clock, Trash2, ShieldOff, X,
+  MessageSquare, Clock, Trash2, ShieldOff, X, Repeat, Calendar, PlayCircle, PauseCircle, QrCode,
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -182,17 +182,73 @@ function ExclusionsCard() {
   );
 }
 
+const SchedulesCard = React.forwardRef(function SchedulesCard(_props, ref) {
+  const [rows, setRows] = useState([]);
+  const load = useCallback(async () => {
+    try { setRows((await api.get('/live/schedules')).data); } catch { /* noop */ }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  React.useImperativeHandle(ref, () => ({ reload: load }), [load]);
+
+  const runNow = async (id) => {
+    try { await api.post(`/live/schedules/${id}/run-now`); toast.success('Kampanye dibuat (menunggu persetujuan)'); load(); }
+    catch (e) { toast.error(e.response?.data?.detail || 'Gagal'); }
+  };
+  const toggle = async (s) => { await api.patch(`/live/schedules/${s.id}`, { active: !s.active }); load(); };
+  const remove = async (id) => {
+    if (!window.confirm('Hapus jadwal ini?')) return;
+    await api.delete(`/live/schedules/${id}`); load();
+  };
+
+  if (rows.length === 0) return null;
+  return (
+    <Card className="p-5 space-y-3">
+      <h3 className="font-bold flex items-center gap-2"><Repeat className="w-5 h-5 text-primary" /> Kampanye terjadwal</h3>
+      <div className="space-y-2">
+        {rows.map((s) => (
+          <div key={s.id} className="p-2.5 border border-white/5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-mono font-bold truncate">{s.name}</span>
+              <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 border flex-shrink-0 ${
+                s.active ? 'text-emerald-400 border-emerald-400/40' : 'text-muted-foreground border-white/10'}`}>
+                {s.active ? 'aktif' : 'jeda'}
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-mono mt-0.5 flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> tiap {s.interval_days} hari · jendela {s.window_days} hari
+              {s.next_run && <> · berikutnya {new Date(s.next_run).toLocaleDateString('id-ID')}</>}
+            </p>
+            <div className="flex gap-1.5 mt-1.5">
+              <Button size="sm" variant="outline" className="h-7 text-[10px] uppercase tracking-widest" onClick={() => runNow(s.id)}>
+                <PlayCircle className="w-3 h-3 mr-1" /> Jalankan
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-[10px] uppercase tracking-widest" onClick={() => toggle(s)}>
+                {s.active ? <><PauseCircle className="w-3 h-3 mr-1" /> Jeda</> : <><PlayCircle className="w-3 h-3 mr-1" /> Lanjut</>}
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-400 ml-auto" onClick={() => remove(s.id)}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+});
+
 const BLANK = {
   name: '', objective: 'click_link', principles: ['authority'],
   sender_name: 'IT Helpdesk', sender_email: 'helpdesk@acme.test',
   subject: '', body_html: '<p>Hello,</p><p>Please confirm here: {{.URL}}</p>',
-  recipients: '', starts_at: '', ends_at: '', max_turns: 0,
+  recipients: '', starts_at: '', ends_at: '', max_turns: 0, use_qr: false,
 };
 
-function CreateForm({ onClose, onCreated }) {
-  const [f, setF] = useState(BLANK);
+function CreateForm({ onClose, onCreated, onScheduled, initial }) {
+  const [f, setF] = useState({ ...BLANK, ...(initial || {}) });
   const [templates, setTemplates] = useState([]);
   const [aiMode, setAiMode] = useState(false); // click campaign by default
+  const [recurring, setRecurring] = useState(false);
+  const [sched, setSched] = useState({ interval_days: 30, window_days: 5 });
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const togglePrinciple = (p) =>
     set('principles', f.principles.includes(p) ? f.principles.filter((x) => x !== p) : [...f.principles, p]);
@@ -225,15 +281,34 @@ function CreateForm({ onClose, onCreated }) {
   };
 
   const submit = async () => {
-    const payload = {
-      ...f,
-      max_turns: Number(f.max_turns),
-      recipients: f.recipients.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean),
-      starts_at: new Date(f.starts_at).toISOString(),
-      ends_at: new Date(f.ends_at).toISOString(),
-    };
+    const recipients = f.recipients.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
     try {
-      const res = await api.post('/live/campaigns', payload);
+      if (recurring) {
+        // Build the schedule template — only the content fields (no time window).
+        const template = {
+          name: f.name, objective: f.objective, principles: f.principles,
+          sender_name: f.sender_name, sender_email: f.sender_email,
+          subject: f.subject, body_html: f.body_html, recipients,
+          max_turns: Number(f.max_turns), language: f.language || 'en',
+          use_qr: !!f.use_qr,
+        };
+        await api.post('/live/schedules', {
+          name: f.name || 'Jadwal kampanye',
+          interval_days: Number(sched.interval_days),
+          window_days: Number(sched.window_days),
+          start_in_days: 0,
+          template,
+        });
+        toast.success('Jadwal dibuat — tiap siklus membuat kampanye untuk disetujui');
+        onScheduled?.();
+        onClose?.();
+        return;
+      }
+      const res = await api.post('/live/campaigns', {
+        ...f, max_turns: Number(f.max_turns), recipients,
+        starts_at: new Date(f.starts_at).toISOString(),
+        ends_at: new Date(f.ends_at).toISOString(),
+      });
       toast.success('Campaign drafted');
       onCreated(res.data.id);
     } catch (e) {
@@ -287,8 +362,36 @@ function CreateForm({ onClose, onCreated }) {
         <div><Label>Sender name</Label><Input value={f.sender_name} onChange={(e) => set('sender_name', e.target.value)} /></div>
         <div><Label>Sender email</Label><Input value={f.sender_email} onChange={(e) => set('sender_email', e.target.value)} /></div>
         <div className="hidden md:block" />
-        <div><Label>Starts</Label><Input type="datetime-local" value={f.starts_at} onChange={(e) => set('starts_at', e.target.value)} /></div>
-        <div><Label>Ends</Label><Input type="datetime-local" value={f.ends_at} onChange={(e) => set('ends_at', e.target.value)} /></div>
+        {!recurring && <>
+          <div><Label>Starts</Label><Input type="datetime-local" value={f.starts_at} onChange={(e) => set('starts_at', e.target.value)} /></div>
+          <div><Label>Ends</Label><Input type="datetime-local" value={f.ends_at} onChange={(e) => set('ends_at', e.target.value)} /></div>
+        </>}
+      </div>
+
+      {/* Quishing: deliver the lure as a QR code encoding the tracked URL. */}
+      <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border p-3">
+        <input type="checkbox" checked={!!f.use_qr} onChange={(e) => set('use_qr', e.target.checked)} className="accent-primary" />
+        <QrCode className="w-4 h-4 text-primary" />
+        <span className="text-sm font-semibold">Quishing (kode QR)</span>
+        <span className="text-[10px] text-muted-foreground">tempel QR berisi tautan terlacak ke email — perlu Public base URL di Settings</span>
+      </label>
+
+      {/* Recurring schedule: each cycle materialises a campaign for approval (G2). */}
+      <div className="rounded-md border border-primary/20 bg-primary/3 p-3 space-y-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} className="accent-primary" />
+          <Repeat className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold">Jadwalkan berulang</span>
+          <span className="text-[10px] text-muted-foreground">tiap siklus membuat kampanye untuk disetujui — tak pernah kirim otomatis (G2)</span>
+        </label>
+        {recurring && (
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <div><Label>Ulang tiap (hari)</Label><Input type="number" min="1" max="365"
+              value={sched.interval_days} onChange={(e) => setSched((p) => ({ ...p, interval_days: e.target.value }))} /></div>
+            <div><Label>Jendela aktif (hari)</Label><Input type="number" min="1" max="30"
+              value={sched.window_days} onChange={(e) => setSched((p) => ({ ...p, window_days: e.target.value }))} /></div>
+          </div>
+        )}
       </div>
 
       {/* Advanced AI settings only when the AI mode is chosen. */}
@@ -329,7 +432,11 @@ function CreateForm({ onClose, onCreated }) {
         <Textarea rows={4} value={f.body_html} onChange={(e) => set('body_html', e.target.value)} /></div>
       <div><Label>Recipients (one per line or comma-separated)</Label>
         <Textarea rows={3} value={f.recipients} onChange={(e) => set('recipients', e.target.value)} placeholder="alice@acme.test&#10;bob@acme.test" /></div>
-      <Button onClick={submit} className="w-full"><Plus className="w-4 h-4 mr-2" /> Create draft</Button>
+      <Button onClick={submit} className="w-full">
+        {recurring
+          ? <><Repeat className="w-4 h-4 mr-2" /> Buat jadwal</>
+          : <><Plus className="w-4 h-4 mr-2" /> Create draft</>}
+      </Button>
     </Card>
   );
 }
@@ -550,11 +657,26 @@ export default function LiveCampaignsPage() {
   const [campaigns, setCampaigns] = useState([]);
   const [selected, setSelected] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [prefill, setPrefill] = useState(null);
+  const schedRef = useRef(null);
 
   const load = useCallback(async () => {
     try { setCampaigns((await api.get('/live/campaigns')).data); } catch { /* noop */ }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Recipients handed over from the Attack Surface Map ("launch to weak points").
+  useEffect(() => {
+    let recipients = null;
+    try {
+      recipients = sessionStorage.getItem('pretexta_prefill_recipients');
+      if (recipients) sessionStorage.removeItem('pretexta_prefill_recipients');
+    } catch { /* noop */ }
+    if (recipients) {
+      setPrefill({ recipients, name: 'Kampanye titik rawan' });
+      setCreating(true); setSelected(null);
+    }
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto p-4 space-y-6">
@@ -570,6 +692,7 @@ export default function LiveCampaignsPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="space-y-4">
           <DomainsCard />
+          <SchedulesCard ref={schedRef} />
           <ExclusionsCard />
           <Card className="p-5">
             <h3 className="font-bold mb-3">Campaigns</h3>
@@ -593,8 +716,10 @@ export default function LiveCampaignsPage() {
         </div>
 
         <div className="lg:col-span-2">
-          {creating && <CreateForm onClose={() => setCreating(false)}
-            onCreated={(id) => { setCreating(false); setSelected(id); load(); }} />}
+          {creating && <CreateForm onClose={() => { setCreating(false); setPrefill(null); }}
+            initial={prefill}
+            onCreated={(id) => { setCreating(false); setPrefill(null); setSelected(id); load(); }}
+            onScheduled={() => { schedRef.current?.reload(); setPrefill(null); }} />}
           {!creating && selected && <Detail id={selected} onChanged={load}
             onDeleted={() => { setSelected(null); load(); }} />}
           {!creating && !selected && (

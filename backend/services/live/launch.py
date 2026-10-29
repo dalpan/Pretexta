@@ -38,6 +38,30 @@ def _obj_name(campaign_id: str) -> str:
     return f"pretexta-{campaign_id}"
 
 
+# The {{.URL}} token stays literal so GoPhish substitutes the per-recipient
+# tracked link into the QR image's src — a scan is then attributed exactly like
+# a click. GoPhish URL-encodes the substituted value for a query parameter.
+_QR_BLOCK = (
+    '<div style="text-align:center;margin:24px 0">'
+    '<img src="{base}/api/live/qr?data={{{{.URL}}}}" alt="Scan to continue" '
+    'width="180" height="180" style="border:0"/>'
+    '<p style="font-size:13px;color:#555">Scan the QR code with your phone\'s '
+    "camera to continue.</p></div>"
+)
+
+
+def _body_with_qr(campaign: dict, config: dict) -> str:
+    """For a quishing campaign, append a QR image that encodes the tracked URL."""
+    body = campaign["body_html"]
+    if not campaign.get("use_qr"):
+        return body
+    base = (config.get("public_base_url") or "").rstrip("/")
+    if not base:
+        logger.warning(f"Campaign {campaign['id']} uses QR but public_base_url is unset; skipping")
+        return body
+    return body + _QR_BLOCK.format(base=base)
+
+
 def _reply_to_address(config: dict, campaign: dict) -> str | None:
     """Reply-To that routes replies back to this campaign via plus-addressing."""
     local = config.get("reply_local")
@@ -74,7 +98,7 @@ async def launch_campaign(campaign: dict, actor_id: str) -> dict:
         config["gophish_base_url"], config["gophish_api_key"], config.get("verify_tls", False)
     ) as gp:
         await gp.create_group(name, targets)
-        await gp.create_template(name, campaign["subject"], campaign["body_html"])
+        await gp.create_template(name, campaign["subject"], _body_with_qr(campaign, config))
         await gp.create_page(name, TEACHABLE_MOMENT_HTML, redirect_url="")
         headers = [
             {"key": "From", "value": f"{campaign['sender_name']} <{campaign['sender_email']}>"}

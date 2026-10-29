@@ -5,12 +5,22 @@ Lifecycle: draft → pending_approval → approved → running → closed, with
 `killed` reachable from any non-final state. See docs/design/live-campaigns.md.
 """
 
+import io
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+import segno
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
-from models.schemas import LiveCampaign, LiveCampaignCreate, User, VerifiedDomain
+from models.schemas import (
+    CampaignSchedule,
+    CampaignTemplate,
+    LiveCampaign,
+    LiveCampaignCreate,
+    User,
+    VerifiedDomain,
+)
 from services import audit
 from services.ai_gateway import AIGateway
 from services.auth import require_admin, require_trainer
@@ -18,6 +28,7 @@ from services.database import db
 from services.live import conversation
 from services.live import domains as domain_svc
 from services.live import launch as launch_svc
+from services.live import scheduler as sched_svc
 from services.live.domains import email_domain
 from services.live.gophish import GophishClient, GophishError
 from services.live.preflight import has_errors, run_preflight
@@ -169,6 +180,20 @@ def _public(doc: dict) -> dict:
 async def list_templates(current_user: User = Depends(require_trainer)):
     """Built-in phishing templates to start a campaign from."""
     return await db.live_templates.find({}, {"_id": 0}).sort("name", 1).to_list(100)
+
+
+@router.get("/qr")
+async def qr_image(data: str = Query(..., min_length=1, max_length=2000)):
+    """Render a QR code PNG for `data`. Public (no auth) so a recipient's mail
+    client can load it into a "quishing" email; `data` is the GoPhish-tracked
+    URL, so a scan is attributed to that recipient exactly like a click."""
+    buf = io.BytesIO()
+    segno.make(data, error="m").save(buf, kind="png", scale=5, border=2)
+    return Response(
+        content=buf.getvalue(),
+        media_type="image/png",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.get("/campaigns")
@@ -411,6 +436,91 @@ async def live_analytics(current_user: User = Depends(require_trainer)):
     }
 
 
+# ==================== RECURRING SCHEDULES ====================
+
+
+class ScheduleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    interval_days: int = Field(ge=1, le=365)
+    window_days: int = Field(default=5, ge=1, le=30)
+    start_in_days: int = Field(default=0, ge=0, le=365)
+    template: CampaignTemplate
+
+
+class ScheduleUpdate(BaseModel):
+    active: bool | None = None
+    interval_days: int | None = Field(default=None, ge=1, le=365)
+    window_days: int | None = Field(default=None, ge=1, le=30)
+
+
+@router.get("/schedules")
+async def list_schedules(current_user: User = Depends(require_trainer)):
+    return (
+        await db.campaign_schedules.find(_scope(current_user), {"_id": 0})
+        .sort("created_at", -1)
+        .to_list(200)
+    )
+
+
+@router.post("/schedules", status_code=201)
+async def create_schedule(body: ScheduleCreate, current_user: User = Depends(require_trainer)):
+    next_run = (datetime.now(UTC) + timedelta(days=body.start_in_days)).isoformat()
+    schedule = CampaignSchedule(
+        organization_id=current_user.organization_id,
+        name=body.name,
+        interval_days=body.interval_days,
+        window_days=body.window_days,
+        next_run=next_run,
+        template=body.template.model_dump(),
+        created_by=current_user.id,
+    )
+    await db.campaign_schedules.insert_one(schedule.model_dump())
+    await audit.record(current_user.id, "live.schedule.create", schedule.id, {"name": body.name})
+    return schedule.model_dump()
+
+
+@router.patch("/schedules/{schedule_id}")
+async def update_schedule(
+    schedule_id: str, body: ScheduleUpdate, current_user: User = Depends(require_trainer)
+):
+    updates = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
+    if not updates:
+        raise HTTPException(422, "No fields to update")
+    res = await db.campaign_schedules.update_one(
+        {"id": schedule_id, **_scope(current_user)}, {"$set": updates}
+    )
+    if not res.matched_count:
+        raise HTTPException(404, "Schedule not found")
+    return {"updated": schedule_id, **updates}
+
+
+@router.delete("/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str, current_user: User = Depends(require_trainer)):
+    res = await db.campaign_schedules.delete_one({"id": schedule_id, **_scope(current_user)})
+    if not res.deleted_count:
+        raise HTTPException(404, "Schedule not found")
+    await audit.record(current_user.id, "live.schedule.delete", schedule_id)
+    return {"deleted": schedule_id}
+
+
+@router.post("/schedules/{schedule_id}/run-now")
+async def run_schedule_now(schedule_id: str, current_user: User = Depends(require_trainer)):
+    """Materialise one campaign from the schedule immediately (still pending_approval)."""
+    schedule = await db.campaign_schedules.find_one(
+        {"id": schedule_id, **_scope(current_user)}, {"_id": 0}
+    )
+    if not schedule:
+        raise HTTPException(404, "Schedule not found")
+    cid = await sched_svc.materialize(schedule)
+    if not cid:
+        raise HTTPException(422, "Schedule template is invalid — edit the schedule")
+    await db.campaign_schedules.update_one(
+        {"id": schedule_id},
+        {"$set": {"last_run_at": datetime.now(UTC).isoformat(), "last_campaign_id": cid}},
+    )
+    return {"created_campaign": cid}
+
+
 # ==================== CONVERSATION & REVIEW QUEUE (P3) ====================
 
 
@@ -542,6 +652,9 @@ class LiveConfig(BaseModel):
     gophish_api_key: str = Field(min_length=1, max_length=200)
     verify_tls: bool = False
     phish_url: str = Field(min_length=1, max_length=300)
+    # Public URL of THIS backend, used to serve QR images into "quishing" emails.
+    # Optional unless a campaign uses QR. e.g. http://localhost:9442
+    public_base_url: str = ""
     smtp_host: str = Field(min_length=1, max_length=200)
     smtp_username: str = ""
     smtp_password: str = ""

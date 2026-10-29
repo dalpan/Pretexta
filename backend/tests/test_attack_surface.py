@@ -153,3 +153,41 @@ async def test_asset_requires_valid_kind(api):
         json={"name": "X", "is_asset": True, "asset_kind": "bogus"},
     )
     assert r.status_code == 422
+
+
+# ---------- launch targets ----------
+
+
+async def test_targets_from_demo_ranked_by_susceptibility(api):
+    await attack_surface.seed_demo_org("org-t")
+    rows = await attack_surface.targets("org-t")
+    # 7 people, all with sandbox emails; no assets.
+    assert len(rows) == 7
+    assert all(r["email"].endswith("@acme.test") for r in rows)
+    # Most susceptible first (New Joiner, susceptibility 82).
+    assert rows[0]["name"] == "New Joiner"
+    assert rows[0]["susceptibility"] >= rows[-1]["susceptibility"]
+
+
+async def test_targets_resolves_email_via_user_id(api):
+    user, _ = await make_user("user", organization_id="acme")
+    await db.users.update_one({"id": user.id}, {"$set": {"email": "real@acme.test"}})
+    await db.org_nodes.insert_one(
+        {
+            "id": "n1",
+            "org_id": "acme",
+            "name": "Linked",
+            "user_id": user.id,
+            "role": "Staff",
+            "department": "Ops",
+            "is_asset": False,
+            "susceptibility": 60,
+        }
+    )
+    rows = await attack_surface.targets("acme")
+    assert any(r["email"] == "real@acme.test" for r in rows)
+
+
+async def test_targets_endpoint_requires_staff(api):
+    _, h = await make_user("user")
+    assert (await api.get("/api/attack-surface/targets", headers=h)).status_code == 403

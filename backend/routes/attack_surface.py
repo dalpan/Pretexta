@@ -38,11 +38,19 @@ async def get_analysis(user: User = Depends(require_trainer)):
     return await attack_surface.analyze(_org(user))
 
 
+@router.get("/targets")
+async def get_targets(user: User = Depends(require_trainer)):
+    """Emailable people on the map, ranked most-susceptible first — to seed a
+    campaign aimed at the human weak points."""
+    return {"targets": await attack_surface.targets(_org(user))}
+
+
 # ---------------------------------------------------------------- nodes
 
 
 class NodeIn(BaseModel):
     name: str
+    email: str | None = None
     role: str = ""
     department: str = ""
     hierarchy_level: int = 0

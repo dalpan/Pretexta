@@ -368,6 +368,8 @@ async def lifespan(app: FastAPI):
     await db.phish_reports.create_index("id", unique=True)
     await db.phish_reports.create_index([("organization_id", 1), ("created_at", -1)])
     await db.phish_reports.create_index([("organization_id", 1), ("verdict", 1)])
+    await db.campaign_schedules.create_index("id", unique=True)
+    await db.campaign_schedules.create_index([("active", 1), ("next_run", 1)])
     # G14: live campaign telemetry expires after 180 days
     await db.live_events.create_index("at", expireAfterSeconds=180 * 24 * 3600)
     await db.live_events.create_index([("campaign_id", 1), ("type", 1)])
@@ -398,8 +400,10 @@ async def lifespan(app: FastAPI):
     import asyncio
 
     from services.live.inbound import run_poller
+    from services.live.scheduler import run_scheduler
 
     poller_task = asyncio.create_task(run_poller())
+    scheduler_task = asyncio.create_task(run_scheduler())
 
     yield
 
@@ -408,6 +412,8 @@ async def lifespan(app: FastAPI):
 
     if poller_task:
         poller_task.cancel()
+    if scheduler_task:
+        scheduler_task.cancel()
     client.close()
 
 
