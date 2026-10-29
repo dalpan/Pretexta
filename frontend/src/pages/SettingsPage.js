@@ -94,6 +94,7 @@ function LiveConfigCard() {
         gophish_api_key: f.gophish_api_key || '',
         verify_tls: !!f.verify_tls,
         phish_url: f.phish_url || '',
+        public_base_url: f.public_base_url || '',
         smtp_host: f.smtp_host || '',
         smtp_username: f.smtp_username || '',
         smtp_password: f.smtp_password || '',
@@ -136,6 +137,7 @@ function LiveConfigCard() {
         {field('gophish_base_url', 'GoPhish admin URL (https://host:3333)')}
         {field('gophish_api_key', 'GoPhish API key', 'password')}
         {field('phish_url', 'Phishing server URL (where links point)')}
+        {field('public_base_url', 'Public base URL of this app (for QR/quishing images, e.g. http://localhost:9442)')}
         {field('smtp_host', 'SMTP relay (host:port)')}
         {field('smtp_username', 'SMTP username (optional)')}
         {field('smtp_password', 'SMTP password (optional)', 'password')}

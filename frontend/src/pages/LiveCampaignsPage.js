@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Radio, Plus, ShieldCheck, Send, Play, Octagon, CheckCircle2, XCircle,
   AlertTriangle, Info, RefreshCw, Globe, Inbox, MousePointerClick, Flag,
-  MessageSquare, Clock, Trash2, ShieldOff, X, Repeat, Calendar, PlayCircle, PauseCircle,
+  MessageSquare, Clock, Trash2, ShieldOff, X, Repeat, Calendar, PlayCircle, PauseCircle, QrCode,
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -240,7 +240,7 @@ const BLANK = {
   name: '', objective: 'click_link', principles: ['authority'],
   sender_name: 'IT Helpdesk', sender_email: 'helpdesk@acme.test',
   subject: '', body_html: '<p>Hello,</p><p>Please confirm here: {{.URL}}</p>',
-  recipients: '', starts_at: '', ends_at: '', max_turns: 0,
+  recipients: '', starts_at: '', ends_at: '', max_turns: 0, use_qr: false,
 };
 
 function CreateForm({ onClose, onCreated, onScheduled }) {
@@ -367,6 +367,14 @@ function CreateForm({ onClose, onCreated, onScheduled }) {
           <div><Label>Ends</Label><Input type="datetime-local" value={f.ends_at} onChange={(e) => set('ends_at', e.target.value)} /></div>
         </>}
       </div>
+
+      {/* Quishing: deliver the lure as a QR code encoding the tracked URL. */}
+      <label className="flex items-center gap-2 cursor-pointer rounded-md border border-border p-3">
+        <input type="checkbox" checked={!!f.use_qr} onChange={(e) => set('use_qr', e.target.checked)} className="accent-primary" />
+        <QrCode className="w-4 h-4 text-primary" />
+        <span className="text-sm font-semibold">Quishing (kode QR)</span>
+        <span className="text-[10px] text-muted-foreground">tempel QR berisi tautan terlacak ke email — perlu Public base URL di Settings</span>
+      </label>
 
       {/* Recurring schedule: each cycle materialises a campaign for approval (G2). */}
       <div className="rounded-md border border-primary/20 bg-primary/3 p-3 space-y-2">

@@ -5,10 +5,12 @@ Lifecycle: draft → pending_approval → approved → running → closed, with
 `killed` reachable from any non-final state. See docs/design/live-campaigns.md.
 """
 
+import io
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+import segno
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
 from models.schemas import (
@@ -178,6 +180,20 @@ def _public(doc: dict) -> dict:
 async def list_templates(current_user: User = Depends(require_trainer)):
     """Built-in phishing templates to start a campaign from."""
     return await db.live_templates.find({}, {"_id": 0}).sort("name", 1).to_list(100)
+
+
+@router.get("/qr")
+async def qr_image(data: str = Query(..., min_length=1, max_length=2000)):
+    """Render a QR code PNG for `data`. Public (no auth) so a recipient's mail
+    client can load it into a "quishing" email; `data` is the GoPhish-tracked
+    URL, so a scan is attributed to that recipient exactly like a click."""
+    buf = io.BytesIO()
+    segno.make(data, error="m").save(buf, kind="png", scale=5, border=2)
+    return Response(
+        content=buf.getvalue(),
+        media_type="image/png",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.get("/campaigns")
@@ -636,6 +652,9 @@ class LiveConfig(BaseModel):
     gophish_api_key: str = Field(min_length=1, max_length=200)
     verify_tls: bool = False
     phish_url: str = Field(min_length=1, max_length=300)
+    # Public URL of THIS backend, used to serve QR images into "quishing" emails.
+    # Optional unless a campaign uses QR. e.g. http://localhost:9442
+    public_base_url: str = ""
     smtp_host: str = Field(min_length=1, max_length=200)
     smtp_username: str = ""
     smtp_password: str = ""

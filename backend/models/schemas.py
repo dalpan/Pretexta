@@ -731,6 +731,7 @@ class LiveCampaignCreate(BaseModel):
     ends_at: datetime
     max_turns: int = Field(default=4, ge=0, le=6)
     language: str = "en"
+    use_qr: bool = False  # quishing: the lure is a QR code encoding the tracked URL
     brand_override_reason: str | None = Field(default=None, max_length=1000)
 
 
@@ -746,8 +747,6 @@ class LiveCampaign(LiveCampaignCreate):
     gophish_campaign_id: int | None = None
     # Opaque token in the Reply-To address, used to match inbound replies (P3).
     reply_token: str = Field(default_factory=lambda: secrets.token_urlsafe(12))
-    # QR / "quishing" variant: the lure is a QR code that encodes the tracked URL.
-    use_qr: bool = False
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
