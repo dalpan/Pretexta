@@ -103,6 +103,11 @@ Audit — `/api/audit` (admin): `GET /` (entries), `GET /verify` (chain integrit
   `PATCH /{id}` (triage). `DELETE /api/live/campaigns/{id}` removes a finished campaign.
 - `GET /api/live/analytics` — historical behaviour across launched campaigns:
   report-rate trend, per-campaign comparison, and repeat offenders.
+- `/api/live/schedules` — recurring campaigns (staff): CRUD + `POST /{id}/run-now`.
+  Each cycle materialises a campaign in `pending_approval` (never auto-sent, G2).
+- `GET /api/live/qr?data=<url>` — public PNG QR code for "quishing" campaigns.
+- `GET /api/attack-surface/targets` — emailable people on the map, ranked
+  most-susceptible first, to seed a campaign aimed at the human weak points.
 
 ## Health
 

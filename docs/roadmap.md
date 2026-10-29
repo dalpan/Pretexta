@@ -118,10 +118,18 @@ node click for the same staff who already see risk profiles (guardrail G13).
   more than once — the ones the remediation loop should be hardening).
 - **AI Challenge demoted** — still server-scored and assignable, but removed from
   the headline nav; it now serves as a targeted practice / remediation exercise.
+- **Recurring schedules** (`services/live/scheduler.py`) — a schedule materialises
+  a campaign on a cadence (baseline → periodic retest), each run in
+  `pending_approval` so two-person approval still holds (G2).
+- **Quishing** — a campaign can deliver its lure as a QR code encoding the tracked
+  URL (`/live/qr`, `use_qr`); a scan is attributed exactly like a click.
+- **Launch from the Attack Surface Map** — `GET /attack-surface/targets` + a
+  one-click flow that pre-fills a campaign with the most-susceptible, emailable
+  people. The map finds the human risk; one click targets it; results feed back.
 
 ## Deferred (real product, later)
 
 TLS/public deployment and multi-worker rate limiting; management reporting and
-export; recurring/scheduled campaigns; supervised auto-send; prompt-quality
-evaluation for the AI personas; IMAP auto-ingest for the report mailbox and an
-end-user "Report Phish" button.
+export; supervised auto-send (scheduled runs still require manual approval);
+prompt-quality evaluation for the AI personas; IMAP auto-ingest for the report
+mailbox and an end-user "Report Phish" button.
