@@ -1,12 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import {
   Activity, ListChecks, Zap, Shield, Target, Clock,
   ClipboardList, ChevronRight, AlertTriangle, CheckCircle2, Users, Tag
 } from 'lucide-react';
-import { getPersonas } from '../services/personas';
 import { useApi } from '../hooks/useApi';
 import PageHeader from '../components/PageHeader';
 import StatCard from '../components/StatCard';
@@ -21,6 +20,7 @@ const CONTENT_ROUTES = {
 
 export default function DashboardPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const { data: simulationsRaw, loading: simsLoading }     = useApi('/simulations');
   const { data: challengesRaw, loading: challengesLoading } = useApi('/challenges/all');
@@ -39,7 +39,6 @@ export default function DashboardPage() {
   const overdueAssigns = activeAssigns.filter(a =>
     a.due_date && new Date(a.due_date) < new Date()
   );
-  const personaCount   = getPersonas().length;
 
   const loading = simsLoading || challengesLoading;
 
@@ -55,7 +54,7 @@ export default function DashboardPage() {
           </span>
         }
       >
-        <Link to="/ai-challenge">
+        <Link to="/triage">
           <Button size="lg" className="neon-border">
             <Zap className="w-5 h-5 mr-2" /> {t('dashboard.init_simulation')}
           </Button>
@@ -64,7 +63,7 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-        <StatCard icon={Shield}    label={t('dashboard.stat_ai_scenarios')} value={personaCount}
+        <StatCard icon={ClipboardList} label={t('dashboard.stat_active_assignments')} value={activeAssigns.length}
           colorClass="border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.15)]"   textClass="text-blue-400" />
         <StatCard icon={Target}    label={t('dashboard.stat_scenarios')}    value={challenges.length}
           colorClass="border-purple-500 shadow-[0_0_10px_rgba(139,92,246,0.15)]" textClass="text-purple-400" />
@@ -78,7 +77,7 @@ export default function DashboardPage() {
       {myGroups.length > 0 && (
         <div className="flex flex-wrap gap-2 items-center p-3 border border-primary/15 bg-primary/3">
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-primary/60 uppercase tracking-widest flex-shrink-0">
-            <Users className="w-3.5 h-3.5" /> Kelompok Latihan Anda:
+            <Users className="w-3.5 h-3.5" /> {t('dashboard.your_groups')}
           </div>
           {myGroups.map(g => (
             <div key={g.id} className="flex items-center gap-1.5 px-2.5 py-1 border border-primary/25 bg-primary/8 text-[10px] font-mono">
@@ -93,12 +92,12 @@ export default function DashboardPage() {
       {/* Pending Assignments — shown only if there are any */}
       {!assignLoading && activeAssigns.length > 0 && (
         <SectionCard
-          title={`My Assignments (${activeAssigns.length} pending)`}
+          title={`${t('dashboard.my_assignments')} (${t('dashboard.pending', { count: activeAssigns.length })})`}
           icon={ClipboardList}
           actions={
             <Link to="/my-assignments">
               <Button variant="ghost" size="sm" className="text-[10px] uppercase tracking-widest">
-                View All <ChevronRight className="w-3 h-3 ml-1" />
+                {t('dashboard.view_all')} <ChevronRight className="w-3 h-3 ml-1" />
               </Button>
             </Link>
           }
@@ -107,7 +106,7 @@ export default function DashboardPage() {
             {overdueAssigns.length > 0 && (
               <div className="flex items-center gap-2 p-2 bg-red-500/5 border border-red-500/20 text-[10px] font-mono text-red-400">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                {overdueAssigns.length} assignment{overdueAssigns.length > 1 ? 's' : ''} overdue
+                {t('dashboard.overdue', { count: overdueAssigns.length })}
               </div>
             )}
             {activeAssigns.slice(0, 3).map(a => {
@@ -119,15 +118,15 @@ export default function DashboardPage() {
                   <div className="min-w-0">
                     <p className="text-xs font-mono font-bold truncate">{a.title}</p>
                     <p className="text-[10px] text-muted-foreground font-mono">
-                      {a.content_type} · Lulus: {a.passing_score}%
-                      {a.due_date && ` · Batas: ${new Date(a.due_date).toLocaleDateString('id-ID')}`}
+                      {a.content_type} · {t('dashboard.passing')}: {a.passing_score}%
+                      {a.due_date && ` · ${t('dashboard.due')}: ${new Date(a.due_date).toLocaleDateString()}`}
                     </p>
                   </div>
                   {/* Point to /my-assignments which handles deep-linking per content type */}
                   <Link to="/my-assignments">
                     <Button size="sm" variant={isOverdue ? 'destructive' : 'default'}
                       className="text-[10px] uppercase tracking-widest flex-shrink-0 ml-3">
-                      Mulai <ChevronRight className="w-3 h-3 ml-1" />
+                      {t('dashboard.start')} <ChevronRight className="w-3 h-3 ml-1" />
                     </Button>
                   </Link>
                 </div>
@@ -136,7 +135,7 @@ export default function DashboardPage() {
             {activeAssigns.length > 3 && (
               <Link to="/my-assignments">
                 <p className="text-[10px] font-mono text-center text-muted-foreground hover:text-primary transition-colors py-1 cursor-pointer">
-                  +{activeAssigns.length - 3} more assignments
+                  {t('dashboard.more_assignments', { count: activeAssigns.length - 3 })}
                 </p>
               </Link>
             )}
@@ -149,18 +148,18 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <SectionCard title={t('dashboard.quick_actions')} icon={Zap}>
             <div className="grid gap-2.5">
-              <Link to="/ai-challenge">
+              <Link to="/triage">
                 <Button className="w-full justify-start h-12 font-semibold relative overflow-hidden group border-primary/40" variant="default">
                   <div className="absolute inset-0 bg-primary/15 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300" />
                   <span className="relative z-10 flex items-center text-sm">
-                    <Zap className="w-4 h-4 mr-3" /> {t('dashboard.start_ai_ops')}
+                    <Zap className="w-4 h-4 mr-3" /> {t('dashboard.start_triage')}
                   </span>
                 </Button>
               </Link>
               <Link to="/my-assignments">
                 <Button className="w-full justify-start h-10" variant="outline">
                   <ClipboardList className="w-4 h-4 mr-3" />
-                  My Assignments
+                  {t('dashboard.my_assignments')}
                   {activeAssigns.length > 0 && (
                     <span className="ml-auto text-[9px] bg-primary text-primary-foreground px-1.5 py-0.5 font-mono">
                       {activeAssigns.length}
@@ -203,7 +202,7 @@ export default function DashboardPage() {
               <EmptyState
                 icon={Activity}
                 title={t('dashboard.no_operations')}
-                action={() => window.location.href = '/ai-challenge'}
+                action={() => navigate('/triage')}
                 actionLabel={t('dashboard.init_first_op')}
               />
             ) : (
@@ -211,6 +210,8 @@ export default function DashboardPage() {
                 {recentSims.map((sim, i) => {
                   const score = sim.score || 0;
                   const isGood = score >= 70;
+                  const done = sim.status === 'completed' || !!sim.completed_at;
+                  const when = new Date(sim.completed_at || sim.started_at || sim.created_at);
                   const isAI = sim.simulation_type === 'ai_challenge' || sim.type === 'ai_challenge';
                   return (
                     <div
@@ -231,19 +232,27 @@ export default function DashboardPage() {
                           </p>
                           <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                             <Clock className="w-2.5 h-2.5" />
-                            {new Date(sim.completed_at || sim.created_at || sim.started_at).toLocaleString()}
+                            {Number.isNaN(when.getTime()) ? '—' : when.toLocaleString()}
                           </p>
                         </div>
                       </div>
                       <div className="flex-shrink-0 text-right ml-4">
-                        <span className="text-[10px] text-muted-foreground block mb-0.5">
-                          {t('dashboard.success_rate')}
-                        </span>
-                        <span className={`font-mono font-bold text-lg leading-none ${
-                          isGood ? 'text-emerald-400' : 'text-orange-400'
-                        }`}>
-                          {score}%
-                        </span>
+                        {done ? (
+                          <>
+                            <span className="text-[10px] text-muted-foreground block mb-0.5">
+                              {t('dashboard.success_rate')}
+                            </span>
+                            <span className={`font-mono font-bold text-lg leading-none ${
+                              isGood ? 'text-emerald-400' : 'text-orange-400'
+                            }`}>
+                              {score}%
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[10px] font-mono uppercase text-yellow-500">
+                            {t('status.in_progress')}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );

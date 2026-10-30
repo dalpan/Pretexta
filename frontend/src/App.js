@@ -19,7 +19,6 @@ const SimulationsPage      = lazy(() => import('./pages/SimulationsPage'));
 const SimulationPlayerPage = lazy(() => import('./pages/SimulationPlayerPage'));
 const AIChatPage           = lazy(() => import('./pages/AIChatPage'));
 const SettingsPage         = lazy(() => import('./pages/SettingsPage'));
-const InstallerPage        = lazy(() => import('./pages/InstallerPage'));
 const ProfilePage          = lazy(() => import('./pages/ProfilePage'));
 const DebriefPage          = lazy(() => import('./pages/DebriefPage'));
 
@@ -171,12 +170,9 @@ function UserRoutes() {
 // ─────────────────────────────────────────────────────────────────────────────
 function AppShell() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
-  const [firstRunCompleted, setFirstRunCompleted] = useState(true);
   const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
-    const firstRun = localStorage.getItem('soceng_first_run');
-    if (!firstRun && !isAuthenticated) setFirstRunCompleted(false);
     const savedTheme = localStorage.getItem('soceng_theme') || 'dark';
     document.documentElement.classList.toggle('light', savedTheme === 'light');
   }, [isAuthenticated]);
@@ -186,17 +182,6 @@ function AppShell() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-primary font-mono animate-pulse">INITIALIZING...</div>
       </div>
-    );
-  }
-
-  if (!firstRunCompleted) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <InstallerPage onComplete={() => {
-          setFirstRunCompleted(true);
-          localStorage.setItem('soceng_first_run', 'true');
-        }} />
-      </Suspense>
     );
   }
 

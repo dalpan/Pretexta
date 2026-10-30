@@ -131,3 +131,21 @@ async def test_list_sets(api):
     await _seed()
     rows = (await api.get("/api/triage", headers=h)).json()
     assert rows and rows[0]["item_count"] == 6 and "items" not in rows[0]
+
+
+async def test_seed_adds_both_languages_once(api):
+    await triage.seed_default_set()
+    await triage.seed_default_set()
+    rows = await db.triage_sets.find({}, {"_id": 0, "id": 1, "language": 1}).to_list(10)
+    assert sorted((r["id"], r["language"]) for r in rows) == [
+        ("triage-inbox-01", "en"),
+        ("triage-inbox-01-id", "id"),
+    ]
+
+
+async def test_seed_fills_missing_set_without_touching_edited_one(api):
+    # An existing database from before the Indonesian set was added, edited by an admin.
+    await db.triage_sets.insert_one({"id": "triage-inbox-01", "title": "Edited", "items": []})
+    await triage.seed_default_set()
+    assert (await db.triage_sets.find_one({"id": "triage-inbox-01"}))["title"] == "Edited"
+    assert await db.triage_sets.find_one({"id": "triage-inbox-01-id"})

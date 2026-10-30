@@ -178,7 +178,7 @@ export default function SimulationPlayerPage() {
           {/* Score Display */}
           <div className="text-right">
             <div className="text-sm text-muted-foreground uppercase tracking-wide">
-              Security Awareness Score
+              {t('simulation.security_score')}
             </div>
             <div className={`text-4xl font-bold font-mono ${score >= 70 ? 'text-tertiary' : score >= 40 ? 'text-warning' : 'text-destructive'
               }`}>
@@ -191,8 +191,8 @@ export default function SimulationPlayerPage() {
       {/* Progress */}
       <div className="glass-panel p-4">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Score {Math.round(score)}/100</span>
-          <span>{currentNode?.type === 'end' ? 'Completed' : 'In progress'}</span>
+          <span>{t('simulation.score_of', { score: Math.round(score) })}</span>
+          <span>{currentNode?.type === 'end' ? t('simulation.status_completed') : t('simulation.status_running')}</span>
         </div>
       </div>
 
@@ -268,7 +268,7 @@ export default function SimulationPlayerPage() {
 
           <div className="mt-6 flex justify-end">
             <Button onClick={() => handleChoice(null)}>
-              Continue <ArrowRight className="w-4 h-4 ml-2" />
+              {t('simulation.continue')} <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         </Card>

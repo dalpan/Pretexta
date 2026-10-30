@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 export default function LoginPage({ onSwitchToRegister }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -45,10 +45,29 @@ export default function LoginPage({ onSwitchToRegister }) {
           </p>
           {/* Ethics notice — no credentials shown */}
           <div className="flex items-center gap-2 justify-center pt-1">
-            <Shield className="w-3 h-3 text-primary/40" />
-            <p className="text-[10px] text-muted-foreground/50 font-mono">
-              Authorized personnel only
+            <Shield className="w-3 h-3 text-primary/40 shrink-0" />
+            <p className="text-[10px] text-muted-foreground/70 font-mono">
+              {t('auth.ethics_notice')}
             </p>
+          </div>
+          <div className="flex justify-center gap-1 pt-1">
+            {['id', 'en'].map((lng) => (
+              <button
+                key={lng}
+                type="button"
+                onClick={() => {
+                  i18n.changeLanguage(lng);
+                  localStorage.setItem('soceng_language', lng);
+                }}
+                className={`px-2 py-0.5 text-[10px] font-mono border ${
+                  i18n.language === lng
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-primary'
+                }`}
+              >
+                {lng.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
 

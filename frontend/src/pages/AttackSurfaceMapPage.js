@@ -61,7 +61,8 @@ function layout(nodes, edges) {
   const assetCol = maxDist; // assets sit to the right of the closest people
   cols[assetCol + 1] = assets;
 
-  const COL_W = 230, ROW_H = 96, PAD_X = 150, PAD_Y = 70;
+  // ROW_H leaves room for an asset diamond plus its two label lines below it.
+  const COL_W = 230, ROW_H = 116, PAD_X = 150, PAD_Y = 70;
   const colKeys = Object.keys(cols).map(Number).sort((a, b) => a - b);
   const maxRows = Math.max(...colKeys.map((k) => cols[k].length), 1);
   const pos = {};
@@ -99,9 +100,10 @@ function GraphCanvas({ graph, selectedPath, onSelectNode }) {
   const entryId = hops[0]?.id;
 
   return (
-    <div className="overflow-auto border border-primary/15 bg-black/30" style={{ maxHeight: 560 }}>
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}
-        className="min-w-full" style={{ fontFamily: 'Oswald, monospace' }}>
+    <div className="border border-primary/15 bg-black/30">
+      {/* Scale to the column width so the asset column is never hidden off-canvas. */}
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" preserveAspectRatio="xMidYMid meet"
+        style={{ fontFamily: 'Oswald, monospace', display: 'block', maxHeight: 560 }}>
         <defs>
           <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
             <path d="M0,0 L7,3 L0,6 Z" fill={EDGE_COLOR} />
