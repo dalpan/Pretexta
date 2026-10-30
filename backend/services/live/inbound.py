@@ -1,16 +1,23 @@
 """
-IMAP poller for live-campaign replies (P3 plumbing).
+IMAP pollers for live campaigns: recipient replies (P3 plumbing) and the
+report mailbox staff forward suspicious mail to.
 
 A recipient's reply arrives at the Reply-To address
 `<reply_local>+<campaign_token>@<reply_domain>`. The poller reads the mailbox,
 maps the token to a campaign, matches the recipient by the reply's From address,
 strips quoted history, and hands the fresh text to the conversation engine.
 
+The report mailbox is a second inbox (e.g. lapor@acme.test). Every message in
+it is a forwarded report: it is parsed for the original sender and subject and
+handed to the report inbox, which credits the reporter when it is one of our
+simulations — the behaviour report rate measures.
+
 Pure parsing (token, body, sender) is separated from IMAP I/O so it can be
 tested without a server.
 """
 
 import asyncio
+import html
 import imaplib
 import logging
 import re
@@ -18,6 +25,7 @@ from email import message_from_bytes
 from email.message import Message
 from email.utils import parseaddr
 
+from services import report_inbox
 from services.ai_gateway import AIGateway
 from services.database import db
 from services.live import conversation
@@ -33,6 +41,13 @@ _QUOTE_MARKERS = (
     re.compile(r"^\s*(From|Pada|Dari):\s", re.IGNORECASE),
     re.compile(r"^\s*_{5,}\s*$"),
 )
+
+# Header lines inside an inline-forwarded message (Gmail, Outlook, Thunderbird; EN/ID).
+_FWD_FROM_RE = re.compile(r"^\s*\*?(?:From|Dari)\s*:\*?\s*(.+)$", re.IGNORECASE | re.MULTILINE)
+_FWD_SUBJECT_RE = re.compile(
+    r"^\s*\*?(?:Subject|Subjek|Perihal)\s*:\*?\s*(.+)$", re.IGNORECASE | re.MULTILINE
+)
+_TAG_RE = re.compile(r"<[^>]+>")
 
 
 def parse_token(*header_values: str | None) -> str | None:
@@ -82,6 +97,56 @@ def extract_body(msg: Message) -> str:
     return payload.decode(msg.get_content_charset() or "utf-8", "replace")
 
 
+def _text_of(msg: Message) -> str:
+    """Plain text of a message, falling back to tag-stripped HTML."""
+    html_text = ""
+    for part in msg.walk():
+        ctype = part.get_content_type()
+        if ctype not in ("text/plain", "text/html") or "attachment" in str(
+            part.get("Content-Disposition", "")
+        ):
+            continue
+        payload = part.get_payload(decode=True)
+        if not payload:
+            continue
+        text = payload.decode(part.get_content_charset() or "utf-8", "replace")
+        if ctype == "text/plain":
+            return text
+        html_text = html_text or html.unescape(_TAG_RE.sub("\n", text))
+    return html_text
+
+
+def parse_report(raw: bytes) -> dict | None:
+    """Pull the reporter and the reported message out of one forwarded email.
+
+    Handles "forward as attachment" (a message/rfc822 part) and inline
+    forwards, where the original From/Subject appear as lines in the body.
+    """
+    msg = message_from_bytes(raw)
+    reporter = sender_address(msg.get("From"))
+    if not reporter:
+        return None
+    for part in msg.walk():
+        if part.get_content_type() == "message/rfc822":
+            inner = part.get_payload(0) if part.is_multipart() else None
+            if isinstance(inner, Message):
+                return {
+                    "reporter_email": reporter,
+                    "subject": str(inner.get("Subject") or msg.get("Subject") or ""),
+                    "from_address": sender_address(inner.get("From")) or "",
+                    "body": _text_of(inner),
+                }
+    body = _text_of(msg)
+    fwd_from = _FWD_FROM_RE.search(body)
+    fwd_subject = _FWD_SUBJECT_RE.search(body)
+    return {
+        "reporter_email": reporter,
+        "subject": fwd_subject.group(1).strip() if fwd_subject else str(msg.get("Subject") or ""),
+        "from_address": sender_address(fwd_from.group(1)) if fwd_from else "",
+        "body": body,
+    }
+
+
 async def route_message(raw: bytes, gateway=None) -> dict:
     """Parse one raw RFC822 message and dispatch it to the conversation engine."""
     msg = message_from_bytes(raw)
@@ -125,7 +190,9 @@ async def route_message(raw: bytes, gateway=None) -> dict:
 # ── IMAP I/O ─────────────────────────────────────────────────────────
 
 
-def _fetch_new(config: dict, last_uid: int, last_uidvalidity: int) -> tuple[list[bytes], int, int]:
+def _fetch_new(
+    config: dict, user: str, password: str, last_uid: int, last_uidvalidity: int
+) -> tuple[list[bytes], int, int]:
     """Blocking IMAP fetch of messages with UID greater than the watermark.
     Returns (raw messages, current UIDVALIDITY, highest UID fetched). Runs in a thread."""
     host, _, port = config["imap_host"].partition(":")
@@ -135,7 +202,7 @@ def _fetch_new(config: dict, last_uid: int, last_uidvalidity: int) -> tuple[list
         else imaplib.IMAP4(host, int(port or 143))
     )
     try:
-        conn.login(config["imap_user"], config.get("imap_password", ""))
+        conn.login(user, password)
         conn.select("INBOX")
         # Track by UID, not the \Seen flag: a human reading the mailbox (e.g. in
         # Thunderbird) marks replies seen, which an UNSEEN search would then skip.
@@ -175,7 +242,12 @@ async def poll_once() -> dict:
     state = await db.live_state.find_one({"id": "imap_watermark"}, {"_id": 0}) or {}
     try:
         raws, uidvalidity, max_uid = await asyncio.to_thread(
-            _fetch_new, config, int(state.get("last_uid", 0)), int(state.get("uidvalidity", 0))
+            _fetch_new,
+            config,
+            config["imap_user"],
+            config.get("imap_password", ""),
+            int(state.get("last_uid", 0)),
+            int(state.get("uidvalidity", 0)),
         )
     except Exception as exc:
         logger.warning(f"IMAP poll failed: {exc}")
@@ -203,14 +275,58 @@ async def poll_once() -> dict:
     return {"polled": len(raws), "outcomes": outcomes}
 
 
+async def poll_reports_once() -> dict:
+    """Fetch forwarded reports from the report mailbox and credit the reporters."""
+    config = await db.live_config.find_one({"id": "live_config"}, {"_id": 0})
+    mailbox = ((config or {}).get("report_imap_user") or "").strip().lower()
+    if not config or not config.get("imap_host") or not mailbox:
+        return {"polled": 0, "reason": "report_mailbox_not_configured"}
+
+    state = await db.live_state.find_one({"id": "report_imap_watermark"}, {"_id": 0}) or {}
+    try:
+        raws, uidvalidity, max_uid = await asyncio.to_thread(
+            _fetch_new,
+            config,
+            mailbox,
+            config.get("report_imap_password", ""),
+            int(state.get("last_uid", 0)),
+            int(state.get("uidvalidity", 0)),
+        )
+    except Exception as exc:
+        logger.warning(f"report mailbox poll failed: {exc}")
+        return {"polled": 0, "error": str(exc)}
+
+    outcomes: dict[str, int] = {}
+    for raw in raws:
+        try:
+            parsed = parse_report(raw)
+            if not parsed or parsed["reporter_email"] == mailbox:
+                status = "skipped"
+            else:
+                report = await report_inbox.ingest_report(None, **parsed)
+                status = "credited" if report["credited"] else report["verdict"]
+        except Exception as exc:
+            logger.warning(f"ingesting a forwarded report failed: {exc}")
+            status = "ingest_error"
+        outcomes[status] = outcomes.get(status, 0) + 1
+
+    await db.live_state.update_one(
+        {"id": "report_imap_watermark"},
+        {"$set": {"last_uid": max_uid, "uidvalidity": uidvalidity}},
+        upsert=True,
+    )
+    return {"polled": len(raws), "outcomes": outcomes}
+
+
 async def run_poller(interval_seconds: int = 30) -> None:
     """Background loop, always running. poll_once is a no-op until IMAP is
     configured, so saving the config in Settings takes effect on the next tick
     without a restart."""
     logger.info("Live reply poller started")
     while True:
-        try:
-            await poll_once()
-        except Exception as exc:
-            logger.warning(f"poller iteration error: {exc}")
+        for poll in (poll_once, poll_reports_once):
+            try:
+                await poll()
+            except Exception as exc:
+                logger.warning(f"poller iteration error: {exc}")
         await asyncio.sleep(interval_seconds)

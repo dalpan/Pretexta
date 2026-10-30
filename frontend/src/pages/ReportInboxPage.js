@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   ShieldAlert, Flag, Inbox, AlertTriangle, CheckCircle2, Trophy,
-  Loader2, Plus, ShieldCheck, Bug, CircleHelp,
+  Loader2, Plus, ShieldCheck, Bug, CircleHelp, Mail, RefreshCw,
 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import SectionCard from '../components/SectionCard';
@@ -31,6 +31,44 @@ function VerdictBadge({ verdict }) {
   );
 }
 
+function MailboxCard({ onDone }) {
+  const { data: box } = useApi('/report-inbox/mailbox');
+  const [busy, setBusy] = useState(false);
+  const poll = async () => {
+    setBusy(true);
+    try {
+      const res = await api.post('/report-inbox/poll');
+      const n = res.data.polled || 0;
+      toast.success(n ? `${n} laporan baru diproses` : 'Tidak ada laporan baru');
+      onDone?.();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Gagal'); }
+    finally { setBusy(false); }
+  };
+  if (!box) return null;
+  return (
+    <SectionCard title="Mailbox pelaporan" icon={Mail}>
+      {box.configured ? (
+        <>
+          <p className="text-[11px] text-muted-foreground font-mono mb-2 leading-relaxed">
+            Personel cukup meneruskan (forward) email mencurigakan ke alamat ini. Laporan diperiksa
+            otomatis tiap 30 detik; pelapor simulasi langsung masuk ke report rate.
+          </p>
+          <p className="text-sm font-mono font-bold text-primary break-all mb-3">{box.address}</p>
+          <Button onClick={poll} disabled={busy} variant="outline" className="w-full text-[11px] uppercase tracking-widest">
+            {busy ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+            Periksa sekarang
+          </Button>
+        </>
+      ) : (
+        <p className="text-[11px] text-muted-foreground font-mono leading-relaxed">
+          Belum diatur. Admin dapat mengisi “Report mailbox” di Pengaturan → Live Campaigns agar
+          email yang di-forward personel tercatat otomatis.
+        </p>
+      )}
+    </SectionCard>
+  );
+}
+
 function RecordForm({ onDone }) {
   const [f, setF] = useState({ reporter_email: '', subject: '', from_address: '', body: '' });
   const [busy, setBusy] = useState(false);
@@ -49,8 +87,8 @@ function RecordForm({ onDone }) {
   return (
     <SectionCard title="Catat laporan" icon={Plus}>
       <p className="text-[11px] text-muted-foreground font-mono mb-3 leading-relaxed">
-        Saat karyawan meneruskan email mencurigakan ke mailbox abuse, sistem memilahnya otomatis.
-        Di produksi ini disuplai oleh poller mailbox; di sini bisa dicatat manual untuk uji coba.
+        Untuk laporan yang masuk lewat jalur lain (telepon, chat, tiket), catat manual di sini.
+        Sistem memilahnya dengan cara yang sama.
       </p>
       <div className="space-y-2">
         <Input placeholder="Email pelapor — alice@acme.test" value={f.reporter_email}
@@ -161,6 +199,7 @@ export default function ReportInboxPage() {
         </div>
 
         <div className="space-y-5">
+          <MailboxCard onDone={refresh} />
           <RecordForm onDone={refresh} />
           <SectionCard title="Pelapor teratas" icon={Trophy}>
             {(board ?? []).length === 0 ? (

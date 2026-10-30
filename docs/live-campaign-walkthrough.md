@@ -98,6 +98,7 @@ fill the **Live Campaigns (GoPhish)** panel:
 | IMAP host | `greenmail:3143` (GreenMail plain IMAP; use `:3993` for SSL) |
 | IMAP SSL | off for GreenMail's 3143 |
 | IMAP user / password | `sim-reply@acme.test` / `sim-reply@acme.test` (GreenMail accepts anything) |
+| Report mailbox / password | `lapor@acme.test` / `lapor@acme.test` — where staff forward suspicious mail; must differ from the IMAP user |
 
 **Configure IMAP if you want replies to be ingested.** Pretexta polls this
 mailbox itself — reading the mail in Thunderbird or any other client does **not**
@@ -306,6 +307,8 @@ To run against a real organization instead of the sandbox:
 | Can't approve a campaign | You are the creator. Approve from a different admin account (step 5). |
 | Pre-flight error about recipients | A recipient is outside a verified domain, or on the exclusion list. |
 | My reply never appears at all | IMAP isn't configured (Settings → Live), or the reply went to the sender address instead of the `Reply-To`. Check the campaign **Conversation** panel and run **Poll now** (Settings/API `POST /live/poll`). |
+| I replied to the lure but **Reported** stays 0 | Replying is engaging, not reporting. Forward the email to the report mailbox (`lapor@acme.test`); it is credited within ~30 s, or click **Periksa sekarang** on Laporan Phishing. |
+| My reply lands in the wrong place | The IMAP user must be the reply mailbox (`sim-reply@acme.test`), not the campaign sender. |
 | Reply shows in Conversation but not in Reply Review | No LLM provider configured — the persona can't draft a reply. Configure one in Settings → LLM (local Ollama works). |
 | Reply read in Thunderbird, poller skipped it | Fixed: the poller tracks UIDs, not the read/\Seen flag, so this no longer happens. |
 | Phishing link won't open (`http://gophish?rid=…`) | `phish_url` is set to an internal Docker name. Set it to a browser-reachable address (`http://localhost:8080` locally, or your public phishing URL), then **launch a new campaign** — the URL is baked in at launch. |

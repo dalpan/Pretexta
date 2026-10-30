@@ -108,7 +108,9 @@ Audit — `/api/audit` (admin): `GET /` (entries), `GET /verify` (chain integrit
   analysis, node/edge CRUD.
 - `/api/report-inbox` — Report-Phish mailbox (staff only): list/stats/leaderboard,
   `POST /ingest` (classify a reported message; credits the reporter if it's ours),
-  `PATCH /{id}` (triage). `DELETE /api/live/campaigns/{id}` removes a finished campaign.
+  `PATCH /{id}` (triage), `GET /mailbox` (the configured report address),
+  `POST /poll` (fetch forwarded reports from the report mailbox now). `POST
+  /api/live/poll` (admin) polls both the reply and the report mailbox. `DELETE /api/live/campaigns/{id}` removes a finished campaign.
 - `GET /api/live/analytics` — historical behaviour across launched campaigns:
   report-rate trend, per-campaign comparison, and repeat offenders.
 - `/api/live/schedules` — recurring campaigns (staff): CRUD + `POST /{id}/run-now`.

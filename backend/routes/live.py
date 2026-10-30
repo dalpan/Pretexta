@@ -646,6 +646,9 @@ async def set_kill_switch(data: KillSwitchRequest, current_user: User = Depends(
 # ==================== GOPHISH CONFIG (admin) ====================
 
 
+_SECRETS = ("gophish_api_key", "smtp_password", "imap_password", "report_imap_password")
+
+
 class LiveConfig(BaseModel):
     model_config = {"extra": "forbid"}
     gophish_base_url: str = Field(min_length=1, max_length=300)
@@ -666,6 +669,10 @@ class LiveConfig(BaseModel):
     imap_ssl: bool = True
     imap_user: str = ""
     imap_password: str = ""
+    # Report mailbox on the same IMAP server: staff forward suspicious mail here
+    # and reporters of our simulations are credited automatically.
+    report_imap_user: str = Field(default="", max_length=200)
+    report_imap_password: str = ""
 
 
 @router.get("/config")
@@ -674,7 +681,7 @@ async def get_config(current_user: User = Depends(require_admin)):
     if not config:
         return None
     # Never return stored secrets
-    for secret in ("gophish_api_key", "smtp_password", "imap_password"):
+    for secret in _SECRETS:
         if config.get(secret):
             config[secret] = "***"
     return config
@@ -682,10 +689,11 @@ async def get_config(current_user: User = Depends(require_admin)):
 
 @router.post("/poll")
 async def poll_inbox(current_user: User = Depends(require_admin)):
-    """Fetch and route inbound replies now. The poller also runs on a timer."""
-    from services.live.inbound import poll_once
+    """Fetch and route inbound replies and forwarded reports now. The poller
+    also runs on a timer."""
+    from services.live.inbound import poll_once, poll_reports_once
 
-    return await poll_once()
+    return {"replies": await poll_once(), "reports": await poll_reports_once()}
 
 
 @router.put("/config")
@@ -694,9 +702,15 @@ async def set_config(data: LiveConfig, current_user: User = Depends(require_admi
     # field (e.g. an older client without the IMAP-SSL toggle) does not reset it
     # to the model default.
     doc = {"id": "live_config", **data.model_dump(exclude_unset=True)}
+    report_box = (doc.get("report_imap_user") or "").strip().lower()
+    if report_box and report_box == (doc.get("imap_user") or "").strip().lower():
+        # Replies would then be counted as reports.
+        raise HTTPException(
+            status_code=400, detail="Report mailbox must differ from the reply mailbox"
+        )
     # A resubmitted mask ("***") means "keep the stored secret", not overwrite it.
     existing = await db.live_config.find_one({"id": "live_config"}, {"_id": 0})
-    for secret in ("gophish_api_key", "smtp_password", "imap_password"):
+    for secret in _SECRETS:
         if doc.get(secret) in ("", "***") and existing:
             doc[secret] = existing.get(secret, "")
     await db.live_config.update_one({"id": "live_config"}, {"$set": doc}, upsert=True)
