@@ -287,3 +287,128 @@ async def test_approve_blocked_on_killed_campaign(api):
 async def test_users_cannot_access_review(api):
     _, h = await make_user("user")
     assert (await api.get("/api/live/review", headers=h)).status_code == 403
+
+
+# ---------- persona reliability ----------
+
+
+class ScriptedGateway(FakeGateway):
+    """Returns the scripted replies in order and records what it was sent."""
+
+    def __init__(self, replies):
+        super().__init__()
+        self._replies = list(replies)
+        self.calls = []
+
+    async def persona_reply(self, *, system_prompt, history):
+        self.calls.append({"system_prompt": system_prompt, "history": history})
+        return self._replies.pop(0)
+
+
+@pytest.mark.parametrize(
+    "text,refused",
+    [
+        ("", True),
+        ("   ", True),
+        ("I cannot generate persuasive phishing messages, even in a simulation.", True),
+        ("I'm sorry, but I can't help with that.", True),
+        ("Sorry, I won't write that.", True),
+        ("As an AI, I must decline.", True),
+        ("Maaf, saya tidak bisa membantu membuat pesan ini.", True),
+        ("Just a quick follow-up on the reset, it only takes a minute.", False),
+        ("I can't wait to get this sorted for you before the deadline.", False),
+        ("I'm sorry for the delay, the reset link is still valid today.", False),
+        ("Halo, ini dari IT Helpdesk. Mohon segera selesaikan verifikasinya ya.", False),
+    ],
+)
+def test_is_refusal(text, refused):
+    assert conversation.is_refusal(text) is refused
+
+
+@pytest.mark.parametrize(
+    "text,lang",
+    [
+        ("Apa ini ?", "id"),
+        ("Maaf, ini dari siapa ya pak?", "id"),
+        ("What is this?", "en"),
+        ("ok", None),
+    ],
+)
+def test_detect_language(text, lang):
+    assert conversation.detect_language(text) == lang
+
+
+def test_lure_text_strips_html_and_template_tags():
+    camp = {"body_html": "<p>Hi {{.FirstName}},</p><p>Verify here: {{.URL}}</p>&amp; thanks"}
+    text = conversation.lure_text(camp)
+    assert "Verify here: [link]" in text and "<p>" not in text and "{{" not in text
+    assert "& thanks" in text
+
+
+async def test_prompt_carries_lure_and_follows_recipient_language(api):
+    camp = await _running_campaign()
+    camp["body_html"] = "<p>Your mailbox will be locked. Verify: {{.URL}}</p>"
+    gw = ScriptedGateway(["Halo, ini tindak lanjut dari IT Helpdesk soal verifikasi tadi."])
+    r = await conversation.process_inbound(camp, "bob@acme.test", "Apa ini ?", gw)
+    assert r["status"] == "draft_pending"
+    prompt = gw.calls[0]["system_prompt"]
+    assert "Your mailbox will be locked. Verify: [link]" in prompt
+    assert "Write in Indonesian" in prompt  # campaign is "en", recipient wrote Indonesian
+    assert gw.calls[0]["history"] == [{"role": "user", "content": "Apa ini ?"}]
+
+
+async def test_refusal_is_retried_once(api):
+    camp = await _running_campaign()
+    gw = ScriptedGateway(["I cannot help with phishing.", "A quick follow-up on the reset."])
+    r = await conversation.process_inbound(camp, "bob@acme.test", "who is this?", gw)
+    assert r["status"] == "draft_pending" and r["draft"] == "A quick follow-up on the reset."
+    assert len(gw.calls) == 2
+
+
+async def test_persistent_refusal_queues_empty_draft_for_human(api):
+    camp = await _running_campaign()
+    gw = ScriptedGateway(["I cannot help with phishing.", ""])
+    r = await conversation.process_inbound(camp, "bob@acme.test", "who is this?", gw)
+    assert r["status"] == "persona_declined"
+    draft = await db.live_messages.find_one({"campaign_id": camp["id"], "direction": "outbound"})
+    assert draft["status"] == "draft_pending" and draft["persona_declined"] is True
+    assert draft["body_redacted"] == ""  # the refusal text is never queued
+
+
+async def test_unsent_drafts_are_not_in_history(api):
+    camp = await _running_campaign()
+    await conversation.process_inbound(camp, "bob@acme.test", "who is this?", FakeGateway())
+    gw = ScriptedGateway(["Following up again."])
+    await conversation.process_inbound(camp, "bob@acme.test", "hello?", gw)
+    roles = [m["role"] for m in gw.calls[0]["history"]]
+    assert roles == ["user", "user"]  # the first draft was never approved, so never seen
+
+
+async def test_approve_rejects_empty_body(api, _no_real_mail):
+    _, h = await make_user("trainer", organization_id="o1")
+    _, draft = await _seed_draft(org="o1")
+    await db.live_messages.update_one({"id": draft["id"]}, {"$set": {"body_redacted": ""}})
+    r = await api.post(f"/api/live/review/{draft['id']}/approve", json={}, headers=h)
+    assert r.status_code == 400
+    r = await api.post(f"/api/live/review/{draft['id']}/approve", json={"body": "  "}, headers=h)
+    assert r.status_code == 400
+    assert not _no_real_mail
+
+
+async def test_review_queue_includes_context(api):
+    _, h = await make_user("trainer", organization_id="o1")
+    camp, draft = await _seed_draft(org="o1")
+    await db.live_messages.insert_one(
+        {
+            "id": "in-1",
+            "campaign_id": camp["id"],
+            "organization_id": "o1",
+            "email": "bob@acme.test",
+            "direction": "inbound",
+            "body_redacted": "who is this?",
+            "status": "received",
+            "at": datetime(2020, 1, 1, tzinfo=UTC),
+        }
+    )
+    row = (await api.get("/api/live/review", headers=h)).json()[0]
+    assert row["in_reply_to"] == "who is this?" and row["campaign_name"] == "drill"
