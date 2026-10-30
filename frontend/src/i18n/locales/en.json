@@ -297,7 +297,20 @@
     "provider_selection": "Choose your LLM provider (OpenAI, Gemini, Claude, etc.) and enter a valid API key.",
     "revoke_key_bold": "Revoke Key",
     "webhooks": "Webhooks",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "demo": {
+      "title": "Demo data",
+      "desc": "Load a fictional organization (12 people on demo.test, three campaigns, the remediation loop, lab results and an attack-surface map) to show the full story. Everything is tagged as demo and can be removed without touching real data.",
+      "status_loaded": "Loaded {{date}}",
+      "status_empty": "Not loaded",
+      "load": "Load demo data",
+      "reload": "Reload demo data",
+      "clear": "Remove demo data",
+      "confirm_clear": "Remove all demo data? Real users and campaigns are not affected.",
+      "loaded": "Demo loaded: {{people}} people, {{campaigns}} campaigns",
+      "cleared": "Demo data removed",
+      "failed": "Failed"
+    }
   },
   "simulation": {
     "security_score": "Security Awareness Score",
@@ -683,7 +696,7 @@
     },
     "no_data": "no data",
     "report_title": "Report rate — the behaviour we train for",
-    "reported_of": "{{reported}}/{{total}} reported · last {{campaigns}} campaigns",
+    "reported_of": "overall {{rate}} ({{reported}}/{{total}}) over {{campaigns}} campaigns",
     "points_since_first": "pts since the first campaign",
     "click_rate": "Click rate",
     "series": {
@@ -721,6 +734,7 @@
       "retest_open": "Retest scheduled for {{principle}}",
       "retest_done": "Retest on {{principle}} passed"
     },
-    "cohort_note": "Cohort of {{people}} trainees. Weights: report rate 40%, did not click 20%, principle resistance 20%, Inbox Triage 20%; missing parts are left out."
+    "cohort_note": "Cohort of {{people}} trainees. Weights: report rate 40%, did not click 20%, principle resistance 20%, Inbox Triage 20%; missing parts are left out.",
+    "latest_campaign": "latest campaign"
   }
 }

@@ -297,7 +297,20 @@
     "provider_selection": "Pilih penyedia LLM Anda (OpenAI, Gemini, Claude, dll.) dan masukkan kunci API yang valid.",
     "revoke_key_bold": "Cabut Kunci",
     "webhooks": "Webhook",
-    "notifications": "Notifikasi"
+    "notifications": "Notifikasi",
+    "demo": {
+      "title": "Data demo",
+      "desc": "Muat organisasi fiktif (12 orang di demo.test, tiga kampanye, siklus remediasi, hasil lab, dan peta serangan) untuk menunjukkan cerita lengkapnya. Semua ditandai sebagai demo dan bisa dihapus tanpa menyentuh data asli.",
+      "status_loaded": "Dimuat {{date}}",
+      "status_empty": "Belum dimuat",
+      "load": "Muat data demo",
+      "reload": "Muat ulang data demo",
+      "clear": "Hapus data demo",
+      "confirm_clear": "Hapus semua data demo? Pengguna dan kampanye asli tidak terpengaruh.",
+      "loaded": "Demo dimuat: {{people}} orang, {{campaigns}} kampanye",
+      "cleared": "Data demo dihapus",
+      "failed": "Gagal"
+    }
   },
   "simulation": {
     "security_score": "Skor Kesadaran Keamanan",
@@ -683,7 +696,7 @@
     },
     "no_data": "belum ada data",
     "report_title": "Report rate — perilaku yang kita latih",
-    "reported_of": "{{reported}}/{{total}} melapor · {{campaigns}} kampanye terakhir",
+    "reported_of": "rata-rata {{rate}} ({{reported}}/{{total}}) dari {{campaigns}} kampanye",
     "points_since_first": "poin sejak kampanye pertama",
     "click_rate": "Click rate",
     "series": {
@@ -721,6 +734,7 @@
       "retest_open": "Tes ulang {{principle}} dijadwalkan",
       "retest_done": "Tes ulang {{principle}} lulus"
     },
-    "cohort_note": "Kohort {{people}} peserta. Bobot: report rate 40%, tidak mengklik 20%, resistansi prinsip 20%, Triase Inbox 20%; komponen tanpa data tidak dihitung."
+    "cohort_note": "Kohort {{people}} peserta. Bobot: report rate 40%, tidak mengklik 20%, resistansi prinsip 20%, Triase Inbox 20%; komponen tanpa data tidak dihitung.",
+    "latest_campaign": "kampanye terbaru"
   }
 }
