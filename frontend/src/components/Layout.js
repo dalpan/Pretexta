@@ -112,7 +112,7 @@ function buildUserNav(t) {
       section: 'TRAINING',
       items: [
         { name: t('nav.dashboard'), path: '/', icon: LayoutDashboard },
-        { name: 'My Assignments', path: '/my-assignments', icon: Inbox },
+        { name: t('nav.my_assignments'), path: '/my-assignments', icon: Inbox },
         { name: t('nav.scenarios'), path: '/scenarios', icon: Target },
         { name: t('nav.quizzes'), path: '/quizzes', icon: ListChecks },
         { name: t('nav.triage'), path: '/triage', icon: Inbox },

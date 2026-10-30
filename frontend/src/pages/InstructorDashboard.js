@@ -43,8 +43,8 @@ export default function InstructorDashboard() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <PageHeader
         icon={Radio}
-        title="Command Center"
-        description={`${user?.display_name || user?.username} — ${role === 'admin' ? 'System Administrator' : 'Training Instructor'}`}
+        title={t('instructor.cc.title')}
+        description={`${user?.display_name || user?.username} — ${role === 'admin' ? t('instructor.cc.role_admin') : t('instructor.cc.role_trainer')}`}
         badge={
           <span className={`text-[10px] font-mono uppercase tracking-[0.25em] border px-2 py-0.5 ${roleCfg.color}`}>
             {roleCfg.label}
@@ -53,20 +53,20 @@ export default function InstructorDashboard() {
       >
         <Link to="/trainer/assignments">
           <Button size="sm" className="text-xs uppercase tracking-widest">
-            <Plus className="w-3.5 h-3.5 mr-2" /> New Assignment
+            <Plus className="w-3.5 h-3.5 mr-2" /> {t('instructor.cc.new_assignment')}
           </Button>
         </Link>
       </PageHeader>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <StatCard icon={Users}        label="Total Users"        value={userCount}
+        <StatCard icon={Users}        label={t('instructor.cc.total_users')}value={userCount}
           colorClass="border-blue-500"    textClass="text-blue-400" />
-        <StatCard icon={Users}        label="In Training Groups" value={totalTrainees}
+        <StatCard icon={Users}        label={t('instructor.cc.in_groups')}value={totalTrainees}
           colorClass="border-purple-500"  textClass="text-purple-400" />
-        <StatCard icon={ClipboardList} label="Active Assignments" value={activeAssignments}
+        <StatCard icon={ClipboardList} label={t('instructor.cc.active_assignments')}value={activeAssignments}
           colorClass="border-yellow-500"  textClass="text-yellow-400" />
-        <StatCard icon={CheckCircle2} label="Completed"          value={completedAssignments}
+        <StatCard icon={CheckCircle2} label={t('instructor.cc.completed')}value={completedAssignments}
           colorClass="border-emerald-500" textClass="text-emerald-400" />
       </div>
 
@@ -74,14 +74,14 @@ export default function InstructorDashboard() {
       {groups.length === 0 && !groupsLoading && (
         <div className="p-5 border border-primary/20 bg-primary/3 space-y-4">
           <h3 className="text-sm font-mono font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-            <Zap className="w-4 h-4" /> Getting Started — Training Workflow
+            <Zap className="w-4 h-4" /> {t('instructor.cc.getting_started')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             {[
-              { n: '1', label: 'Create Group', desc: 'Organize trainees into training groups', path: '/trainer/groups', icon: Users },
-              { n: '2', label: 'Add Users', desc: 'Add registered users to your training group', path: '/trainer/groups', icon: UserCog },
-              { n: '3', label: 'Assign Exercises', desc: 'Assign scenarios, quizzes, or AI personas', path: '/trainer/assignments', icon: ClipboardList },
-              { n: '4', label: 'View Reports', desc: 'Monitor progress and risk profiles', path: '/trainer/reports', icon: ShieldAlert },
+              { n: '1', label: t('instructor.cc.step1'), desc: t('instructor.cc.step1_desc'), path: '/trainer/groups', icon: Users },
+              { n: '2', label: t('instructor.cc.step2'), desc: t('instructor.cc.step2_desc'), path: '/trainer/groups', icon: UserCog },
+              { n: '3', label: t('instructor.cc.step3'), desc: t('instructor.cc.step3_desc'), path: '/trainer/assignments', icon: ClipboardList },
+              { n: '4', label: t('instructor.cc.step4'), desc: t('instructor.cc.step4_desc'), path: '/trainer/reports', icon: ShieldAlert },
             ].map(({ n, label, desc, path, icon: Icon }) => (
               <Link key={n} to={path}>
                 <div className="p-3 border border-white/10 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
@@ -103,7 +103,7 @@ export default function InstructorDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <div className="space-y-4">
-          <SectionCard title="Quick Actions" icon={Zap}>
+          <SectionCard title={t('dashboard.quick_actions')} icon={Zap}>
             <div className="space-y-2">
               <Link to="/trainer/groups">
                 <Button variant="outline" className="w-full justify-start h-10 text-xs uppercase tracking-widest">
@@ -113,27 +113,27 @@ export default function InstructorDashboard() {
               </Link>
               <Link to="/trainer/assignments">
                 <Button variant="default" className="w-full justify-start h-10 text-xs uppercase tracking-widest">
-                  <ClipboardList className="w-3.5 h-3.5 mr-3" /> Assign Exercise
+                  <ClipboardList className="w-3.5 h-3.5 mr-3" /> {t('instructor.cc.assign_exercise')}
                   <ChevronRight className="w-3 h-3 ml-auto" />
                 </Button>
               </Link>
               <Link to="/trainer/reports">
                 <Button variant="outline" className="w-full justify-start h-10 text-xs uppercase tracking-widest">
-                  <ShieldAlert className="w-3.5 h-3.5 mr-3" /> Assessment Reports
+                  <ShieldAlert className="w-3.5 h-3.5 mr-3" /> {t('instructor.cc.reports')}
                   <ChevronRight className="w-3 h-3 ml-auto" />
                 </Button>
               </Link>
               {role === 'admin' && (
                 <Link to="/users">
                   <Button variant="outline" className="w-full justify-start h-10 text-xs uppercase tracking-widest border-yellow-400/20 text-yellow-400/70 hover:text-yellow-400">
-                    <UserCog className="w-3.5 h-3.5 mr-3" /> Manage Users
+                    <UserCog className="w-3.5 h-3.5 mr-3" /> {t('instructor.cc.manage_users')}
                     <ChevronRight className="w-3 h-3 ml-auto" />
                   </Button>
                 </Link>
               )}
               <Link to="/scenarios">
                 <Button variant="ghost" className="w-full justify-start h-10 text-xs uppercase tracking-widest">
-                  <Target className="w-3.5 h-3.5 mr-3" /> Browse Scenarios
+                  <Target className="w-3.5 h-3.5 mr-3" /> {t('dashboard.browse_scenarios')}
                   <ChevronRight className="w-3 h-3 ml-auto" />
                 </Button>
               </Link>
@@ -147,7 +147,7 @@ export default function InstructorDashboard() {
             actions={
               <Link to="/trainer/groups">
                 <Button variant="ghost" size="sm" className="text-[10px] uppercase tracking-widest">
-                  View All <ChevronRight className="w-3 h-3 ml-1" />
+                  {t('dashboard.view_all')} <ChevronRight className="w-3 h-3 ml-1" />
                 </Button>
               </Link>
             }
@@ -159,8 +159,8 @@ export default function InstructorDashboard() {
             ) : groups.length === 0 ? (
               <Link to="/trainer/groups">
                 <div className="text-center py-4 border border-dashed border-primary/20 hover:border-primary/40 transition-colors cursor-pointer">
-                  <p className="text-[10px] font-mono text-muted-foreground">No groups yet</p>
-                  <p className="text-[10px] font-mono text-primary mt-1">+ Create your first group</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">{t('instructor.cc.no_groups')}</p>
+                  <p className="text-[10px] font-mono text-primary mt-1">{t('instructor.cc.first_group')}</p>
                 </div>
               </Link>
             ) : (
@@ -171,7 +171,7 @@ export default function InstructorDashboard() {
                       <div>
                         <p className="text-xs font-mono font-bold group-hover:text-primary transition-colors">{group.name}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {group.trainee_ids?.length || 0} trainees
+                          {t('instructor.cc.trainees', { count: group.trainee_ids?.length || 0 })}
                           {group.tags?.length > 0 && ` · ${group.tags.slice(0, 2).join(', ')}`}
                         </p>
                       </div>
@@ -182,7 +182,7 @@ export default function InstructorDashboard() {
                 {groups.length > 4 && (
                   <Link to="/trainer/groups">
                     <p className="text-[10px] font-mono text-muted-foreground text-center py-1 hover:text-primary transition-colors">
-                      +{groups.length - 4} more groups
+                      {t('instructor.cc.more_groups', { count: groups.length - 4 })}
                     </p>
                   </Link>
                 )}
@@ -194,12 +194,12 @@ export default function InstructorDashboard() {
         {/* Recent Assignments */}
         <div className="lg:col-span-2">
           <SectionCard
-            title="Recent Assignments"
+            title={t('instructor.cc.recent_assignments')}
             icon={ClipboardList}
             actions={
               <Link to="/trainer/assignments">
                 <Button variant="ghost" size="sm" className="text-[10px] uppercase tracking-widest">
-                  View All <ChevronRight className="w-3 h-3 ml-1" />
+                  {t('dashboard.view_all')} <ChevronRight className="w-3 h-3 ml-1" />
                 </Button>
               </Link>
             }
@@ -212,8 +212,8 @@ export default function InstructorDashboard() {
               <Link to="/trainer/assignments">
                 <EmptyState
                   icon={ClipboardList}
-                  title="No assignments yet"
-                  description="Assign exercises to trainees to start tracking their progress."
+                  title={t('instructor.cc.no_assignments')}
+                  description={t('instructor.cc.no_assignments_desc')}
                 />
               </Link>
             ) : (
@@ -231,12 +231,12 @@ export default function InstructorDashboard() {
                       <div className="min-w-0">
                         <p className="text-xs font-mono font-bold truncate">{assignment.title}</p>
                         <p className="text-[10px] text-muted-foreground font-mono">
-                          {assignment.content_type} · Pass: {assignment.passing_score}%
-                          {assignment.due_date && ` · Due: ${new Date(assignment.due_date).toLocaleDateString()}`}
+                          {assignment.content_type} · {t('dashboard.passing')}: {assignment.passing_score}%
+                          {assignment.due_date && ` · ${t('dashboard.due')}: ${new Date(assignment.due_date).toLocaleDateString()}`}
                         </p>
                       </div>
                       <span className={`text-[9px] font-mono uppercase border px-1.5 py-0.5 flex-shrink-0 ml-3 ${statusColor}`}>
-                        {assignment.status}
+                        {t(`status.${assignment.status}`, { defaultValue: assignment.status })}
                       </span>
                     </div>
                   );

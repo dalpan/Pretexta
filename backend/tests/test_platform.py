@@ -79,3 +79,14 @@ async def test_generate_still_rejects_oversized_prompt(api):
     _, h = await make_user("user")
     r = await api.post("/api/llm/generate", json={"prompt": "x" * 9000}, headers=h)
     assert r.status_code == 413
+
+
+async def test_simulation_gets_a_start_time_when_caller_omits_it(api):
+    from services.database import db
+    from services.simulation import create_simulation
+
+    created = await create_simulation(
+        {"simulation_type": "simulation", "status": "running", "title": "x"}, "u1", internal=True
+    )
+    sim = await db.simulations.find_one({"id": created["id"]})
+    assert sim["started_at"]  # previously missing, which rendered as "Invalid Date"

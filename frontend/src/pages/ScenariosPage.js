@@ -81,8 +81,6 @@ export default function ScenariosPage() {
 
   // Fungsi untuk memfilter dan mencari tantangan
   const filteredChallenges = useMemo(() => {
-    setCurrentPage(1); // Reset halaman ke 1 setiap kali filter berubah
-
     return challenges.filter(challenge => {
       // Tab Filtering
       const isProfessional = challenge.metadata?.type === 'professional' || challenge.metadata?.tags?.includes('professional');
@@ -102,6 +100,11 @@ export default function ScenariosPage() {
       return matchesSearch && matchesDifficulty && matchesCategory;
     });
   }, [challenges, searchTerm, filterDifficulty, filterCategory, activeTab]);
+
+  // Reset halaman ke 1 setiap kali filter berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterDifficulty, filterCategory, activeTab]);
 
   const handleDifficultyFilterChange = (difficulty, checked) => {
     setFilterDifficulty(prev =>
@@ -136,7 +139,7 @@ export default function ScenariosPage() {
         description={t('scenarios.page_description')}
       >
         <Badge variant="secondary" className="font-mono text-xs tracking-wider">
-          {challenges.length} {t('scenarios.title').toLowerCase()}
+          {filteredChallenges.length} {t('scenarios.title').toLowerCase()}
         </Badge>
       </PageHeader>
 
@@ -260,10 +263,12 @@ export default function ScenariosPage() {
 
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{challenge.estimated_time} min</span>
-                    </div>
+                    {challenge.estimated_time > 0 && (
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{challenge.estimated_time} min</span>
+                      </div>
+                    )}
                     <div className="flex items-center space-x-1">
                       <Target className="w-4 h-4" />
                       <span>{challenge.node_count ?? challenge.nodes?.length ?? 0} {t('scenarios.nodes')}</span>

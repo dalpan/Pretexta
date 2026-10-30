@@ -52,6 +52,11 @@ async def create_simulation(data: dict, user_id: str, internal: bool = False) ->
     data["id"] = str(uuid.uuid4())
     data["user_id"] = user_id
 
+    # Every simulation has a start time, even when the caller omits it (lists sort
+    # and display by it).
+    if not data.get("started_at"):
+        data["started_at"] = datetime.now(UTC)
+
     # Normalize timestamps
     for field in ("started_at", "completed_at"):
         val = data.get(field)
