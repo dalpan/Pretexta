@@ -5,6 +5,7 @@ from routes.auth import router as auth_router
 from routes.campaigns import router as campaigns_router
 from routes.challenges import router as challenges_router
 from routes.debrief import router as debrief_router
+from routes.demo import router as demo_router
 from routes.freetext import router as freetext_router
 from routes.glossary import router as glossary_router
 from routes.imports import router as imports_router
@@ -48,6 +49,7 @@ __all__ = [
     "webhooks_router",
     "scenario_builder_router",
     "debrief_router",
+    "demo_router",
     # v3 platform services
     "personas_router",
     "risk_profile_router",

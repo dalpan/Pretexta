@@ -55,6 +55,7 @@ async def _live(scope: dict) -> dict[str, Any]:
         clicked += m["clicked"]
 
     rates = [t["report_rate"] for t in trend if t["report_rate"] is not None]
+    latest = trend[-1] if trend else {}
     return {
         "campaigns": len(campaigns),
         "recipients": recipients,
@@ -64,6 +65,9 @@ async def _live(scope: dict) -> dict[str, Any]:
         "click_rate": round(clicked / recipients, 3) if recipients else None,
         # Change between the first and the latest campaign in the window.
         "report_rate_delta": round(rates[-1] - rates[0], 3) if len(rates) >= 2 else None,
+        # Current state = the most recent campaign; the aggregate above is context.
+        "latest_report_rate": latest.get("report_rate"),
+        "latest_click_rate": latest.get("click_rate"),
         "trend": trend,
     }
 
@@ -129,9 +133,11 @@ async def _loop(user_ids: list[str]) -> dict[str, Any]:
 
 def _index(live: dict, principles: dict, lab: dict) -> dict[str, Any]:
     known = [v for v in principles.values() if v is not None]
+    # The index describes readiness now, so live behaviour comes from the latest campaign.
+    report, click = live["latest_report_rate"], live["latest_click_rate"]
     components = {
-        "report_rate": None if live["report_rate"] is None else live["report_rate"] * 100,
-        "no_click": None if live["click_rate"] is None else (1 - live["click_rate"]) * 100,
+        "report_rate": None if report is None else report * 100,
+        "no_click": None if click is None else (1 - click) * 100,
         "principles": mean(known) if known else None,
         "triage": lab["avg_triage_score"],
     }

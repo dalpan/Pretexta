@@ -88,15 +88,17 @@ async def test_index_and_loop(api):
     live = body["live"]
     assert live["report_rate"] == 0.5 and live["click_rate"] == 0.25
     assert live["report_rate_delta"] == 0.5
+    assert (live["latest_report_rate"], live["latest_click_rate"]) == (0.75, 0.25)
     assert [t["name"] for t in live["trend"]] == ["c1", "c2"]
 
     assert body["weakest_principles"][0] == "authority"
     assert body["lab"] == {"triage_runs": 1, "avg_triage_score": 90.0, "avg_d_prime": 2.0}
 
     comps = body["index"]["components"]
-    assert comps == {"report_rate": 50, "no_click": 75, "principles": 70, "triage": 90}
-    # 0.4*50 + 0.2*75 + 0.2*70 + 0.2*90 = 67
-    assert body["index"]["score"] == 67
+    # Live components come from the latest campaign (75% reported, 25% clicked).
+    assert comps == {"report_rate": 75, "no_click": 75, "principles": 70, "triage": 90}
+    # 0.4*75 + 0.2*75 + 0.2*70 + 0.2*90 = 77
+    assert body["index"]["score"] == 77
 
     loop = body["loop"]
     assert (loop["remediation_assigned"], loop["remediation_passed"]) == (2, 1)

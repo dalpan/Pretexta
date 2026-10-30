@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch';
 import {
   Settings as SettingsIcon, Globe, Zap, Key, RefreshCw, ExternalLink,
-  Server, Wifi, WifiOff, Check, ChevronDown, Search, Shield, UserCog
+  Server, Wifi, WifiOff, Check, ChevronDown, Search, Shield, UserCog, Database, Trash2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import SectionCard from '../components/SectionCard';
@@ -75,6 +75,57 @@ function AdminPanel() {
   );
 }
 
+
+function DemoDataCard() {
+  const { t } = useTranslation();
+  const [state, setState] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = () => api.get('/demo').then((r) => setState(r.data)).catch(() => setState(null));
+  useEffect(() => { refresh(); }, []);
+
+  const run = async (action) => {
+    if (action === 'clear' && !window.confirm(t('settings.demo.confirm_clear'))) return;
+    setBusy(true);
+    try {
+      if (action === 'load') {
+        const r = await api.post('/demo');
+        toast.success(t('settings.demo.loaded', { people: r.data.people, campaigns: r.data.campaigns }));
+      } else {
+        await api.delete('/demo');
+        toast.success(t('settings.demo.cleared'));
+      }
+      refresh();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || t('settings.demo.failed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SectionCard title={t('settings.demo.title')} icon={Database}>
+      <p className="text-xs text-muted-foreground">{t('settings.demo.desc')}</p>
+      <p className="text-[11px] font-mono text-muted-foreground">
+        {state?.loaded
+          ? t('settings.demo.status_loaded', { date: new Date(state.seeded_at).toLocaleString() })
+          : t('settings.demo.status_empty')}
+      </p>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={() => run('load')} disabled={busy}>
+          <Database className="w-3.5 h-3.5 mr-2" />
+          {state?.loaded ? t('settings.demo.reload') : t('settings.demo.load')}
+        </Button>
+        {state?.loaded && (
+          <Button size="sm" variant="outline" onClick={() => run('clear')} disabled={busy}
+            className="text-red-400 border-red-400/30">
+            <Trash2 className="w-3.5 h-3.5 mr-2" /> {t('settings.demo.clear')}
+          </Button>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
 
 function LiveConfigCard() {
   const [f, setF] = useState(null);
@@ -316,6 +367,7 @@ export default function SettingsPage() {
       {/* Admin Panel — only for admin users */}
       {isAdmin && <AdminPanel />}
       {isAdmin && <LiveConfigCard />}
+      {isAdmin && <DemoDataCard />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEFT COLUMN */}

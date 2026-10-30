@@ -105,10 +105,15 @@ function ReportCard({ live, t }) {
       <div className="grid sm:grid-cols-3 gap-4 items-center">
         <div>
           <div className="text-5xl font-bold" style={{ color: GOOD, fontFamily: 'Oswald, monospace' }}>
-            {pct(live.report_rate)}
+            {pct(live.latest_report_rate)}
           </div>
           <div className="text-[10px] font-mono text-muted-foreground mt-1">
-            {t('readiness.reported_of', { reported: live.reported, total: live.recipients, campaigns: live.campaigns })}
+            {t('readiness.latest_campaign')}
+          </div>
+          <div className="text-[10px] font-mono text-muted-foreground">
+            {t('readiness.reported_of', {
+              rate: pct(live.report_rate), reported: live.reported, total: live.recipients, campaigns: live.campaigns,
+            })}
           </div>
           {delta != null && (
             <div className="flex items-center gap-1 mt-2 text-xs font-mono"
@@ -119,7 +124,7 @@ function ReportCard({ live, t }) {
           )}
           <div className="flex items-center gap-1.5 mt-3 text-[10px] font-mono text-muted-foreground">
             <MousePointerClick className="w-3 h-3" style={{ color: WARN }} />
-            {t('readiness.click_rate')}: <span style={{ color: WARN }}>{pct(live.click_rate)}</span>
+            {t('readiness.click_rate')}: <span style={{ color: WARN }}>{pct(live.latest_click_rate)}</span>
           </div>
         </div>
         <div className="sm:col-span-2 h-40">
