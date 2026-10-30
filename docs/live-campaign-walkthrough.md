@@ -1,9 +1,10 @@
 # Walkthrough: run a live campaign end to end
 
 This is a complete, copy-pasteable tutorial for setting up GoPhish and running a
-full live phishing simulation in Pretexta — from zero to a running campaign with
-AI follow-up. Every step here was executed against the real app; the screenshots
-are from that run.
+full live phishing simulation in Pretexta — from zero to a running **click
+campaign** measured by **report rate**. (The optional AI-conversation layer is
+covered in step 9.) Every step here was executed against the real app; the
+screenshots are from that run.
 
 > Live mode sends real email. Do this first against **sandbox domains**
 > (`*.test`) and a local mail server, as shown here. Only point it at real
@@ -22,6 +23,7 @@ Contents:
 10. [Results and the kill switch](#10-results-and-the-kill-switch)
 11. [Going to real mailboxes](#11-going-to-real-mailboxes)
 12. [Troubleshooting](#12-troubleshooting)
+13. [After the campaign — the rest of LIVE OPS](#13-after-the-campaign--the-rest-of-live-ops)
 
 ---
 
@@ -164,29 +166,51 @@ For a real domain you would add it, then publish the shown DNS **TXT** record
 
 ## 7. Create a campaign
 
-Click **+ New campaign**. You can **Start from a template** (built-in phishing
+Click **Kampanye baru** (top-right). You can **Start from a template** (built-in
 pretexts: IT helpdesk, CEO wire, HR policy, delivery, tool install) to fill the
-fields, then adjust — or fill the form yourself:
+fields, then adjust — or fill the form yourself.
 
 ![New campaign form](images/live-01-create-form.jpg)
+
+**First choose the campaign type.** The form opens on the two choices:
+
+- **Kampanye Klik** *(the default — start here)* — you send a lure and measure
+  behaviour: who clicks, and the headline metric, **who reports it**. No AI, no
+  conversation. This is the primary flow and the one this walkthrough runs.
+- **Percakapan AI** *(advanced)* — an AI persona continues a reply thread toward
+  one approved objective (`reply`, `agree_to_share_otp`, …). Every reply is held
+  for human review (see step 9). Pick this only when you specifically want the
+  conversation layer; it needs IMAP + an LLM configured.
+
+For a click campaign, fill:
 
 | Field | Example |
 |-------|---------|
 | Name | Q4 Helpdesk Phishing Drill |
-| Objective | `agree_to_share_otp` |
 | Sender name / email | IT Helpdesk / `helpdesk@acme.test` (must be on a verified domain) |
 | Influence principles | authority, scarcity |
 | Subject | Action required: verify your mailbox |
-| Body (HTML) | `<p>We detected unusual activity. Confirm within 2 hours: {{.URL}}</p>` |
+| Body (HTML) | `<p>We detected unusual activity. Confirm here: <a href="{{.URL}}">verify now</a></p>` |
 | Recipients | `alice@acme.test`, `bob@acme.test` (one per line or comma-separated) |
 | Starts / Ends | now … within 30 days |
-| Max AI turns | 3 |
 
-`{{.URL}}` is the tracked link GoPhish fills in. Click **Create draft**.
+`{{.URL}}` is the per-recipient tracked link GoPhish fills in — it **must** appear
+in the body. Click **Create draft**.
 
-The campaign opens with its pre-flight result. Green means every guardrail
-check passed; errors (coercive themes, brand impersonation, recipients outside a
-verified domain, a window over 30 days) block submission until fixed.
+**Optional toggles on the same form:**
+
+- **Quishing (kode QR)** — deliver the lure as a QR code that encodes `{{.URL}}`; a
+  phone scan is tracked exactly like a click. Set **Public base URL** in Settings
+  first (e.g. `http://localhost:9442`) so the recipient's mail client can load the
+  QR image.
+- **Jadwalkan berulang** — instead of one campaign, create a *schedule*: every N
+  days it materialises a fresh campaign in `pending_approval` (never auto-sent, so
+  two-person approval still applies). Manage schedules in the **Kampanye terjadwal**
+  card.
+
+The campaign opens with its pre-flight result. Green means every guardrail check
+passed; errors (coercive themes, brand impersonation, recipients outside a verified
+domain, a window over 30 days) block submission until fixed.
 
 ![Pre-flight passed](images/live-02-preflight.jpg)
 
@@ -286,3 +310,22 @@ To run against a real organization instead of the sandbox:
 | Reply read in Thunderbird, poller skipped it | Fixed: the poller tracks UIDs, not the read/\Seen flag, so this no longer happens. |
 | Phishing link won't open (`http://gophish?rid=…`) | `phish_url` is set to an internal Docker name. Set it to a browser-reachable address (`http://localhost:8080` locally, or your public phishing URL), then **launch a new campaign** — the URL is baked in at launch. |
 | Self-signed cert warning at :3333 | Expected for GoPhish's admin UI; accept it, or set `verify_tls: false` (default). |
+
+---
+
+## 13. After the campaign — the rest of LIVE OPS
+
+A click campaign is the start of a loop, not the end. The other LIVE OPS menus
+(all documented in the [user guide §5](user-guide.md#5-live-ops-admin--trainer))
+pick up from here:
+
+- **Laporan Phishing** — the abuse inbox. When a recipient forwards the lure to
+  report it, it is classified and the reporter is **credited into this campaign's
+  report rate**. This is the behaviour you are training for.
+- **Analitik Live** — the report-rate **trend across campaigns** and the **repeat
+  offenders** who fail more than once.
+- **Remediation** — a click here automatically assigns the person targeted
+  practice for the principle they fell for, then schedules a retest (user guide §4).
+- **Peta Serangan (Attack Surface Map)** — see the human paths an attacker could
+  walk, and use **Luncurkan ke titik rawan** to seed your next campaign with the
+  most-susceptible people.
