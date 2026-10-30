@@ -31,6 +31,7 @@ const MyAssignmentsPage    = lazy(() => import('./pages/MyAssignmentsPage'));
 
 // ── Trainer/Admin pages ────────────────────────────────────────────────────
 const InstructorDashboard  = lazy(() => import('./pages/InstructorDashboard'));
+const ReadinessPage        = lazy(() => import('./pages/ReadinessPage'));
 const TraineesPage         = lazy(() => import('./pages/TraineesPage'));
 const AssignmentsPage      = lazy(() => import('./pages/AssignmentsPage'));
 const InstructorReportsPage = lazy(() => import('./pages/InstructorReportsPage'));
@@ -59,7 +60,8 @@ function PageLoader() {
 function AdminRoutes() {
   return (
     <Routes>
-      <Route path="/"                        element={<InstructorDashboard />} />
+      <Route path="/"                        element={<ReadinessPage />} />
+      <Route path="/command"                 element={<InstructorDashboard />} />
       {/* User management — admin only */}
       <Route path="/users"                   element={<UsersPage />} />
       {/* Trainer management */}
@@ -100,7 +102,8 @@ function AdminRoutes() {
 function TrainerRoutes() {
   return (
     <Routes>
-      <Route path="/"                        element={<InstructorDashboard />} />
+      <Route path="/"                        element={<ReadinessPage />} />
+      <Route path="/command"                 element={<InstructorDashboard />} />
       {/* Trainer tools */}
       <Route path="/users"                   element={<UsersPage />} />
       <Route path="/trainer/groups"          element={<TraineesPage />} />
