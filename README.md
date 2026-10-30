@@ -65,6 +65,20 @@ route is the easiest path an attacker could walk from the outside to a crown jew
 </details>
 
 <details>
+<summary><strong>Recurring schedules + quishing</strong> — a campaign on a cadence, or delivered as a QR code</summary>
+
+![Recurring schedule and quishing](screenshots/07-schedule-quishing.png)
+
+</details>
+
+<details>
+<summary><strong>Launch from the Attack Surface Map</strong> — one click targets the human weak points</summary>
+
+![Launch from the Attack Surface Map](screenshots/08-launch-from-map.png)
+
+</details>
+
+<details>
 <summary><strong>Settings</strong> — GoPhish + mail-relay wiring for live mode (secrets stored masked)</summary>
 
 ![Settings](screenshots/04-settings-gophish.png)
@@ -129,6 +143,9 @@ median time-to-report lead the dashboard.
 | **No credential capture** | Landing pages are teachable moments — never password forms (G5) |
 | **Optional AI conversation** | A persona can continue a reply thread toward one approved objective — every reply **held for human review**, secrets redacted before storage (G6–G8) |
 | **Hash-chained audit log** | Every state change is tamper-evident (G9) |
+| **Recurring schedules** | Run a baseline and periodic retests; each run is created in *pending_approval*, never auto-sent (G2) |
+| **Quishing (QR)** | Deliver the lure as a QR code encoding the tracked URL — a scan is attributed like a click |
+| **Launch from the map** | One click seeds a campaign with the most-susceptible people from the Human Attack Surface Map |
 
 See [guardrails.md](docs/guardrails.md) for the full G1–G15 set.
 
