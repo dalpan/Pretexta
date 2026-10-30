@@ -8,7 +8,7 @@ import {
   Terminal, LayoutDashboard, FileCode, ListChecks, Activity, Settings, LogOut,
   BookOpen, Trophy, BarChart3, Flag, Pencil, Sun, Moon, User, Globe,
   Menu, X, Users, ClipboardList, ShieldAlert, Radio, Target, Inbox, MessageSquare, PenLine,
-  Shield, UserCog, History, BookMarked, Share2,
+  Shield, ShieldCheck, UserCog, History, BookMarked, Share2,
 } from 'lucide-react';
 
 const LANGUAGES = [
@@ -23,13 +23,14 @@ function buildAdminNav(t) {
     {
       section: 'COMMAND',
       items: [
-        { name: 'Command Center', path: '/', icon: Radio },
-        { name: 'All Users', path: '/users', icon: UserCog },
+        { name: t('nav.readiness'), path: '/', icon: ShieldCheck },
+        { name: t('instructor.cc.title'), path: '/command', icon: Radio },
+        { name: t('nav.all_users'), path: '/users', icon: UserCog },
         { name: t('instructor.groups'), path: '/trainer/groups', icon: Users },
         { name: t('instructor.assignments'), path: '/trainer/assignments', icon: ClipboardList },
         { name: t('instructor.reports'), path: '/trainer/reports', icon: ShieldAlert },
-        { name: 'Riwayat User', path: '/trainer/user-history', icon: History },
-        { name: 'Peta Serangan', path: '/attack-surface', icon: Share2 },
+        { name: t('nav.user_history'), path: '/trainer/user-history', icon: History },
+        { name: t('nav.attack_surface'), path: '/attack-surface', icon: Share2 },
       ],
     },
     {
@@ -47,15 +48,15 @@ function buildAdminNav(t) {
       items: [
         { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
         { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
-        { name: 'Laporan Phishing', path: '/live/reports', icon: ShieldAlert },
-        { name: 'Analitik Live', path: '/live/analytics', icon: BarChart3 },
+        { name: t('nav.report_inbox'), path: '/live/reports', icon: ShieldAlert },
+        { name: t('nav.live_analytics'), path: '/live/analytics', icon: BarChart3 },
       ],
     },
     {
       section: 'SYSTEM',
       items: [
         { name: t('nav.analytics'), path: '/analytics', icon: BarChart3 },
-        { name: 'Glosarium', path: '/glossary', icon: BookMarked },
+        { name: t('nav.glossary'), path: '/glossary', icon: BookMarked },
         { name: t('nav.settings'), path: '/settings', icon: Settings },
       ],
     },
@@ -67,13 +68,14 @@ function buildTrainerNav(t) {
     {
       section: 'TRAINING MGMT',
       items: [
-        { name: 'Command Center', path: '/', icon: Radio },
-        { name: 'Users', path: '/users', icon: UserCog },
+        { name: t('nav.readiness'), path: '/', icon: ShieldCheck },
+        { name: t('instructor.cc.title'), path: '/command', icon: Radio },
+        { name: t('nav.users'), path: '/users', icon: UserCog },
         { name: t('instructor.groups'), path: '/trainer/groups', icon: Users },
         { name: t('instructor.assignments'), path: '/trainer/assignments', icon: ClipboardList },
         { name: t('instructor.reports'), path: '/trainer/reports', icon: ShieldAlert },
-        { name: 'Riwayat User', path: '/trainer/user-history', icon: History },
-        { name: 'Peta Serangan', path: '/attack-surface', icon: Share2 },
+        { name: t('nav.user_history'), path: '/trainer/user-history', icon: History },
+        { name: t('nav.attack_surface'), path: '/attack-surface', icon: Share2 },
       ],
     },
     {
@@ -91,15 +93,15 @@ function buildTrainerNav(t) {
       items: [
         { name: t('nav.live_campaigns'), path: '/live', icon: Radio },
         { name: t('nav.reply_review'), path: '/live/review', icon: MessageSquare },
-        { name: 'Laporan Phishing', path: '/live/reports', icon: ShieldAlert },
-        { name: 'Analitik Live', path: '/live/analytics', icon: BarChart3 },
+        { name: t('nav.report_inbox'), path: '/live/reports', icon: ShieldAlert },
+        { name: t('nav.live_analytics'), path: '/live/analytics', icon: BarChart3 },
       ],
     },
     {
       section: 'ACCOUNT',
       items: [
         { name: t('nav.analytics'), path: '/analytics', icon: BarChart3 },
-        { name: 'Glosarium', path: '/glossary', icon: BookMarked },
+        { name: t('nav.glossary'), path: '/glossary', icon: BookMarked },
         { name: t('nav.settings'), path: '/settings', icon: Settings },
       ],
     },

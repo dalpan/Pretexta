@@ -41,7 +41,14 @@
     "reply_review": "Reply Review",
     "triage": "Inbox Triage",
     "write_reply": "Write Your Reply",
-    "my_assignments": "My Assignments"
+    "my_assignments": "My Assignments",
+    "readiness": "Readiness",
+    "all_users": "All Users",
+    "users": "Users",
+    "user_history": "User History",
+    "attack_surface": "Attack Surface Map",
+    "report_inbox": "Phish Reports",
+    "live_analytics": "Live Analytics"
   },
   "dashboard": {
     "welcome": "Welcome to Pretexta",
@@ -656,5 +663,64 @@
     "select": "Select a message.",
     "progress": "{{done}}/{{total}} reviewed — you can submit any time",
     "submit": "Submit triage"
+  },
+  "readiness": {
+    "title": "Readiness",
+    "desc": "How well your people resist social engineering — measured by behaviour, closed by remediation",
+    "index": "Readiness index",
+    "band": {
+      "none": "no data yet",
+      "strong": "resilient",
+      "alert": "alert",
+      "vulnerable": "vulnerable",
+      "critical": "critical"
+    },
+    "component": {
+      "report_rate": "Report rate",
+      "no_click": "Did not click",
+      "principles": "Principle resistance",
+      "triage": "Inbox Triage score"
+    },
+    "no_data": "no data",
+    "report_title": "Report rate — the behaviour we train for",
+    "reported_of": "{{reported}}/{{total}} reported · last {{campaigns}} campaigns",
+    "points_since_first": "pts since the first campaign",
+    "click_rate": "Click rate",
+    "series": {
+      "report": "Report rate",
+      "click": "Click rate"
+    },
+    "trend_needs_two": "Run two campaigns to see a trend",
+    "loop_title": "The loop: measure → remediate → retest",
+    "loop_desc": "Every failure triggers targeted practice for the exact principle used, then a variant retest.",
+    "step": {
+      "failed": "clicked in a campaign",
+      "assigned": "practice assigned",
+      "passed": "practice passed",
+      "retested": "retest passed"
+    },
+    "principles_title": "Resistance by influence principle",
+    "resistance": "Resistance",
+    "weakest": "Weakest",
+    "surface_title": "Attack surface",
+    "surface_empty": "Model people, trust and crown jewels to see the easiest attack path.",
+    "open_map": "Open the map",
+    "score": "score",
+    "top_path": "Easiest crown jewel: {{asset}} ({{probability}} modelled success)",
+    "lab_title": "Lab discrimination",
+    "d_prime": "avg d′",
+    "triage_score": "avg triage",
+    "triage_runs": "runs",
+    "d_prime_hint": "d′ measures telling phish from legitimate mail; over-flagging does not raise it.",
+    "feed_title": "Loop activity",
+    "feed_empty": "No remediation yet.",
+    "feed_privacy": "Anonymous — individual results stay with the person and their trainer.",
+    "feed": {
+      "remediation_open": "Practice assigned for {{principle}}",
+      "remediation_done": "Practice on {{principle}} passed",
+      "retest_open": "Retest scheduled for {{principle}}",
+      "retest_done": "Retest on {{principle}} passed"
+    },
+    "cohort_note": "Cohort of {{people}} trainees. Weights: report rate 40%, did not click 20%, principle resistance 20%, Inbox Triage 20%; missing parts are left out."
   }
 }
