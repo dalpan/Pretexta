@@ -28,6 +28,19 @@ const CONTENT_TYPE_LABELS = {
 };
 
 function AssignmentCard({ assignment }) {
+  const { t } = useTranslation();
+  // System (remediation/retest) reasons are rendered from a key so they follow
+  // the UI language; manual instructor notes are shown as written.
+  const note = assignment.reason_key
+    ? t(`remediation.${assignment.reason_key}`, {
+      ...assignment.reason_params,
+      principle: t(`principles.${assignment.reason_params?.principle}`, {
+        defaultValue: assignment.reason_params?.principle,
+      }),
+      defaultValue: assignment.instructions,
+    })
+    : assignment.instructions;
+  const isSystem = assignment.source === 'remediation' || assignment.source === 'retest';
   const navigate = useNavigate();
   const Icon = CONTENT_TYPE_ICONS[assignment.content_type] || Target;
   const result = assignment.result;
@@ -119,11 +132,13 @@ function AssignmentCard({ assignment }) {
             {result && ` · Percobaan ke-${result.attempts}`}
           </p>
 
-          {assignment.instructions && (
+          {note && (
             <div className="p-2.5 bg-black/20 border border-white/5 mb-3">
               <p className="text-[10px] text-muted-foreground font-mono leading-relaxed">
-                <span className="text-primary/60 uppercase tracking-widest mr-1.5">Catatan Instruktur:</span>
-                {assignment.instructions}
+                <span className="text-primary/60 uppercase tracking-widest mr-1.5">
+                  {isSystem ? t('remediation.why') : t('remediation.instructor_note')}:
+                </span>
+                {note}
               </p>
             </div>
           )}

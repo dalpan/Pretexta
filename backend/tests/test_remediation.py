@@ -129,3 +129,76 @@ async def test_retest_not_scheduled_for_manual_assignment(api):
         {"id": "m1", "source": "manual", "principle": "authority"}, user.id
     )
     assert await db.assignments.count_documents({"source": "retest"}) == 0
+
+
+async def test_reason_is_translatable(api):
+    """System assignments carry a reason key + params so the UI can localise them."""
+    from services import remediation
+
+    user, _ = await make_user("user")
+    await db.challenges.insert_one(
+        {
+            "id": "c-auth",
+            "title": "Authority drill",
+            "cialdini_categories": ["authority"],
+            "nodes": [],
+        }
+    )
+    await remediation.on_lab_result(
+        {
+            "score": 40,
+            "title": "Boss on WhatsApp",
+            "challenge_data": {"cialdini_categories": ["authority"]},
+        },
+        user.id,
+    )
+    a = await db.assignments.find_one({"trainee_id": user.id})
+    assert a["reason_key"] == "lab_fail"
+    assert a["reason_params"] == {
+        "principle": "authority",
+        "score": 40,
+        "title": "Boss on WhatsApp",
+    }
+
+
+async def test_remediation_prefers_same_context_and_skips_the_failed_exercise(api):
+    from services import remediation
+
+    user, _ = await make_user("user")
+    await db.challenges.insert_many(
+        [
+            {
+                "id": "en-auth",
+                "title": "Generic CEO fraud",
+                "cialdini_categories": ["authority"],
+                "metadata": {"tags": ["bec"]},
+                "nodes": [],
+            },
+            {
+                "id": "unit-failed",
+                "title": "Boss on WhatsApp",
+                "cialdini_categories": ["authority"],
+                "metadata": {"tags": ["whatsapp", "satuan", "military", "indonesia"]},
+                "nodes": [],
+            },
+            {
+                "id": "unit-other",
+                "title": "Nota dinas APK",
+                "cialdini_categories": ["authority"],
+                "metadata": {"tags": ["email", "satuan", "military", "indonesia"]},
+                "nodes": [],
+            },
+        ]
+    )
+    await remediation.on_lab_result(
+        {
+            "score": 40,
+            "title": "Boss on WhatsApp",
+            "challenge_id": "unit-failed",
+            "challenge_data": {"cialdini_categories": ["authority"]},
+        },
+        user.id,
+    )
+    a = await db.assignments.find_one({"trainee_id": user.id})
+    assert a["content_id"] == "unit-other"  # same unit context, not the one just failed
+    assert a["title"] == "Nota dinas APK"  # no English "Remediation:" prefix

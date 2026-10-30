@@ -328,24 +328,19 @@ export default function SimulationPlayerPage() {
             {getContent(currentNode, 'title')}
           </h2>
 
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+          {/* Explanations are authored with line breaks and bullet lists. */}
+          <p className="text-base text-muted-foreground mb-8 max-w-2xl mx-auto text-left whitespace-pre-line leading-relaxed">
             {getContent(currentNode, 'explanation')}
           </p>
 
           <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
             <Button onClick={() => navigate('/simulations')}>
-              Lihat Semua Riwayat
+              {t('simulation.view_all_simulations')}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/scenarios')}>
-              Coba Skenario Lain
-            </Button>
-
             {/* A fresh attempt is a new scenario run, so scoring stays honest. */}
-            {outcome !== 'success' && (
-              <Button variant="secondary" onClick={() => navigate('/scenarios')}>
-                Try another scenario
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => navigate('/scenarios')}>
+              {t('simulation.try_another')}
+            </Button>
           </div>
         </Card>
       )}

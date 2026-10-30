@@ -33,22 +33,45 @@ PRINCIPLE_LABELS = {
 }
 
 
-async def _pick_content(principle: str, exclude_ids: set[str]) -> dict | None:
+# Tags that describe who an exercise is written for (language, setting). A
+# remediation should feel like the exercise that was failed, so candidates that
+# share more of these tags are preferred.
+CONTEXT_TAGS = {"indonesia", "satuan", "military"}
+
+
+async def _pick_content(
+    principle: str, exclude_ids: set[str], prefer_tags: set[str] | None = None
+) -> dict | None:
     """Choose a lab exercise that trains `principle` and the trainee hasn't just done.
 
     Prefers an interactive scenario; falls back to a quiz on the same principle.
+    Within a type, prefers content sharing the most `prefer_tags`.
     """
+    prefer_tags = prefer_tags or set()
     for coll, content_type in (("challenges", "challenge"), ("quizzes", "quiz")):
-        async for doc in db[coll].find(
-            {"cialdini_categories": principle}, {"_id": 0, "id": 1, "title": 1}
-        ):
-            if doc["id"] not in exclude_ids:
-                return {
-                    "content_type": content_type,
-                    "content_id": doc["id"],
-                    "title": doc["title"],
-                }
+        candidates = [
+            doc
+            async for doc in db[coll].find(
+                {"cialdini_categories": principle},
+                {"_id": 0, "id": 1, "title": 1, "metadata.tags": 1},
+            )
+            if doc["id"] not in exclude_ids
+        ]
+        if candidates:
+            # max() keeps the first of equal scores, so the stored order breaks ties.
+            best = max(
+                candidates,
+                key=lambda d: len(prefer_tags & set((d.get("metadata") or {}).get("tags") or [])),
+            )
+            return {"content_type": content_type, "content_id": best["id"], "title": best["title"]}
     return None
+
+
+async def _context_tags(challenge_id: str | None) -> set[str]:
+    if not challenge_id:
+        return set()
+    doc = await db.challenges.find_one({"id": challenge_id}, {"_id": 0, "metadata.tags": 1})
+    return CONTEXT_TAGS & set(((doc or {}).get("metadata") or {}).get("tags") or [])
 
 
 async def _recent_content_ids(user_id: str) -> set[str]:
@@ -69,6 +92,10 @@ async def assign_remediation(
     source: str = "remediation",
     retest_of: str | None = None,
     due_days: int = REMEDIATION_DUE_DAYS,
+    reason_key: str | None = None,
+    reason_params: dict | None = None,
+    prefer_tags: set[str] | None = None,
+    exclude_content: str | None = None,
 ) -> str | None:
     """Create a remediation assignment for `principle`. Idempotent per principle:
     skips if the user already has an active remediation for it."""
@@ -86,7 +113,10 @@ async def assign_remediation(
     if existing:
         return None
 
-    content = await _pick_content(principle, await _recent_content_ids(user_id))
+    exclude = await _recent_content_ids(user_id)
+    if exclude_content:
+        exclude.add(exclude_content)  # never "remediate" with the exercise just failed
+    content = await _pick_content(principle, exclude, prefer_tags)
     if not content:
         logger.info(f"No remediation content for principle '{principle}'")
         return None
@@ -96,9 +126,12 @@ async def assign_remediation(
         trainee_id=user_id,
         content_type=content["content_type"],
         content_id=content["content_id"],
-        title=f"Remediation: {content['title']}",
+        # The UI badges the source (remediation / retest), so the title stays the exercise's own.
+        title=content["title"],
         instructions=reason,
         reason=reason,
+        reason_key=reason_key,
+        reason_params={"principle": principle, **(reason_params or {})},
         principle=principle,
         source=source,
         retest_of=retest_of,
@@ -121,12 +154,17 @@ async def on_lab_result(sim: dict, user_id: str) -> None:
         return
     principles = (sim.get("challenge_data") or {}).get("cialdini_categories") or []
     title = sim.get("title", "an exercise")
+    prefer = await _context_tags(sim.get("challenge_id"))
     for principle in principles[:2]:
         await assign_remediation(
             user_id,
             principle,
             f"You scored {round(score)}% on '{title}', which tested {_label(principle)}. "
             f"This exercise gives you focused practice.",
+            reason_key="lab_fail",
+            reason_params={"score": round(score), "title": title},
+            prefer_tags=prefer,
+            exclude_content=sim.get("challenge_id"),
         )
 
 
@@ -150,6 +188,8 @@ async def on_live_fail(campaign: dict, email: str, outcome: str) -> None:
             principle,
             f"In a live phishing simulation you {verb} a message that used {_label(principle)}. "
             f"This exercise helps you recognise it next time.",
+            reason_key=f"live_{outcome}",
+            prefer_tags={"indonesia"} if campaign.get("language") == "id" else set(),
         )
 
 
@@ -165,4 +205,8 @@ async def on_assignment_passed(assignment: dict, user_id: str) -> None:
         source="retest",
         retest_of=assignment["id"],
         due_days=RETEST_AFTER_DAYS,
+        reason_key="retest",
+        # A variant: same context as the practice, but not the same exercise.
+        prefer_tags=await _context_tags(assignment.get("content_id")),
+        exclude_content=assignment.get("content_id"),
     )
