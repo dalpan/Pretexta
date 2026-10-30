@@ -675,7 +675,12 @@
     "legit": "Tampak sah",
     "select": "Pilih sebuah pesan.",
     "progress": "{{done}}/{{total}} ditinjau — Anda bisa mengirim kapan saja",
-    "submit": "Kirim hasil triase"
+    "submit": "Kirim hasil triase",
+    "choose_set": "Pilih inbox",
+    "channel": {
+      "whatsapp": "Pesan WhatsApp",
+      "sms": "SMS"
+    }
   },
   "readiness": {
     "title": "Ketahanan",
@@ -736,5 +741,15 @@
     },
     "cohort_note": "Kohort {{people}} peserta. Bobot: report rate 40%, tidak mengklik 20%, resistansi prinsip 20%, Triase Inbox 20%; komponen tanpa data tidak dihitung.",
     "latest_campaign": "kampanye terbaru"
+  },
+  "remediation": {
+    "why": "Alasan",
+    "instructor_note": "Catatan instruktur",
+    "lab_fail": "Skor Anda {{score}}% pada '{{title}}', yang menguji prinsip {{principle}}. Latihan ini memberi Anda latihan terarah.",
+    "live_clicked": "Dalam simulasi phishing, Anda mengklik tautan pada pesan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
+    "live_submitted": "Dalam simulasi phishing, Anda mengirim data ke halaman dari pesan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
+    "live_complied": "Dalam simulasi phishing, Anda menuruti permintaan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
+    "live_disclosed": "Dalam simulasi phishing, Anda membagikan rahasia sebagai balasan pesan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
+    "retest": "Tes ulang terjadwal untuk prinsip {{principle}} — latihan berbeda untuk memastikan pelajarannya melekat."
   }
 }

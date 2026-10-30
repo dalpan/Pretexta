@@ -675,7 +675,12 @@
     "legit": "Looks legit",
     "select": "Select a message.",
     "progress": "{{done}}/{{total}} reviewed — you can submit any time",
-    "submit": "Submit triage"
+    "submit": "Submit triage",
+    "choose_set": "Choose an inbox",
+    "channel": {
+      "whatsapp": "WhatsApp message",
+      "sms": "SMS"
+    }
   },
   "readiness": {
     "title": "Readiness",
@@ -736,5 +741,15 @@
     },
     "cohort_note": "Cohort of {{people}} trainees. Weights: report rate 40%, did not click 20%, principle resistance 20%, Inbox Triage 20%; missing parts are left out.",
     "latest_campaign": "latest campaign"
+  },
+  "remediation": {
+    "why": "Why",
+    "instructor_note": "Instructor note",
+    "lab_fail": "You scored {{score}}% on '{{title}}', which tested {{principle}}. This exercise gives you focused practice.",
+    "live_clicked": "In a live phishing simulation you clicked the link in a message that used {{principle}}. This exercise helps you recognise it next time.",
+    "live_submitted": "In a live phishing simulation you submitted data to a page reached through a message that used {{principle}}. This exercise helps you recognise it next time.",
+    "live_complied": "In a live phishing simulation you agreed to a request that used {{principle}}. This exercise helps you recognise it next time.",
+    "live_disclosed": "In a live phishing simulation you shared a secret in reply to a message that used {{principle}}. This exercise helps you recognise it next time.",
+    "retest": "Scheduled retest for {{principle}} — a different exercise to confirm the lesson stuck."
   }
 }
