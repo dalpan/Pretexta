@@ -95,6 +95,12 @@ A trainee's home shows what's available and their progress. The left nav groups
 
 ### The training menus
 
+**My Assignments** — the exercises a trainer (or the system) has assigned to you,
+with their due dates and your attempts. Two badges matter here: **Remediasi** marks
+a targeted exercise auto-assigned after you failed something, and **Tes ulang** marks
+a follow-up retest to confirm the lesson stuck (see *The remediation loop* below).
+Start an assignment from this page.
+
 **Scenarios** — branching, consequence-driven simulations. You read a message,
 choose how to respond, and your decisions move a susceptibility score. There is
 no "obviously correct" option; the server holds the score and the branches.
@@ -115,22 +121,33 @@ You get a per-criterion breakdown and coaching. (Needs an LLM configured.)
 
 ![Write Your Reply](images/04-write-reply.jpg)
 
-**AI Challenge** — open-ended roleplay against an adversarial persona. Hold the
-line in a live chat; leaking a secret or agreeing to the demand is a compromise,
-resisting under escalating pressure is a win. The outcome and score are decided
-server-side from what you type. (Needs an LLM configured.) This is no longer a
-headline menu — it is reached when a trainer **assigns** it, so it works as a
-targeted practice / remediation exercise rather than self-serve browsing.
-
-![AI Challenge](images/05-ai-challenge.jpg)
-
 **Quizzes** — multiple-choice knowledge checks with instant feedback. Graded on
 the server; the answer key is never sent to the browser.
 
 ![Quizzes](images/07-quizzes.jpg)
 
-**Training Campaigns** — multi-stage practice chains (email → call → social →
-extraction) that unlock stage by stage.
+> **Assigned-only exercises.** Two more exercise types exist but are *not* self-serve
+> menus — they appear only when a trainer assigns them (and show up in **My
+> Assignments**): **AI Challenge** (open-ended roleplay against an adversarial
+> persona — leaking a secret or agreeing to the demand loses, resisting wins; scored
+> server-side; needs an LLM) and **Training Campaigns** (multi-stage practice chains:
+> email → call → social → extraction).
+
+### The remediation loop
+
+Pretexta is a closed loop — **measure → remediate → retest** — and you experience it
+in *My Assignments*:
+
+1. **You fail something.** A click in a live phishing simulation, or a low score on a
+   lab exercise.
+2. **Targeted practice is assigned automatically.** The server looks at *which*
+   Cialdini principle you fell for (authority, scarcity, …) and assigns a focused
+   exercise on exactly that — tagged **Remediasi**.
+3. **You pass it, then retest.** When you clear the remediation, a variant **Tes
+   ulang** is scheduled a little later to confirm the lesson held.
+
+You do not request any of this; it is created for you. A trainer sees the same loop
+across their cohort in Assessment Reports.
 
 ### Progress
 
@@ -190,6 +207,28 @@ stays manual by design (G8) — it is not the headline.
 - **Luncurkan ke titik rawan** — from the Attack Surface Map, one click pre-fills a
   campaign with the most-susceptible, emailable people.
 
+### Laporan Phishing (Report-Phish inbox)
+
+The defensive mirror of a campaign — **reporting a phish is the behaviour you want**,
+so Pretexta measures it. When someone forwards a suspicious email to the abuse
+mailbox, the server classifies it and the page shows each report with a verdict:
+
+- **Simulasi tertangkap** — it was one of your own simulations; the reporter is
+  **credited automatically**, which flows straight into that campaign's report rate.
+- **Perlu ditinjau** — not one of yours; click **Tandai ancaman** or **Tandai aman**
+  to triage it.
+
+A **top-reporters** leaderboard surfaces who defends actively. In production a mail
+rule or poller feeds the inbox; the **Catat laporan** form lets you record one by
+hand for a demo. (Integration endpoint: `POST /report-inbox/ingest`.)
+
+### Analitik Live
+
+Report-rate **trend across campaigns** (oldest → newest), a per-campaign comparison,
+and **repeat offenders** — the people who clicked or submitted in more than one
+campaign. Those are exactly the people the remediation loop should be hardening, so
+this is where you confirm training is actually moving behaviour over time.
+
 ---
 
 ## 5b. Human Attack Surface Map (admin / trainer)
@@ -240,12 +279,13 @@ only revealed on a node click — to the same staff who already see risk profile
 | Assignments | Command | trainer/admin | Assign exercises |
 | Assessment Reports | Command | trainer/admin | Trainee results & risk |
 | Riwayat User | Command | trainer/admin | Per-user history |
+| My Assignments | Training | all (trainee) | Assigned exercises; Remediasi / Tes ulang badges |
 | Scenarios | Training | all | Branching simulations |
 | Inbox Triage | Training | all | Signal-detection exercise |
 | Write Your Reply | Training | all | LLM-graded free-text |
 | AI Challenge | (assignment only) | all | Persona roleplay — launched from an assignment, not a menu |
 | Quizzes | Training | all | Knowledge checks |
-| Training Campaigns | Training | all | Multi-stage practice |
+| Training Campaigns | (assignment only) | all | Multi-stage practice — launched from an assignment, not a menu |
 | Scenario Builder | Training | trainer/admin | Author scenarios |
 | Live Campaigns | Live Ops | trainer/admin | Real phishing simulations |
 | Reply Review | Live Ops | trainer/admin | Approve AI replies |
