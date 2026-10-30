@@ -218,9 +218,16 @@ mailbox, the server classifies it and the page shows each report with a verdict:
 - **Perlu ditinjau** — not one of yours; click **Tandai ancaman** or **Tandai aman**
   to triage it.
 
-A **top-reporters** leaderboard surfaces who defends actively. In production a mail
-rule or poller feeds the inbox; the **Catat laporan** form lets you record one by
-hand for a demo. (Integration endpoint: `POST /report-inbox/ingest`.)
+A **top-reporters** leaderboard surfaces who defends actively.
+
+**Report mailbox.** Set **Report mailbox** in Settings → Live Campaigns (for example
+`lapor@acme.test`, on the same IMAP server as replies). Pretexta polls it every 30
+seconds: staff simply **forward** the suspicious email there — inline or as an
+attachment — and the original sender and subject are read from the forward. The
+**Mailbox pelaporan** card shows the address and a **Periksa sekarang** button. The
+report mailbox must be different from the reply mailbox, or replies would count as
+reports. Reports that arrive another way (phone, chat, ticket) can be recorded with
+the **Catat laporan** form. (Integration endpoint: `POST /report-inbox/ingest`.)
 
 ### Analitik Live
 

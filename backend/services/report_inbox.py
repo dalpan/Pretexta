@@ -39,28 +39,50 @@ def _clean_subject(subject: str) -> str:
 
 
 async def classify(
-    org_scope: dict, subject: str, from_address: str, body: str
+    org_scope: dict, subject: str, from_address: str, body: str, reporter_email: str = ""
 ) -> tuple[str, str | None]:
     """Decide whether a reported message is one of our simulations.
 
     Matches by the campaign's sender address (in the From or anywhere in the
-    forwarded body) or by an exact subject match. Returns (verdict, campaign_id).
+    forwarded body) or by an exact subject match. Campaigns often reuse a
+    sender, so among matches the newest one the reporter actually received
+    wins (preferring one they have not been credited for yet).
+    Returns (verdict, campaign_id).
     """
     clean_subj = _clean_subject(subject)
     from_addr = (from_address or "").strip().lower()
     body_l = (body or "").lower()
 
+    matches: list[str] = []
     async for c in db.live_campaigns.find(
         {**org_scope, "status": {"$in": list(_SENT_STATUSES)}},
         {"_id": 0, "id": 1, "sender_email": 1, "subject": 1},
-    ):
+    ).sort("created_at", -1):
         sender = (c.get("sender_email") or "").strip().lower()
-        if sender and (sender == from_addr or sender in body_l):
-            return "simulation", c["id"]
         csubj = (c.get("subject") or "").strip().lower()
-        if csubj and clean_subj and csubj == clean_subj:
-            return "simulation", c["id"]
-    return "needs_review", None
+        if (sender and (sender == from_addr or sender in body_l)) or (
+            csubj and clean_subj and csubj == clean_subj
+        ):
+            matches.append(c["id"])
+    if not matches:
+        return "needs_review", None
+
+    email = (reporter_email or "").strip().lower()
+    if email:
+        received = {
+            r["campaign_id"]: r.get("reported", False)
+            async for r in db.live_recipients.find(
+                {"campaign_id": {"$in": matches}, "email": email},
+                {"_id": 0, "campaign_id": 1, "reported": 1},
+            )
+        }
+        for cid in matches:
+            if cid in received and not received[cid]:
+                return "simulation", cid
+        for cid in matches:
+            if cid in received:
+                return "simulation", cid
+    return "simulation", matches[0]
 
 
 async def credit_reporter(campaign_id: str, reporter_email: str) -> bool:
@@ -103,13 +125,25 @@ async def ingest_report(
     """Store one reported message and, if it is ours, credit the reporter."""
     org_scope = {} if org_id is None else {"organization_id": org_id}
     redacted, _ = scrub(body or "")
-    verdict, campaign_id = await classify(org_scope, subject, from_address, body)
+    verdict, campaign_id = await classify(org_scope, subject, from_address, body, reporter_email)
 
     credited = False
     if verdict == "simulation" and campaign_id:
         credited = await credit_reporter(campaign_id, reporter_email)
 
-    user = await db.users.find_one({"email": reporter_email.strip().lower()}, {"_id": 0, "id": 1})
+    user = await db.users.find_one(
+        {"email": reporter_email.strip().lower()}, {"_id": 0, "id": 1, "organization_id": 1}
+    )
+    if org_id is None:
+        # Arrived through the report mailbox, not a staff member's scope: file it
+        # under the matched campaign's organization, else the reporter's.
+        if campaign_id:
+            campaign = await db.live_campaigns.find_one(
+                {"id": campaign_id}, {"_id": 0, "organization_id": 1}
+            )
+            org_id = (campaign or {}).get("organization_id")
+        if org_id is None:
+            org_id = (user or {}).get("organization_id")
     report = PhishReport(
         organization_id=org_id,
         reporter_email=reporter_email.strip().lower(),

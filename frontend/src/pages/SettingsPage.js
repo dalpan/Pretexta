@@ -155,6 +155,8 @@ function LiveConfigCard() {
         imap_ssl: !!f.imap_ssl,
         imap_user: f.imap_user || '',
         imap_password: f.imap_password || '',
+        report_imap_user: f.report_imap_user || '',
+        report_imap_password: f.report_imap_password || '',
         smtp_starttls: !!f.smtp_starttls,
       });
       toast.success('Live config saved');
@@ -197,6 +199,8 @@ function LiveConfigCard() {
         {field('imap_host', 'IMAP host for replies (host:port)')}
         {field('imap_user', 'IMAP username')}
         {field('imap_password', 'IMAP password', 'password')}
+        {field('report_imap_user', 'Report mailbox (staff forward suspicious mail here, e.g. lapor@acme.test)')}
+        {field('report_imap_password', 'Report mailbox password', 'password')}
       </div>
       <div className="flex flex-wrap gap-6 pt-1">
         <label className="flex items-center gap-2 text-xs">
