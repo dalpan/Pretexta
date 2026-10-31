@@ -41,7 +41,14 @@
     "reply_review": "Reply Review",
     "triage": "Inbox Triage",
     "write_reply": "Write Your Reply",
-    "my_assignments": "My Assignments"
+    "my_assignments": "My Assignments",
+    "readiness": "Readiness",
+    "all_users": "All Users",
+    "users": "Users",
+    "user_history": "User History",
+    "attack_surface": "Attack Surface Map",
+    "report_inbox": "Phish Reports",
+    "live_analytics": "Live Analytics"
   },
   "dashboard": {
     "welcome": "Welcome to Pretexta",
@@ -290,7 +297,20 @@
     "provider_selection": "Choose your LLM provider (OpenAI, Gemini, Claude, etc.) and enter a valid API key.",
     "revoke_key_bold": "Revoke Key",
     "webhooks": "Webhooks",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "demo": {
+      "title": "Demo data",
+      "desc": "Load a fictional organization (12 people on demo.test, three campaigns, the remediation loop, lab results and an attack-surface map) to show the full story. Everything is tagged as demo and can be removed without touching real data.",
+      "status_loaded": "Loaded {{date}}",
+      "status_empty": "Not loaded",
+      "load": "Load demo data",
+      "reload": "Reload demo data",
+      "clear": "Remove demo data",
+      "confirm_clear": "Remove all demo data? Real users and campaigns are not affected.",
+      "loaded": "Demo loaded: {{people}} people, {{campaigns}} campaigns",
+      "cleared": "Demo data removed",
+      "failed": "Failed"
+    }
   },
   "simulation": {
     "security_score": "Security Awareness Score",
@@ -655,6 +675,99 @@
     "legit": "Looks legit",
     "select": "Select a message.",
     "progress": "{{done}}/{{total}} reviewed — you can submit any time",
-    "submit": "Submit triage"
+    "submit": "Submit triage",
+    "choose_set": "Choose an inbox",
+    "channel": {
+      "whatsapp": "WhatsApp message",
+      "sms": "SMS"
+    }
+  },
+  "readiness": {
+    "title": "Readiness",
+    "desc": "How well your people resist social engineering — measured by behaviour, closed by remediation",
+    "index": "Readiness index",
+    "band": {
+      "none": "no data yet",
+      "strong": "resilient",
+      "alert": "alert",
+      "vulnerable": "vulnerable",
+      "critical": "critical"
+    },
+    "component": {
+      "report_rate": "Report rate",
+      "no_click": "Did not click",
+      "principles": "Principle resistance",
+      "triage": "Inbox Triage score"
+    },
+    "no_data": "no data",
+    "report_title": "Report rate — the behaviour we train for",
+    "reported_of": "overall {{rate}} ({{reported}}/{{total}}) over {{campaigns}} campaigns",
+    "points_since_first": "pts since the first campaign",
+    "click_rate": "Click rate",
+    "series": {
+      "report": "Report rate",
+      "click": "Click rate"
+    },
+    "trend_needs_two": "Run two campaigns to see a trend",
+    "loop_title": "The loop: measure → remediate → retest",
+    "loop_desc": "Every failure triggers targeted practice for the exact principle used, then a variant retest.",
+    "step": {
+      "failed": "clicked in a campaign",
+      "assigned": "practice assigned",
+      "passed": "practice passed",
+      "retested": "retest passed"
+    },
+    "principles_title": "Resistance by influence principle",
+    "resistance": "Resistance",
+    "weakest": "Weakest",
+    "surface_title": "Attack surface",
+    "surface_empty": "Model people, trust and crown jewels to see the easiest attack path.",
+    "open_map": "Open the map",
+    "score": "score",
+    "top_path": "Easiest crown jewel: {{asset}} ({{probability}} modelled success)",
+    "lab_title": "Lab discrimination",
+    "d_prime": "avg d′",
+    "triage_score": "avg triage",
+    "triage_runs": "runs",
+    "d_prime_hint": "d′ measures telling phish from legitimate mail; over-flagging does not raise it.",
+    "feed_title": "Loop activity",
+    "feed_empty": "No remediation yet.",
+    "feed_privacy": "Anonymous — individual results stay with the person and their trainer.",
+    "feed": {
+      "remediation_open": "Practice assigned for {{principle}}",
+      "remediation_done": "Practice on {{principle}} passed",
+      "retest_open": "Retest scheduled for {{principle}}",
+      "retest_done": "Retest on {{principle}} passed"
+    },
+    "cohort_note": "Cohort of {{people}} trainees. Weights: report rate 40%, did not click 20%, principle resistance 20%, Inbox Triage 20%; missing parts are left out.",
+    "latest_campaign": "latest campaign"
+  },
+  "remediation": {
+    "why": "Why",
+    "instructor_note": "Instructor note",
+    "lab_fail": "You scored {{score}}% on '{{title}}', which tested {{principle}}. This exercise gives you focused practice.",
+    "live_clicked": "In a live phishing simulation you clicked the link in a message that used {{principle}}. This exercise helps you recognise it next time.",
+    "live_submitted": "In a live phishing simulation you submitted data to a page reached through a message that used {{principle}}. This exercise helps you recognise it next time.",
+    "live_complied": "In a live phishing simulation you agreed to a request that used {{principle}}. This exercise helps you recognise it next time.",
+    "live_disclosed": "In a live phishing simulation you shared a secret in reply to a message that used {{principle}}. This exercise helps you recognise it next time.",
+    "retest": "Scheduled retest for {{principle}} — a different exercise to confirm the lesson stuck."
+  },
+  "review": {
+    "title": "Reply Review Queue",
+    "subtitle": "Approve each AI persona reply before it is sent (review mode)",
+    "empty_title": "Queue is empty",
+    "empty_desc": "AI replies awaiting approval will appear here.",
+    "awaiting": "awaiting review",
+    "declined": "AI did not draft",
+    "they_wrote": "They wrote",
+    "declined_note": "The AI model declined to draft this turn. Write the reply yourself, or discard it.",
+    "placeholder": "Write the persona's reply…",
+    "help": "Every AI reply is held here until a human approves it. Edit before sending if needed.",
+    "approve": "Approve & send",
+    "discard": "Discard",
+    "sent": "Reply sent",
+    "discarded": "Discarded",
+    "approve_failed": "Approve failed",
+    "discard_failed": "Discard failed"
   }
 }

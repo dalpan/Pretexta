@@ -5,6 +5,7 @@ from routes.auth import router as auth_router
 from routes.campaigns import router as campaigns_router
 from routes.challenges import router as challenges_router
 from routes.debrief import router as debrief_router
+from routes.demo import router as demo_router
 from routes.freetext import router as freetext_router
 from routes.glossary import router as glossary_router
 from routes.imports import router as imports_router
@@ -17,6 +18,7 @@ from routes.notifications import router as notifications_router
 from routes.organizations import router as organizations_router
 from routes.personas import router as personas_router
 from routes.quizzes import router as quizzes_router
+from routes.readiness import router as readiness_router
 from routes.report_inbox import router as report_inbox_router
 from routes.reports import router as reports_router
 from routes.risk_profile import router as risk_profile_router
@@ -47,6 +49,7 @@ __all__ = [
     "webhooks_router",
     "scenario_builder_router",
     "debrief_router",
+    "demo_router",
     # v3 platform services
     "personas_router",
     "risk_profile_router",
@@ -56,5 +59,6 @@ __all__ = [
     "live_router",
     "audit_router",
     "attack_surface_router",
+    "readiness_router",
     "report_inbox_router",
 ]

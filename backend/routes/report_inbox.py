@@ -43,6 +43,22 @@ async def report_leaderboard(user: User = Depends(require_trainer)):
     return await report_inbox.leaderboard(_scope(user))
 
 
+@router.get("/mailbox")
+async def report_mailbox(user: User = Depends(require_trainer)):
+    """The address staff forward suspicious mail to, if a report mailbox is set up."""
+    config = await db.live_config.find_one({"id": "live_config"}, {"_id": 0}) or {}
+    address = (config.get("report_imap_user") or "").strip().lower()
+    return {"address": address or None, "configured": bool(address and config.get("imap_host"))}
+
+
+@router.post("/poll")
+async def poll_report_mailbox(user: User = Depends(require_trainer)):
+    """Fetch forwarded reports now instead of waiting for the next poller tick."""
+    from services.live.inbound import poll_reports_once
+
+    return await poll_reports_once()
+
+
 class ReportIn(BaseModel):
     reporter_email: str = Field(min_length=3, max_length=320)
     subject: str = Field(default="", max_length=400)
@@ -52,7 +68,7 @@ class ReportIn(BaseModel):
 
 @router.post("/ingest", status_code=201)
 async def ingest(body: ReportIn, user: User = Depends(require_trainer)):
-    """Record a reported message (the integration point the mail poller also uses)."""
+    """Record a reported message by hand (the report mailbox poller feeds the same path)."""
     org_id = None if user.role == "admin" else user.organization_id
     report = await report_inbox.ingest_report(
         org_id, body.reporter_email, body.subject, body.from_address, body.body

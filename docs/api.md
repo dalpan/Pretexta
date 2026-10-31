@@ -43,6 +43,14 @@ Scenarios — `/api/scenarios`:
 | POST | `/resume` | U | Resume/begin a session by `simulation_id` |
 | GET | `/session/{id}` | U | Current session state |
 
+Inbox Triage — `/api/triage`:
+
+| Method | Path | Role | Notes |
+|--------|------|------|-------|
+| GET | `` / `/{id}` | U | List sets; `/{id}` strips labels and explanations |
+| POST | `/{id}/submit` | U | Server grades with signal detection (d′) |
+| POST | `` | T | Add a set (e.g. a unit-specific content pack). Items may be `email_inbox`, `whatsapp` or `sms`; a set needs both pretexts and legitimate messages, and every pretext needs a principle + explanation |
+
 Simulations, debrief, reports — `/api/simulations`, `/api/debrief`,
 `/api/reports`: read your own
 (staff may review trainees). Clients **cannot** create graded simulation types
@@ -100,7 +108,9 @@ Audit — `/api/audit` (admin): `GET /` (entries), `GET /verify` (chain integrit
   analysis, node/edge CRUD.
 - `/api/report-inbox` — Report-Phish mailbox (staff only): list/stats/leaderboard,
   `POST /ingest` (classify a reported message; credits the reporter if it's ours),
-  `PATCH /{id}` (triage). `DELETE /api/live/campaigns/{id}` removes a finished campaign.
+  `PATCH /{id}` (triage), `GET /mailbox` (the configured report address),
+  `POST /poll` (fetch forwarded reports from the report mailbox now). `POST
+  /api/live/poll` (admin) polls both the reply and the report mailbox. `DELETE /api/live/campaigns/{id}` removes a finished campaign.
 - `GET /api/live/analytics` — historical behaviour across launched campaigns:
   report-rate trend, per-campaign comparison, and repeat offenders.
 - `/api/live/schedules` — recurring campaigns (staff): CRUD + `POST /{id}/run-now`.
@@ -108,6 +118,13 @@ Audit — `/api/audit` (admin): `GET /` (entries), `GET /verify` (chain integrit
 - `GET /api/live/qr?data=<url>` — public PNG QR code for "quishing" campaigns.
 - `GET /api/attack-surface/targets` — emailable people on the map, ranked
   most-susceptible first, to seed a campaign aimed at the human weak points.
+
+- `GET /api/readiness` — staff home screen: readiness index (components and
+  weights exposed), report-rate trend, remediation-loop counts, principle
+  resistance, lab d′ and attack-surface posture. Cohort-level only (G13).
+- `/api/demo` (admin) — `GET` status, `POST` load the fictional demo
+  organization (`demo.test`), `DELETE` remove it; only records tagged as demo
+  are touched.
 
 ## Health
 

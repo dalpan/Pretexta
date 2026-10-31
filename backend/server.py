@@ -21,6 +21,7 @@ from routes import (
     campaigns_router,
     challenges_router,
     debrief_router,
+    demo_router,
     freetext_router,
     glossary_router,
     imports_router,
@@ -32,6 +33,7 @@ from routes import (
     organizations_router,
     personas_router,
     quizzes_router,
+    readiness_router,
     report_inbox_router,
     reports_router,
     risk_profile_router,
@@ -487,6 +489,8 @@ api_router.include_router(live_router)
 api_router.include_router(audit_router)
 api_router.include_router(attack_surface_router)
 api_router.include_router(report_inbox_router)
+api_router.include_router(readiness_router)
+api_router.include_router(demo_router)
 
 app.include_router(api_router)
 

@@ -656,7 +656,9 @@ function Detail({ id, onChanged, onDeleted }) {
                   <span className="font-mono">{msg.direction === 'inbound' ? t('live.msg.replied', { email: msg.email }) : t('live.msg.persona')}</span>
                   <Badge variant="outline" className="text-[10px]">{t(`status.${msg.status}`, { defaultValue: msg.status })}</Badge>
                 </div>
-                <div className="mt-1">{msg.body_redacted}</div>
+                {msg.persona_declined && !msg.body_redacted
+                  ? <div className="mt-1 text-xs text-amber-500">{t('review.declined_note')}</div>
+                  : <div className="mt-1 whitespace-pre-line">{msg.body_redacted}</div>}
                 {msg.secrets_found?.length > 0 && (
                   <div className="text-[10px] text-amber-500 mt-1">{t('live.msg.redacted', { kinds: msg.secrets_found.join(', ') })}</div>
                 )}

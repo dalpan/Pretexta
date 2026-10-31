@@ -353,6 +353,10 @@ class Assignment(BaseModel):
     reason: str | None = None  # human-readable explanation shown to the trainee
     principle: str | None = None  # the Cialdini principle being remediated
     retest_of: str | None = None  # the remediation assignment this re-tests
+    # Translatable form of `reason` for system assignments: the client renders
+    # remediation.<reason_key> with these params; `reason` stays as the fallback.
+    reason_key: str | None = None
+    reason_params: dict[str, Any] | None = None
 
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 

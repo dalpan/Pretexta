@@ -41,7 +41,14 @@
     "reply_review": "Tinjau Balasan",
     "triage": "Triase Inbox",
     "write_reply": "Tulis Balasan",
-    "my_assignments": "Tugas Saya"
+    "my_assignments": "Tugas Saya",
+    "readiness": "Ketahanan",
+    "all_users": "Semua Pengguna",
+    "users": "Pengguna",
+    "user_history": "Riwayat Pengguna",
+    "attack_surface": "Peta Serangan",
+    "report_inbox": "Laporan Phishing",
+    "live_analytics": "Analitik Live"
   },
   "dashboard": {
     "welcome": "Selamat Datang di Pretexta",
@@ -290,7 +297,20 @@
     "provider_selection": "Pilih penyedia LLM Anda (OpenAI, Gemini, Claude, dll.) dan masukkan kunci API yang valid.",
     "revoke_key_bold": "Cabut Kunci",
     "webhooks": "Webhook",
-    "notifications": "Notifikasi"
+    "notifications": "Notifikasi",
+    "demo": {
+      "title": "Data demo",
+      "desc": "Muat organisasi fiktif (12 orang di demo.test, tiga kampanye, siklus remediasi, hasil lab, dan peta serangan) untuk menunjukkan cerita lengkapnya. Semua ditandai sebagai demo dan bisa dihapus tanpa menyentuh data asli.",
+      "status_loaded": "Dimuat {{date}}",
+      "status_empty": "Belum dimuat",
+      "load": "Muat data demo",
+      "reload": "Muat ulang data demo",
+      "clear": "Hapus data demo",
+      "confirm_clear": "Hapus semua data demo? Pengguna dan kampanye asli tidak terpengaruh.",
+      "loaded": "Demo dimuat: {{people}} orang, {{campaigns}} kampanye",
+      "cleared": "Data demo dihapus",
+      "failed": "Gagal"
+    }
   },
   "simulation": {
     "security_score": "Skor Kesadaran Keamanan",
@@ -655,6 +675,99 @@
     "legit": "Tampak sah",
     "select": "Pilih sebuah pesan.",
     "progress": "{{done}}/{{total}} ditinjau — Anda bisa mengirim kapan saja",
-    "submit": "Kirim hasil triase"
+    "submit": "Kirim hasil triase",
+    "choose_set": "Pilih inbox",
+    "channel": {
+      "whatsapp": "Pesan WhatsApp",
+      "sms": "SMS"
+    }
+  },
+  "readiness": {
+    "title": "Ketahanan",
+    "desc": "Seberapa tahan personel terhadap rekayasa sosial — diukur dari perilaku, ditutup dengan remediasi",
+    "index": "Indeks ketahanan",
+    "band": {
+      "none": "belum ada data",
+      "strong": "tangguh",
+      "alert": "siaga",
+      "vulnerable": "rentan",
+      "critical": "kritis"
+    },
+    "component": {
+      "report_rate": "Report rate",
+      "no_click": "Tidak mengklik",
+      "principles": "Resistansi prinsip",
+      "triage": "Skor Triase Inbox"
+    },
+    "no_data": "belum ada data",
+    "report_title": "Report rate — perilaku yang kita latih",
+    "reported_of": "rata-rata {{rate}} ({{reported}}/{{total}}) dari {{campaigns}} kampanye",
+    "points_since_first": "poin sejak kampanye pertama",
+    "click_rate": "Click rate",
+    "series": {
+      "report": "Report rate",
+      "click": "Click rate"
+    },
+    "trend_needs_two": "Jalankan dua kampanye untuk melihat tren",
+    "loop_title": "Siklus: ukur → remediasi → tes ulang",
+    "loop_desc": "Setiap kegagalan memicu latihan terarah untuk prinsip yang dipakai, lalu tes ulang dengan varian.",
+    "step": {
+      "failed": "klik di kampanye",
+      "assigned": "latihan ditugaskan",
+      "passed": "latihan lulus",
+      "retested": "tes ulang lulus"
+    },
+    "principles_title": "Resistansi per prinsip pengaruh",
+    "resistance": "Resistansi",
+    "weakest": "Terlemah",
+    "surface_title": "Permukaan serangan",
+    "surface_empty": "Petakan orang, relasi kepercayaan, dan aset kritis untuk melihat jalur serangan termudah.",
+    "open_map": "Buka peta",
+    "score": "skor",
+    "top_path": "Aset kritis termudah: {{asset}} ({{probability}} peluang berhasil dalam model)",
+    "lab_title": "Diskriminasi lab",
+    "d_prime": "rata-rata d′",
+    "triage_score": "rata-rata triase",
+    "triage_runs": "percobaan",
+    "d_prime_hint": "d′ mengukur kemampuan membedakan phishing dari email sah; menandai semuanya tidak menaikkannya.",
+    "feed_title": "Aktivitas siklus",
+    "feed_empty": "Belum ada remediasi.",
+    "feed_privacy": "Anonim — hasil individu hanya untuk yang bersangkutan dan pelatihnya.",
+    "feed": {
+      "remediation_open": "Latihan {{principle}} ditugaskan",
+      "remediation_done": "Latihan {{principle}} lulus",
+      "retest_open": "Tes ulang {{principle}} dijadwalkan",
+      "retest_done": "Tes ulang {{principle}} lulus"
+    },
+    "cohort_note": "Kohort {{people}} peserta. Bobot: report rate 40%, tidak mengklik 20%, resistansi prinsip 20%, Triase Inbox 20%; komponen tanpa data tidak dihitung.",
+    "latest_campaign": "kampanye terbaru"
+  },
+  "remediation": {
+    "why": "Alasan",
+    "instructor_note": "Catatan instruktur",
+    "lab_fail": "Skor Anda {{score}}% pada '{{title}}', yang menguji prinsip {{principle}}. Latihan ini memberi Anda latihan terarah.",
+    "live_clicked": "Dalam simulasi phishing, Anda mengklik tautan pada pesan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
+    "live_submitted": "Dalam simulasi phishing, Anda mengirim data ke halaman dari pesan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
+    "live_complied": "Dalam simulasi phishing, Anda menuruti permintaan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
+    "live_disclosed": "Dalam simulasi phishing, Anda membagikan rahasia sebagai balasan pesan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
+    "retest": "Tes ulang terjadwal untuk prinsip {{principle}} — latihan berbeda untuk memastikan pelajarannya melekat."
+  },
+  "review": {
+    "title": "Antrean Review Balasan",
+    "subtitle": "Setujui setiap balasan persona AI sebelum dikirim (mode review)",
+    "empty_title": "Antrean kosong",
+    "empty_desc": "Balasan AI yang menunggu persetujuan akan muncul di sini.",
+    "awaiting": "menunggu review",
+    "declined": "AI tidak membuat draf",
+    "they_wrote": "Pesan penerima",
+    "declined_note": "Model AI menolak membuat balasan untuk giliran ini. Tulis balasannya sendiri, atau buang.",
+    "placeholder": "Tulis balasan persona…",
+    "help": "Setiap balasan AI ditahan di sini sampai disetujui manusia. Sunting dulu bila perlu.",
+    "approve": "Setujui & kirim",
+    "discard": "Buang",
+    "sent": "Balasan terkirim",
+    "discarded": "Dibuang",
+    "approve_failed": "Gagal menyetujui",
+    "discard_failed": "Gagal membuang"
   }
 }

@@ -149,3 +149,50 @@ async def test_seed_fills_missing_set_without_touching_edited_one(api):
     await triage.seed_default_set()
     assert (await db.triage_sets.find_one({"id": "triage-inbox-01"}))["title"] == "Edited"
     assert await db.triage_sets.find_one({"id": "triage-inbox-01-id"})
+
+
+def _set_payload(**over):
+    items = [
+        {
+            "channel": "whatsapp",
+            "from": "Atasan (nomor baru)",
+            "subject": "Tolong transfer dulu",
+            "body": "..",
+            "is_pretext": True,
+            "principle": "authority",
+            "explanation": "nomor baru",
+        },
+        {"from": "hr@acme.com", "subject": "Timesheet", "body": "..", "is_pretext": False},
+        {"from": "cal@acme.com", "subject": "Invite", "body": "..", "is_pretext": False},
+        {
+            "channel": "whatsapp",
+            "from": "Grup Kantor",
+            "subject": "Rapat jam 9",
+            "body": "..",
+            "is_pretext": False,
+        },
+    ]
+    return {"id": "pack-1", "title": "Pack", "language": "id", "items": items, **over}
+
+
+async def test_trainer_can_add_a_set_with_chat_items(api):
+    _, h = await make_user("trainer")
+    r = await api.post("/api/triage", json=_set_payload(), headers=h)
+    assert r.status_code == 201, r.text
+    taker, th = await make_user("user")
+    got = (await api.get("/api/triage/pack-1", headers=th)).json()
+    assert got["items"][0]["channel"] == "whatsapp"
+    assert "is_pretext" not in got["items"][0]  # labels stay on the server
+    assert (await api.post("/api/triage", json=_set_payload(), headers=h)).status_code == 409
+
+
+async def test_set_authoring_rules(api):
+    _, uh = await make_user("user")
+    assert (await api.post("/api/triage", json=_set_payload(), headers=uh)).status_code == 403
+    _, h = await make_user("trainer")
+    only_legit = _set_payload()
+    only_legit["items"] = [dict(i, is_pretext=False) for i in only_legit["items"]]
+    assert (await api.post("/api/triage", json=only_legit, headers=h)).status_code == 422
+    unexplained = _set_payload()
+    unexplained["items"][0].pop("explanation")
+    assert (await api.post("/api/triage", json=unexplained, headers=h)).status_code == 422
