@@ -102,6 +102,10 @@ Audit — `/api/audit` (admin): `GET /` (entries), `GET /verify` (chain integrit
 - `/api/campaigns` — lab multi-stage "Training Campaigns".
 - `/api/instructor`, `/api/assignments` — groups, assignments, cohort analytics.
 - `/api/organizations` — create/join/leave; `/api/leaderboard`, `/api/analytics`.
+  `GET /api/analytics/team` returns per-member stats to staff only; other members
+  get aggregates, suppressed (`"suppressed": true`) when the org has fewer than 5
+  members. `GET /api/risk-profile/org/{id}` applies the same cohort rule to a
+  non-staff org owner (G13).
 - `/api/personas`, `/api/glossary`, `/api/risk-profile`,
   `/api/notifications`, `/api/webhooks`, `/api/settings`, `/api/import`.
 - `/api/attack-surface` — Human Attack Surface Map (staff only): graph,

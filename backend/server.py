@@ -303,33 +303,8 @@ async def auto_import_yaml(db):
     logger.info(f"Auto-import complete: {total} new items loaded, {skipped} already existed")
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application startup and shutdown events."""
-    # Startup: seed default admin user from env vars
-    seed_username = os.environ.get("SEED_ADMIN_USERNAME", "soceng")
-    seed_password = os.environ.get("SEED_ADMIN_PASSWORD") or ""
-    seed_display = os.environ.get("SEED_ADMIN_DISPLAY_NAME", "Admin")
-    existing_user = await db.users.find_one({"username": seed_username})
-    if not existing_user:
-        if not seed_password:
-            seed_password = secrets.token_urlsafe(12)
-            logger.warning(
-                f"SEED_ADMIN_PASSWORD not set. Generated admin password for "
-                f"'{seed_username}': {seed_password}  (shown once, change it after login)"
-            )
-        seed_user = User(
-            username=seed_username,
-            password_hash=hash_password(seed_password),
-            display_name=seed_display,
-            role="admin",
-        )
-        doc = seed_user.model_dump()
-        doc["created_at"] = doc["created_at"].isoformat()
-        await db.users.insert_one(doc)
-        logger.info(f"Seed admin user created: {seed_username}")
-
-    # Ensure indexes
+async def ensure_indexes():
+    """Create every index the app relies on, including the G14 TTL indexes."""
     await db.users.create_index("username", unique=True)
     await db.organizations.create_index("invite_code", unique=True, sparse=True)
     await db.notifications.create_index([("user_id", 1), ("read", 1)])
@@ -379,6 +354,35 @@ async def lifespan(app: FastAPI):
     await db.live_messages.create_index([("campaign_id", 1), ("email", 1), ("at", 1)])
     await db.live_messages.create_index([("direction", 1), ("status", 1)])
     await db.live_messages.create_index("at", expireAfterSeconds=180 * 24 * 3600)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application startup and shutdown events."""
+    # Startup: seed default admin user from env vars
+    seed_username = os.environ.get("SEED_ADMIN_USERNAME", "soceng")
+    seed_password = os.environ.get("SEED_ADMIN_PASSWORD") or ""
+    seed_display = os.environ.get("SEED_ADMIN_DISPLAY_NAME", "Admin")
+    existing_user = await db.users.find_one({"username": seed_username})
+    if not existing_user:
+        if not seed_password:
+            seed_password = secrets.token_urlsafe(12)
+            logger.warning(
+                f"SEED_ADMIN_PASSWORD not set. Generated admin password for "
+                f"'{seed_username}': {seed_password}  (shown once, change it after login)"
+            )
+        seed_user = User(
+            username=seed_username,
+            password_hash=hash_password(seed_password),
+            display_name=seed_display,
+            role="admin",
+        )
+        doc = seed_user.model_dump()
+        doc["created_at"] = doc["created_at"].isoformat()
+        await db.users.insert_one(doc)
+        logger.info(f"Seed admin user created: {seed_username}")
+
+    await ensure_indexes()
 
     # Auto-import sample data on every startup (skips titles that already exist)
     logger.info("Syncing sample data from YAML files...")

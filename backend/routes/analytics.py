@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
 
 from models.schemas import User
-from services.auth import get_current_user
+from services.auth import get_current_user, is_staff
 from services.database import db
+from services.privacy import cohort_too_small
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -100,7 +101,11 @@ async def get_personal_analytics(current_user: User = Depends(get_current_user))
 
 @router.get("/team")
 async def get_team_analytics(current_user: User = Depends(get_current_user)):
-    """Get team/organization analytics."""
+    """Get team/organization analytics.
+
+    Per-member stats are staff-only; other members see aggregates, and only when
+    the organization is large enough that they cannot single anyone out (G13).
+    """
     if not current_user.organization_id:
         return {"error": "Not part of an organization"}
 
@@ -113,6 +118,14 @@ async def get_team_analytics(current_user: User = Depends(get_current_user)):
         {"id": {"$in": member_ids}},
         {"_id": 0, "password_hash": 0},
     ).to_list(100)
+
+    staff = is_staff(current_user)
+    if not staff and cohort_too_small(len(members)):
+        return {
+            "organization": {"id": org["id"], "name": org["name"]},
+            "total_members": len(members),
+            "suppressed": True,
+        }
 
     # Aggregate team stats
     team_stats = []
@@ -157,11 +170,13 @@ async def get_team_analytics(current_user: User = Depends(get_current_user)):
 
     team_avg = round(total_score / total_scored_sims, 1) if total_scored_sims > 0 else 0
 
-    return {
+    result = {
         "organization": {"id": org["id"], "name": org["name"]},
         "total_members": len(members),
         "total_simulations": total_sims,
         "team_avg_score": team_avg,
         "category_averages": category_averages,
-        "member_stats": sorted(team_stats, key=lambda x: x["avg_score"], reverse=True),
     }
+    if staff:
+        result["member_stats"] = sorted(team_stats, key=lambda x: x["avg_score"], reverse=True)
+    return result
