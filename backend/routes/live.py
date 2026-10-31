@@ -562,7 +562,27 @@ async def review_queue(current_user: User = Depends(require_trainer)):
     scope = _scope(current_user)
     query = {"direction": "outbound", "status": "draft_pending"}
     query.update(scope)
-    return await db.live_messages.find(query, {"_id": 0}).sort("at", 1).to_list(500)
+    drafts = await db.live_messages.find(query, {"_id": 0}).sort("at", 1).to_list(500)
+    # Give the reviewer the message being answered and which campaign it is.
+    names: dict[str, str] = {}
+    for d in drafts:
+        cid = d["campaign_id"]
+        if cid not in names:
+            c = await db.live_campaigns.find_one({"id": cid}, {"_id": 0, "name": 1})
+            names[cid] = (c or {}).get("name", "")
+        d["campaign_name"] = names[cid]
+        last_in = await db.live_messages.find_one(
+            {
+                "campaign_id": cid,
+                "email": d["email"],
+                "direction": "inbound",
+                "at": {"$lte": d["at"]},
+            },
+            {"_id": 0, "body_redacted": 1},
+            sort=[("at", -1)],
+        )
+        d["in_reply_to"] = (last_in or {}).get("body_redacted", "")
+    return drafts
 
 
 class ReviewDecision(BaseModel):
@@ -587,6 +607,8 @@ async def approve_draft(
     if not campaign or campaign.get("killed"):
         raise HTTPException(status_code=409, detail="Campaign is not active")
     body = data.body if data.body is not None else msg["body_redacted"]
+    if not (body or "").strip():
+        raise HTTPException(status_code=400, detail="Write a reply before sending")
     sent = await conversation.send_approved_reply(campaign, msg, body, current_user.id)
     await audit.record(
         current_user.id, "live.review.approve", message_id, {"edited": bool(data.body)}

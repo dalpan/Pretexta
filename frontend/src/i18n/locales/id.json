@@ -751,5 +751,23 @@
     "live_complied": "Dalam simulasi phishing, Anda menuruti permintaan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
     "live_disclosed": "Dalam simulasi phishing, Anda membagikan rahasia sebagai balasan pesan yang memakai prinsip {{principle}}. Latihan ini membantu Anda mengenalinya lain kali.",
     "retest": "Tes ulang terjadwal untuk prinsip {{principle}} — latihan berbeda untuk memastikan pelajarannya melekat."
+  },
+  "review": {
+    "title": "Antrean Review Balasan",
+    "subtitle": "Setujui setiap balasan persona AI sebelum dikirim (mode review)",
+    "empty_title": "Antrean kosong",
+    "empty_desc": "Balasan AI yang menunggu persetujuan akan muncul di sini.",
+    "awaiting": "menunggu review",
+    "declined": "AI tidak membuat draf",
+    "they_wrote": "Pesan penerima",
+    "declined_note": "Model AI menolak membuat balasan untuk giliran ini. Tulis balasannya sendiri, atau buang.",
+    "placeholder": "Tulis balasan persona…",
+    "help": "Setiap balasan AI ditahan di sini sampai disetujui manusia. Sunting dulu bila perlu.",
+    "approve": "Setujui & kirim",
+    "discard": "Buang",
+    "sent": "Balasan terkirim",
+    "discarded": "Dibuang",
+    "approve_failed": "Gagal menyetujui",
+    "discard_failed": "Gagal membuang"
   }
 }

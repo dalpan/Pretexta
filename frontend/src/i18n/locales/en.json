@@ -751,5 +751,23 @@
     "live_complied": "In a live phishing simulation you agreed to a request that used {{principle}}. This exercise helps you recognise it next time.",
     "live_disclosed": "In a live phishing simulation you shared a secret in reply to a message that used {{principle}}. This exercise helps you recognise it next time.",
     "retest": "Scheduled retest for {{principle}} — a different exercise to confirm the lesson stuck."
+  },
+  "review": {
+    "title": "Reply Review Queue",
+    "subtitle": "Approve each AI persona reply before it is sent (review mode)",
+    "empty_title": "Queue is empty",
+    "empty_desc": "AI replies awaiting approval will appear here.",
+    "awaiting": "awaiting review",
+    "declined": "AI did not draft",
+    "they_wrote": "They wrote",
+    "declined_note": "The AI model declined to draft this turn. Write the reply yourself, or discard it.",
+    "placeholder": "Write the persona's reply…",
+    "help": "Every AI reply is held here until a human approves it. Edit before sending if needed.",
+    "approve": "Approve & send",
+    "discard": "Discard",
+    "sent": "Reply sent",
+    "discarded": "Discarded",
+    "approve_failed": "Approve failed",
+    "discard_failed": "Discard failed"
   }
 }
