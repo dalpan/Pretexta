@@ -38,9 +38,9 @@ check cannot be submitted, approved or launched. See
 | G10 | Real government agencies / third-party brands blocked unless a written override reason is recorded | `preflight.py` |
 | G11 | Per-organization exclusion list honored in pre-flight and at launch | `preflight.py`, `launch.py` |
 | G12 | Append-only, hash-chained audit log of every create/approve/launch/kill/override/export | `services/audit.py` |
-| G13 | Individual results visible only to the person and their trainer; management sees aggregates | analytics (planned enforcement) |
+| G13 | Individual results visible only to the person and staff (trainer/admin); everyone else sees aggregates, and none at all for a cohort under 5 | `services/privacy.py`, `routes/analytics.py`, `routes/risk_profile.py` |
 | G14 | Live telemetry (`live_events`, `live_messages`) expires after 180 days (TTL index) | `server.py` indexes |
-| G15 | No live results on leaderboards or in gamification | analytics (planned enforcement) |
+| G15 | No live results on leaderboards or in gamification: live outcomes never award XP or badges or create lab results | live services write only `live_*`; `tests/test_privacy_guardrails.py` |
 
 ## The content filter (G9/G10)
 
