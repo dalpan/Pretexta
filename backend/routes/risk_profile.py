@@ -8,8 +8,9 @@ Also provides organization-level risk aggregation for admins/trainers.
 from fastapi import APIRouter, Depends, HTTPException
 
 from models.schemas import User
-from services.auth import get_current_user
+from services.auth import get_current_user, is_staff
 from services.database import db
+from services.privacy import cohort_too_small
 from services.risk_engine import get_or_create_risk_profile, get_org_risk_map
 
 router = APIRouter(prefix="/risk-profile", tags=["risk"])
@@ -40,4 +41,12 @@ async def get_org_risk(org_id: str, current_user: User = Depends(get_current_use
     if not (is_owner or is_admin):
         raise HTTPException(status_code=403, detail="Not authorized to view org risk data")
 
-    return await get_org_risk_map(org_id)
+    risk = await get_org_risk_map(org_id)
+    # A non-staff owner of a small org could read individuals off the averages (G13).
+    if not is_staff(current_user) and cohort_too_small(risk.get("trained_count", 0)):
+        return {
+            "member_count": risk.get("member_count", 0),
+            "trained_count": risk.get("trained_count", 0),
+            "suppressed": True,
+        }
+    return risk
