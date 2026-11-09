@@ -321,6 +321,135 @@ async def test_live_templates_seeded_and_listed(api):
 async def test_templates_require_trainer(api):
     _, h = await make_user("user")
     assert (await api.get("/api/live/templates", headers=h)).status_code == 403
+    assert (await api.post("/api/live/templates", json={}, headers=h)).status_code == 403
+
+
+def test_builtin_templates_pass_content_guardrails():
+    from services.live.launch import LIVE_TEMPLATES
+    from services.live.preflight import check_content
+
+    assert len({t["id"] for t in LIVE_TEMPLATES}) == len(LIVE_TEMPLATES)
+    assert any(t.get("language") == "id" for t in LIVE_TEMPLATES)
+    for t in LIVE_TEMPLATES:
+        assert check_content(t) == [], t["id"]
+
+
+async def test_seed_templates_adds_new_builtins_and_keeps_custom(api):
+    from services.live.launch import LIVE_TEMPLATES, seed_templates
+
+    # An instance seeded by an older release: one built-in plus a custom template.
+    await db.live_templates.insert_one({**LIVE_TEMPLATES[0], "name": "old copy"})
+    await db.live_templates.insert_one({"id": "tmpl-c-1", "name": "mine", "builtin": False})
+    await seed_templates()
+    await seed_templates()  # idempotent
+    ids = {d["id"] for d in await db.live_templates.find({}, {"id": 1}).to_list(100)}
+    assert {t["id"] for t in LIVE_TEMPLATES} | {"tmpl-c-1"} == ids
+    refreshed = await db.live_templates.find_one({"id": LIVE_TEMPLATES[0]["id"]})
+    assert refreshed["name"] == LIVE_TEMPLATES[0]["name"] and refreshed["builtin"] is True
+    assert (await db.live_templates.find_one({"id": "tmpl-c-1"}))["name"] == "mine"
+
+
+def _template(**over):
+    base = {
+        "name": "Nota dinas — protap baru",
+        "category": "Internal",
+        "objective": "click_link",
+        "principles": ["authority"],
+        "sender_name": "Sekretariat",
+        "subject": "Protap baru wajib dibaca",
+        "body_html": '<p>Baca protap terbaru: <a href="{{.URL}}">buka</a></p>',
+        "language": "id",
+    }
+    base.update(over)
+    return base
+
+
+async def test_custom_templates_are_org_scoped(api):
+    from services.live.launch import seed_templates
+
+    await seed_templates()
+    _, a = await make_user("trainer", organization_id="org-a")
+    _, b = await make_user("trainer", organization_id="org-b")
+
+    r = await api.post("/api/live/templates", json=_template(), headers=a)
+    assert r.status_code == 201, r.text
+    tid = r.json()["id"]
+    assert r.json()["builtin"] is False and r.json()["organization_id"] == "org-a"
+
+    names_a = {t["name"] for t in (await api.get("/api/live/templates", headers=a)).json()}
+    names_b = {t["name"] for t in (await api.get("/api/live/templates", headers=b)).json()}
+    assert "Nota dinas — protap baru" in names_a
+    assert "Nota dinas — protap baru" not in names_b
+    assert "IT Helpdesk — verify your mailbox" in names_b  # built-ins stay visible
+
+    assert (await api.post("/api/live/templates", json=_template(), headers=a)).status_code == 409
+    assert (await api.post("/api/live/templates", json=_template(), headers=b)).status_code == 201
+
+    assert (await api.delete(f"/api/live/templates/{tid}", headers=b)).status_code == 404
+    builtin = "tmpl-helpdesk-otp"
+    assert (await api.delete(f"/api/live/templates/{builtin}", headers=a)).status_code == 400
+    assert (await api.delete(f"/api/live/templates/{tid}", headers=a)).status_code == 200
+    assert not await db.live_templates.find_one({"id": tid})
+    assert await db.audit_log.find_one({"action": "live.template.delete", "target": tid})
+
+
+@pytest.mark.parametrize(
+    "over",
+    [
+        {"subject": "Info kenaikan gaji triwulan ini"},  # G9
+        {"body_html": "<p>Cek tagihan BPJS: {{.URL}}</p>"},  # G10
+        {"body_html": "<p>Tidak ada tautan</p>"},  # click_link without {{.URL}}
+        {"objective": "steal_everything"},  # G7
+        {"principles": ["fear"]},  # G7
+        {"language": "fr"},
+    ],
+)
+async def test_custom_template_must_pass_content_guardrails(api, over):
+    _, h = await make_user("trainer")
+    r = await api.post("/api/live/templates", json=_template(**over), headers=h)
+    assert r.status_code == 422, r.text
+    assert not await db.live_templates.find_one({"builtin": False})
+
+
+# ---------- delete domain ----------
+
+
+async def test_delete_domain_scoped_and_blocked_while_in_use(api):
+    _, a = await make_user("trainer", organization_id="org-a")
+    _, b = await make_user("trainer", organization_id="org-b")
+    dom = await _add_sandbox_domain(api, a)
+
+    assert (await api.delete(f"/api/live/domains/{dom['id']}", headers=b)).status_code == 404
+
+    r = await api.post("/api/live/campaigns", json=_campaign(), headers=a)
+    cid = r.json()["id"]
+    await api.post(f"/api/live/campaigns/{cid}/submit", headers=a)
+    r = await api.delete(f"/api/live/domains/{dom['id']}", headers=a)
+    assert r.status_code == 409 and "Q4 helpdesk drill" in r.json()["detail"]
+
+    await db.live_campaigns.update_one({"id": cid}, {"$set": {"status": "closed"}})
+    assert (await api.delete(f"/api/live/domains/{dom['id']}", headers=a)).status_code == 200
+    assert not await db.verified_domains.find_one({"id": dom["id"]})
+    assert await db.audit_log.find_one({"action": "live.domain.delete", "target": "acme.test"})
+
+
+async def test_delete_domain_blocked_by_active_schedule(api):
+    _, h = await make_user("trainer", organization_id="org-a")
+    dom = await _add_sandbox_domain(api, h, "sub.acme.test")
+    template = {k: v for k, v in _campaign().items() if k not in ("starts_at", "ends_at")}
+    template["recipients"] = ["carol@sub.acme.test"]
+    template["sender_email"] = "it@sub.acme.test"
+    r = await api.post(
+        "/api/live/schedules",
+        json={"name": "Monthly drill", "interval_days": 30, "template": template},
+        headers=h,
+    )
+    assert r.status_code == 201, r.text
+    r = await api.delete(f"/api/live/domains/{dom['id']}", headers=h)
+    assert r.status_code == 409 and "Monthly drill" in r.json()["detail"]
+
+    await db.campaign_schedules.update_many({}, {"$set": {"active": False}})
+    assert (await api.delete(f"/api/live/domains/{dom['id']}", headers=h)).status_code == 200
 
 
 # ---------- delete campaign ----------

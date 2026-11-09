@@ -543,7 +543,10 @@
       "pending": "pending DNS",
       "sandbox_ok": "Sandbox domain verified",
       "verified_toast": "Verified",
-      "txt_missing": "TXT record not found"
+      "txt_missing": "TXT record not found",
+      "delete": "Remove domain",
+      "confirm_delete": "Confirm?",
+      "deleted": "{{domain}} removed"
     },
     "exclusions": {
       "title": "Exclusion list",
@@ -604,7 +607,16 @@
       "draft_ok": "Campaign drafted",
       "create_failed": "Create failed",
       "create_schedule": "Create schedule",
-      "create_draft": "Create draft"
+      "create_draft": "Create draft",
+      "language": "Campaign language (AI replies use it)",
+      "tpl_group_custom": "Your organization",
+      "tpl_group_id": "Built-in · Bahasa Indonesia",
+      "tpl_group_en": "Built-in · English",
+      "tpl_save": "Save current content as a template",
+      "tpl_need_content": "Fill in the subject and body first",
+      "tpl_saved": "Template saved",
+      "tpl_delete": "Delete this template",
+      "tpl_deleted": "Template deleted"
     }
   },
   "status": {

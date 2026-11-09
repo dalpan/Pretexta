@@ -109,6 +109,17 @@ function DomainsCard() {
     toast[res.data.verified ? 'success' : 'error'](res.data.verified ? t('live.domains.verified_toast') : t('live.domains.txt_missing'));
     load();
   };
+  // Two-step delete: the first click arms the button, the second removes the domain.
+  const [armed, setArmed] = useState(null);
+  const remove = async (d) => {
+    if (armed !== d.id) { setArmed(d.id); return; }
+    setArmed(null);
+    try {
+      await api.delete(`/live/domains/${d.id}`);
+      toast.success(t('live.domains.deleted', { domain: d.domain }));
+      load();
+    } catch (e) { toast.error(e.response?.data?.detail || t('live.failed')); }
+  };
 
   return (
     <Card className="p-5 space-y-3">
@@ -131,6 +142,12 @@ function DomainsCard() {
                   <ShieldCheck className="w-3.5 h-3.5" />
                 </Button>
               )}
+              <Button size="sm" variant={armed === d.id ? 'destructive' : 'ghost'}
+                onClick={() => remove(d)} onBlur={() => setArmed(null)}
+                title={t('live.domains.delete')} aria-label={t('live.domains.delete')}>
+                <Trash2 className="w-3.5 h-3.5" />
+                {armed === d.id && <span className="ml-1 text-xs">{t('live.domains.confirm_delete')}</span>}
+              </Button>
             </div>
           </div>
         ))}
@@ -295,11 +312,50 @@ function CreateForm({ onClose, onCreated, onScheduled, initial }) {
     setF((p) => ({ ...p, objective: isAiObjective(p.objective) ? p.objective : 'reply', max_turns: p.max_turns || 3 }));
   };
 
-  useEffect(() => {
+  const [templateId, setTemplateId] = useState('');
+  const loadTemplates = useCallback(() => {
     api.get('/live/templates').then((r) => setTemplates(r.data)).catch(() => {});
   }, []);
+  useEffect(() => { loadTemplates(); }, [loadTemplates]);
+  const selectedTpl = templates.find((x) => x.id === templateId);
+  const templateGroups = [
+    ['live.form.tpl_group_custom', templates.filter((x) => x.builtin === false)],
+    ['live.form.tpl_group_id', templates.filter((x) => x.builtin !== false && x.language === 'id')],
+    ['live.form.tpl_group_en', templates.filter((x) => x.builtin !== false && x.language !== 'id')],
+  ].filter(([, rows]) => rows.length);
+
+  const saveAsTemplate = async () => {
+    if (!f.subject.trim() || !bodyHtml.trim()) { toast.error(t('live.form.tpl_need_content')); return; }
+    try {
+      const res = await api.post('/live/templates', {
+        name: f.name.trim() || f.subject.trim().slice(0, 120),
+        objective: f.objective, principles: f.principles,
+        sender_name: f.sender_name, subject: f.subject, body_html: bodyHtml,
+        language: f.language === 'id' ? 'id' : 'en',
+      });
+      toast.success(t('live.form.tpl_saved'));
+      loadTemplates();
+      setTemplateId(res.data.id);
+    } catch (e) {
+      toast.error(typeof e.response?.data?.detail === 'string' ? e.response.data.detail : t('live.failed'));
+    }
+  };
+  const [tplArmed, setTplArmed] = useState(false);
+  const deleteTemplate = async () => {
+    if (!selectedTpl || selectedTpl.builtin !== false) return;
+    if (!tplArmed) { setTplArmed(true); return; }
+    setTplArmed(false);
+    try {
+      await api.delete(`/live/templates/${selectedTpl.id}`);
+      toast.success(t('live.form.tpl_deleted'));
+      setTemplateId('');
+      loadTemplates();
+    } catch (e) { toast.error(e.response?.data?.detail || t('live.failed')); }
+  };
 
   const applyTemplate = (id) => {
+    setTemplateId(id);
+    setTplArmed(false);
     const tpl = templates.find((x) => x.id === id);
     if (!tpl) return;
     setAiMode(isAiObjective(tpl.objective));
@@ -313,6 +369,7 @@ function CreateForm({ onClose, onCreated, onScheduled, initial }) {
       sender_name: tpl.sender_name,
       subject: tpl.subject,
       body_html: tpl.body_html,
+      language: tpl.language || 'en',
     }));
   };
 
@@ -366,16 +423,38 @@ function CreateForm({ onClose, onCreated, onScheduled, initial }) {
         <h3 className="font-bold">{t('live.form.title')}</h3>
         <Button variant="ghost" size="sm" onClick={onClose}><XCircle className="w-4 h-4" /></Button>
       </div>
-      {templates.length > 0 && (
-        <div>
-          <Label>{t('live.form.template')}</Label>
-          <select className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-            defaultValue="" onChange={(e) => applyTemplate(e.target.value)}>
+      <div>
+        <Label>{t('live.form.template')}</Label>
+        <div className="flex gap-2">
+          <select className="flex-1 min-w-0 h-10 rounded-md border border-input bg-background px-3 text-sm"
+            value={templateId} onChange={(e) => applyTemplate(e.target.value)}>
             <option value="">{t('live.form.template_none')}</option>
-            {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name} · {tpl.category}</option>)}
+            {templateGroups.map(([label, rows]) => (
+              <optgroup key={label} label={t(label)}>
+                {rows.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name} · {tpl.category}</option>)}
+              </optgroup>
+            ))}
           </select>
+          <select className="w-20 h-10 rounded-md border border-input bg-background px-2 text-sm"
+            aria-label={t('live.form.language')} title={t('live.form.language')}
+            value={f.language === 'id' ? 'id' : 'en'} onChange={(e) => set('language', e.target.value)}>
+            <option value="en">EN</option>
+            <option value="id">ID</option>
+          </select>
+          {selectedTpl?.builtin === false && (
+            <Button type="button" size="sm" className="h-10" variant={tplArmed ? 'destructive' : 'outline'}
+              onClick={deleteTemplate} onBlur={() => setTplArmed(false)}
+              title={t('live.form.tpl_delete')} aria-label={t('live.form.tpl_delete')}>
+              <Trash2 className="w-4 h-4" />
+              {tplArmed && <span className="ml-1 text-xs">{t('live.domains.confirm_delete')}</span>}
+            </Button>
+          )}
         </div>
-      )}
+        <button type="button" onClick={saveAsTemplate}
+          className="mt-1 text-xs text-primary hover:underline">
+          {t('live.form.tpl_save')}
+        </button>
+      </div>
       {/* Campaign type: click is the primary, measurable flow; AI is advanced. */}
       <div>
         <Label>{t('live.form.type')}</Label>

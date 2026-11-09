@@ -346,10 +346,54 @@ LIVE_TEMPLATES = [
         "body_html": "<p>As part of our security upgrade, all laptops must run the new "
         'endpoint agent by end of week. Download and install: <a href="{{.URL}}">get the agent</a>.</p>',
     },
+    # Bahasa Indonesia
+    {
+        "id": "tmpl-id-password-expiry",
+        "name": "Helpdesk TI — kata sandi kedaluwarsa",
+        "category": "Klik / Kredensial",
+        "language": "id",
+        "objective": "click_link",
+        "principles": ["authority", "scarcity"],
+        "sender_name": "Helpdesk TI",
+        "subject": "Kata sandi akun Anda kedaluwarsa hari ini",
+        "body_html": "<p>Yth. Bapak/Ibu,</p><p>Kata sandi akun kantor Anda akan kedaluwarsa "
+        "hari ini pukul 17.00. Agar akses email dan aplikasi internal tidak terhenti, "
+        'perbarui kata sandi melalui tautan berikut: <a href="{{.URL}}">perbarui kata sandi</a>.'
+        "</p><p>Terima kasih,<br>Helpdesk TI</p>",
+    },
+    {
+        "id": "tmpl-id-shared-document",
+        "name": "Dokumen bersama — laporan triwulan",
+        "category": "Klik / Kredensial",
+        "language": "id",
+        "objective": "click_link",
+        "principles": ["liking", "social_proof"],
+        "sender_name": "Berbagi Dokumen",
+        "subject": "Dokumen dibagikan kepada Anda: Laporan Triwulan III (final)",
+        "body_html": "<p>Halo,</p><p>Rekan Anda dari bagian Keuangan membagikan dokumen "
+        "<b>Laporan Triwulan III (final)</b>. Tujuh rekan lain sudah memberi komentar dan "
+        'menunggu masukan Anda: <a href="{{.URL}}">buka dokumen</a>.</p>',
+    },
+    {
+        "id": "tmpl-id-director-payment",
+        "name": "Direktur — pembayaran vendor mendesak",
+        "category": "Business Email Compromise",
+        "language": "id",
+        "objective": "agree_to_approve_payment",
+        "principles": ["authority", "scarcity"],
+        "sender_name": "Kantor Direktur",
+        "subject": "Bisa bantu sebentar? Mendesak",
+        "body_html": "<p>Saya sedang rapat dan tidak bisa menerima telepon. Ada pembayaran "
+        "vendor yang harus diproses hari ini sebelum pukul 15.00. Mohon konfirmasi lewat "
+        'portal berikut: <a href="{{.URL}}">{{.URL}}</a>. Tolong dirahasiakan dulu sampai '
+        "saya kabari.</p>",
+    },
 ]
 
 
 async def seed_templates() -> None:
-    if await db.live_templates.count_documents({}):
-        return
-    await db.live_templates.insert_many([dict(t) for t in LIVE_TEMPLATES])
+    """Upsert the built-in templates by id, so templates added in a later release
+    reach instances that were seeded earlier. Custom templates are never touched."""
+    for template in LIVE_TEMPLATES:
+        doc = {"language": "en", **template, "builtin": True}
+        await db.live_templates.update_one({"id": doc["id"]}, {"$set": doc}, upsert=True)
