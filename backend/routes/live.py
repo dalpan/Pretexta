@@ -6,14 +6,18 @@ Lifecycle: draft → pending_approval → approved → running → closed, with
 """
 
 import io
+import re
+import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 import segno
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from models.schemas import (
+    CIALDINI_PRINCIPLES,
+    LIVE_OBJECTIVES,
     CampaignSchedule,
     CampaignTemplate,
     LiveCampaign,
@@ -31,7 +35,7 @@ from services.live import launch as launch_svc
 from services.live import scheduler as sched_svc
 from services.live.domains import email_domain
 from services.live.gophish import GophishClient, GophishError
-from services.live.preflight import has_errors, run_preflight
+from services.live.preflight import check_content, has_errors, run_preflight
 
 router = APIRouter(prefix="/live", tags=["live-campaigns"])
 audit_router = APIRouter(prefix="/audit", tags=["audit"])
@@ -120,11 +124,51 @@ async def verify_domain(domain_id: str, current_user: User = Depends(require_tra
     return {"domain": doc["domain"], "verified": ok}
 
 
+def _on_domain(domain: str) -> dict:
+    """Mongo regex matching addresses on `domain` or any of its subdomains."""
+    return {"$regex": rf"[@.]{re.escape(domain)}$", "$options": "i"}
+
+
+async def _domain_in_use(doc: dict) -> str | None:
+    """Name of an active campaign or schedule that still relies on this domain."""
+    on_domain = _on_domain(doc["domain"])
+    campaign = await db.live_campaigns.find_one(
+        {
+            "organization_id": doc.get("organization_id"),
+            "status": {"$in": list(ACTIVE_STATUSES)},
+            "$or": [{"sender_email": on_domain}, {"recipients": on_domain}],
+        },
+        {"_id": 0, "name": 1},
+    )
+    if campaign:
+        return f"campaign '{campaign['name']}'"
+    schedule = await db.campaign_schedules.find_one(
+        {
+            "organization_id": doc.get("organization_id"),
+            "active": True,
+            "$or": [{"template.sender_email": on_domain}, {"template.recipients": on_domain}],
+        },
+        {"_id": 0, "name": 1},
+    )
+    if schedule:
+        return f"recurring schedule '{schedule['name']}'"
+    return None
+
+
 @router.delete("/domains/{domain_id}")
-async def delete_domain(domain_id: str, current_user: User = Depends(require_admin)):
-    doc = await db.verified_domains.find_one_and_delete({"id": domain_id}, {"_id": 0})
+async def delete_domain(domain_id: str, current_user: User = Depends(require_trainer)):
+    """Remove a domain. Blocked while an active campaign or schedule still uses it,
+    so a running campaign never loses the verification it was approved under."""
+    doc = await db.verified_domains.find_one({"id": domain_id, **_scope(current_user)}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Domain not found")
+    user_of = await _domain_in_use(doc)
+    if user_of:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{doc['domain']} is still used by {user_of}. Close, kill or pause it first.",
+        )
+    await db.verified_domains.delete_one({"id": domain_id})
     await audit.record(current_user.id, "live.domain.delete", doc["domain"])
     return {"message": "Domain removed"}
 
@@ -176,10 +220,76 @@ def _public(doc: dict) -> dict:
     return {**doc, "recipient_count": len(doc.get("recipients", []))}
 
 
+class LiveTemplateCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=120)
+    category: str = Field(default="Custom", min_length=1, max_length=60)
+    objective: str
+    principles: list[str] = Field(min_length=1)
+    sender_name: str = Field(min_length=1, max_length=80)
+    subject: str = Field(min_length=1, max_length=200)
+    body_html: str = Field(min_length=1, max_length=20000)
+    language: Literal["en", "id"] = "en"
+
+
+def _template_scope(user: User) -> dict:
+    """Built-in templates for everyone; custom ones only within their organization."""
+    if user.role == "admin":
+        return {}
+    return {"$or": [{"builtin": {"$ne": False}}, {"organization_id": user.organization_id}]}
+
+
 @router.get("/templates")
 async def list_templates(current_user: User = Depends(require_trainer)):
-    """Built-in phishing templates to start a campaign from."""
-    return await db.live_templates.find({}, {"_id": 0}).sort("name", 1).to_list(100)
+    """Phishing templates to start a campaign from: built-in plus the organization's own."""
+    return (
+        await db.live_templates.find(_template_scope(current_user), {"_id": 0})
+        .sort([("builtin", -1), ("language", 1), ("name", 1)])
+        .to_list(500)
+    )
+
+
+@router.post("/templates", status_code=201)
+async def create_template(body: LiveTemplateCreate, current_user: User = Depends(require_trainer)):
+    """Save a custom template. It must pass the same content guardrails (G7, G9, G10)
+    as a campaign, so a template can never be one that pre-flight would block."""
+    if body.objective not in LIVE_OBJECTIVES:
+        raise HTTPException(422, f"Unknown objective '{body.objective}'")
+    unknown = set(body.principles) - set(CIALDINI_PRINCIPLES)
+    if unknown:
+        raise HTTPException(422, f"Unknown principles: {sorted(unknown)}")
+    errors = [f["message"] for f in check_content(body.model_dump()) if f["level"] == "error"]
+    if errors:
+        raise HTTPException(422, "; ".join(errors))
+    if await db.live_templates.find_one(
+        {"name": body.name, "builtin": False, "organization_id": current_user.organization_id}
+    ):
+        raise HTTPException(409, "A template with this name already exists")
+    doc = {
+        **body.model_dump(),
+        "id": f"tmpl-c-{uuid.uuid4().hex[:12]}",
+        "builtin": False,
+        "organization_id": current_user.organization_id,
+        "created_by": current_user.id,
+        "created_at": datetime.now(UTC).isoformat(),
+    }
+    await db.live_templates.insert_one(dict(doc))
+    await audit.record(current_user.id, "live.template.create", doc["id"], {"name": body.name})
+    return doc
+
+
+@router.delete("/templates/{template_id}")
+async def delete_template(template_id: str, current_user: User = Depends(require_trainer)):
+    doc = await db.live_templates.find_one(
+        {"id": template_id, **_template_scope(current_user)}, {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(404, "Template not found")
+    if doc.get("builtin", True):
+        raise HTTPException(400, "Built-in templates cannot be deleted")
+    await db.live_templates.delete_one({"id": template_id})
+    await audit.record(current_user.id, "live.template.delete", template_id, {"name": doc["name"]})
+    return {"message": "Template deleted"}
 
 
 @router.get("/qr")

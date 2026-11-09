@@ -543,7 +543,10 @@
       "pending": "menunggu DNS",
       "sandbox_ok": "Domain sandbox terverifikasi",
       "verified_toast": "Terverifikasi",
-      "txt_missing": "Record TXT tidak ditemukan"
+      "txt_missing": "Record TXT tidak ditemukan",
+      "delete": "Hapus domain",
+      "confirm_delete": "Yakin?",
+      "deleted": "{{domain}} dihapus"
     },
     "exclusions": {
       "title": "Daftar kecuali",
@@ -604,7 +607,16 @@
       "draft_ok": "Draf kampanye dibuat",
       "create_failed": "Gagal membuat",
       "create_schedule": "Buat jadwal",
-      "create_draft": "Buat draf"
+      "create_draft": "Buat draf",
+      "language": "Bahasa campaign (dipakai untuk balasan AI)",
+      "tpl_group_custom": "Milik organisasi",
+      "tpl_group_id": "Bawaan · Bahasa Indonesia",
+      "tpl_group_en": "Bawaan · English",
+      "tpl_save": "Simpan isi saat ini sebagai template",
+      "tpl_need_content": "Isi subjek dan isi email terlebih dahulu",
+      "tpl_saved": "Template disimpan",
+      "tpl_delete": "Hapus template ini",
+      "tpl_deleted": "Template dihapus"
     }
   },
   "status": {

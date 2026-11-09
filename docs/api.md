@@ -72,7 +72,10 @@ directly (409).
 |--------|------|------|---------|
 | GET/POST | `/domains` | T | List / add a recipient domain (G1) |
 | POST | `/domains/{id}/verify` | T | Re-check DNS TXT |
-| DELETE | `/domains/{id}` | A | Remove |
+| DELETE | `/domains/{id}` | T | Remove (own organization; 409 while an active campaign or schedule still uses it) |
+| GET | `/templates` | T | Built-in templates (EN/ID) plus the organization's custom ones |
+| POST | `/templates` | T | Save a custom template (must pass G7/G9/G10 content checks) |
+| DELETE | `/templates/{id}` | T | Delete a custom template (built-ins cannot be deleted) |
 | GET/POST | `/exclusions` | T | Exclusion list (G11) |
 | DELETE | `/exclusions/{email}` | T | |
 | GET/POST | `/campaigns` | T | List / create (runs pre-flight) |
