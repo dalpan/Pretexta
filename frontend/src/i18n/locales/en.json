@@ -21,7 +21,8 @@
     "change_password": "Change Password",
     "current_password": "Current Password",
     "new_password": "New Password",
-    "ethics_notice": "Authorized security-awareness training only."
+    "ethics_notice": "Authorized security-awareness training only.",
+    "must_change_banner": "An administrator reset your password. Choose your own password now in Profile."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -781,5 +782,22 @@
     "discarded": "Discarded",
     "approve_failed": "Approve failed",
     "discard_failed": "Discard failed"
+  },
+  "users": {
+    "reset": {
+      "title": "Reset password",
+      "help": "Set a new password for @{{username}}. Every session of this account is signed out. Share the new password through a separate channel.",
+      "new_password": "New password",
+      "policy": "Min. 8 characters · one uppercase letter · one number",
+      "generate": "Generate a strong password",
+      "show": "Show password",
+      "hide": "Hide password",
+      "require_change": "Require the user to choose their own password after signing in",
+      "submit": "Reset password",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "done": "Password for @{{username}} was reset",
+      "pending_badge": "Must change password"
+    }
   }
 }

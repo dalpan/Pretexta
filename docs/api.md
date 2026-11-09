@@ -14,7 +14,8 @@ Roles: **U** = any authenticated user, **T** = trainer or admin, **A** = admin.
 | POST | `/login` | – | Returns a token + user |
 | GET | `/me` | U | Current user |
 | PUT | `/profile` | U | Update display name/email/theme |
-| POST | `/change-password` | U | |
+| POST | `/change-password` | U | Returns a fresh token; signs out the user's other sessions |
+| POST | `/users/{id}/reset-password` | A | Set another non-admin user's password, sign out their sessions, optionally require a change at next login; audited without the password |
 | POST | `/promote` | A | Change another user's role |
 | POST | `/create-user` | T | Trainers create user-role accounts; admins any |
 

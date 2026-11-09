@@ -3,6 +3,7 @@ import re
 from fastapi import APIRouter, Depends, HTTPException
 
 from models.schemas import (
+    AdminPasswordResetRequest,
     LoginRequest,
     LoginResponse,
     PasswordChangeRequest,
@@ -10,7 +11,14 @@ from models.schemas import (
     RegisterRequest,
     User,
 )
-from services.auth import create_token, get_current_user, hash_password, verify_password
+from services import audit
+from services.auth import (
+    create_token,
+    get_current_user,
+    hash_password,
+    require_admin,
+    verify_password,
+)
 from services.database import db
 from services.gamification import award_xp
 
@@ -91,7 +99,7 @@ async def login(request: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     user = User(**user_doc)
-    token = create_token(user.id)
+    token = create_token(user.id, user.token_version)
 
     # Update last_active and check streak
     await award_xp(user.id, 0, check_streak=True)
@@ -109,6 +117,7 @@ async def login(request: LoginRequest):
             "badges": user.badges,
             "streak_days": user.streak_days,
             "theme": user.theme,
+            "must_change_password": user.must_change_password,
             "created_at": user.created_at.isoformat(),
         },
     )
@@ -129,6 +138,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         "streak_days": current_user.streak_days,
         "theme": current_user.theme,
         "notifications_enabled": current_user.notifications_enabled,
+        "must_change_password": current_user.must_change_password,
         "created_at": current_user.created_at.isoformat(),
     }
 
@@ -190,9 +200,68 @@ async def change_password(
     if pw_error:
         raise HTTPException(status_code=400, detail=pw_error)
 
-    new_hash = hash_password(request.new_password)
-    await db.users.update_one({"id": current_user.id}, {"$set": {"password_hash": new_hash}})
-    return {"message": "Password changed successfully"}
+    if verify_password(request.new_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="New password must differ from the current one")
+
+    # Bumping token_version signs out every other session; this one gets a fresh token.
+    updated = await db.users.find_one_and_update(
+        {"id": current_user.id},
+        {
+            "$set": {
+                "password_hash": hash_password(request.new_password),
+                "must_change_password": False,
+            },
+            "$inc": {"token_version": 1},
+        },
+        return_document=True,
+        projection={"_id": 0, "token_version": 1},
+    )
+    await audit.record(current_user.id, "auth.password.change", current_user.id)
+    return {
+        "message": "Password changed successfully",
+        "token": create_token(current_user.id, updated["token_version"]),
+    }
+
+
+@router.post("/users/{user_id}/reset-password")
+async def reset_user_password(
+    user_id: str,
+    request: AdminPasswordResetRequest,
+    current_user: User = Depends(require_admin),
+):
+    """Admin sets a new password for another account and signs out its sessions."""
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Use change-password for your own account")
+    target = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.get("role") == "admin":
+        raise HTTPException(status_code=403, detail="Cannot reset another admin's password")
+
+    pw_error = validate_password(request.new_password)
+    if pw_error:
+        raise HTTPException(status_code=400, detail=pw_error)
+
+    await db.users.update_one(
+        {"id": user_id},
+        {
+            "$set": {
+                "password_hash": hash_password(request.new_password),
+                "must_change_password": request.require_change,
+            },
+            "$inc": {"token_version": 1},
+        },
+    )
+    # The password itself is never logged.
+    await audit.record(
+        current_user.id,
+        "auth.password.reset",
+        user_id,
+        {"username": target["username"], "require_change": request.require_change},
+    )
+    return {
+        "message": f"Password for '{target['username']}' was reset; their sessions were signed out"
+    }
 
 
 @router.post("/create-user")

@@ -8,7 +8,7 @@ import {
   Terminal, LayoutDashboard, FileCode, ListChecks, Activity, Settings, LogOut,
   BookOpen, Trophy, BarChart3, Flag, Pencil, Sun, Moon, User, Globe,
   Menu, X, Users, ClipboardList, ShieldAlert, Radio, Target, Inbox, MessageSquare, PenLine,
-  Shield, ShieldCheck, UserCog, History, BookMarked, Share2,
+  Shield, ShieldCheck, UserCog, History, BookMarked, Share2, KeyRound,
 } from 'lucide-react';
 
 const LANGUAGES = [
@@ -382,6 +382,13 @@ export default function Layout({ children, onLogout }) {
       <div className="lg:ml-72 min-h-screen relative z-10">
         <div className="pt-14 lg:pt-0">
           <div className="p-4 md:p-8 max-w-7xl mx-auto">
+            {user?.must_change_password && location.pathname !== '/profile' && (
+              <Link to="/profile"
+                className="mb-4 flex items-center gap-2 border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-sm text-amber-300 hover:bg-amber-400/15">
+                <KeyRound className="w-4 h-4 flex-shrink-0" />
+                <span>{t('auth.must_change_banner')}</span>
+              </Link>
+            )}
             {children}
           </div>
         </div>

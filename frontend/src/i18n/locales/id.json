@@ -21,7 +21,8 @@
     "change_password": "Ubah Kata Sandi",
     "current_password": "Kata Sandi Saat Ini",
     "new_password": "Kata Sandi Baru",
-    "ethics_notice": "Hanya untuk pelatihan kesadaran keamanan yang berizin."
+    "ethics_notice": "Hanya untuk pelatihan kesadaran keamanan yang berizin.",
+    "must_change_banner": "Administrator telah me-reset kata sandi Anda. Silakan ganti dengan kata sandi Anda sendiri di Profil."
   },
   "nav": {
     "dashboard": "Dasbor",
@@ -781,5 +782,22 @@
     "discarded": "Dibuang",
     "approve_failed": "Gagal menyetujui",
     "discard_failed": "Gagal membuang"
+  },
+  "users": {
+    "reset": {
+      "title": "Reset kata sandi",
+      "help": "Atur kata sandi baru untuk @{{username}}. Semua sesi akun ini akan dikeluarkan. Sampaikan kata sandi baru lewat jalur terpisah.",
+      "new_password": "Kata sandi baru",
+      "policy": "Min. 8 karakter · satu huruf besar · satu angka",
+      "generate": "Buat kata sandi kuat",
+      "show": "Tampilkan kata sandi",
+      "hide": "Sembunyikan kata sandi",
+      "require_change": "Wajibkan pengguna mengganti kata sandi sendiri setelah login",
+      "submit": "Reset kata sandi",
+      "saving": "Menyimpan...",
+      "cancel": "Batal",
+      "done": "Kata sandi @{{username}} berhasil di-reset",
+      "pending_badge": "Wajib ganti sandi"
+    }
   }
 }
