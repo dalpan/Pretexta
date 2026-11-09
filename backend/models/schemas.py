@@ -20,6 +20,10 @@ class User(BaseModel):
     avatar_url: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_active: bool = True
+    # Bumped whenever the password changes; tokens carrying an older value are
+    # rejected, which ends every existing session of this user.
+    token_version: int = 0
+    must_change_password: bool = False  # set when an admin resets the password
     # Gamification
     xp: int = 0
     level: int = 1
@@ -52,6 +56,12 @@ class LoginResponse(BaseModel):
 class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+class AdminPasswordResetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    new_password: str = Field(min_length=1, max_length=128)
+    require_change: bool = True  # user must pick their own password after logging in
 
 
 class ProfileUpdateRequest(BaseModel):

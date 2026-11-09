@@ -14,6 +14,7 @@ import SectionCard from '../components/SectionCard';
 import StatCard from '../components/StatCard';
 import { useApi, useMutation } from '../hooks/useApi';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 // Level thresholds mirror backend gamification.py LEVEL_THRESHOLDS
 const LEVEL_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4000, 5500, 7500, 10000];
@@ -65,6 +66,7 @@ function BadgeCard({ badge, earned }) {
 function PasswordChangeForm({ t }) {
   const [form, setForm] = useState({ current: '', next: '', confirm: '' });
   const { mutate, loading } = useMutation('post', '/auth/change-password');
+  const { user, login } = useAuth();
 
   const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
@@ -75,7 +77,9 @@ function PasswordChangeForm({ t }) {
       return;
     }
     try {
-      await mutate({ current_password: form.current, new_password: form.next });
+      const res = await mutate({ current_password: form.current, new_password: form.next });
+      // Changing the password signs out every other session; keep this one on the fresh token.
+      if (res?.token) login(res.token, { ...user, must_change_password: false });
       toast.success(t('auth.password_changed'));
       setForm({ current: '', next: '', confirm: '' });
     } catch (err) {

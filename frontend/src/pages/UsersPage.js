@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   Users, Search, Shield, User, Flame, Award, ChevronRight,
-  UserCog, AlertTriangle, CheckCircle2, X, RefreshCw, Plus, Eye, EyeOff
+  UserCog, AlertTriangle, CheckCircle2, X, RefreshCw, Plus, Eye, EyeOff, KeyRound, Dices
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -133,13 +133,100 @@ function CreateUserModal({ onClose, onCreated, isAdmin }) {
   );
 }
 
+// A random password that satisfies the policy (8+ chars, an uppercase letter, a digit).
+function generatePassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const bytes = new Uint32Array(14);
+  window.crypto.getRandomValues(bytes);
+  const body = Array.from(bytes, (b) => chars[b % chars.length]).join('');
+  return `${body.slice(0, 6)}-${body.slice(6, 12)}-${'ABCDEFGHJKLMNPQRSTUVWXYZ'[bytes[12] % 24]}${2 + (bytes[13] % 8)}`;
+}
+
+function ResetPasswordModal({ target, onClose }) {
+  const { t } = useTranslation();
+  const [password, setPassword] = useState('');
+  const [show, setShow] = useState(false);
+  const [requireChange, setRequireChange] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api.post(`/auth/users/${target.id}/reset-password`, {
+        new_password: password, require_change: requireChange,
+      });
+      toast.success(t('users.reset.done', { username: target.username }));
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || t('errors.generic'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md border border-primary/30 bg-card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-mono font-bold uppercase tracking-widest text-sm flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-primary" /> {t('users.reset.title')}
+          </h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-primary" aria-label={t('common.close', 'Close')}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t('users.reset.help', { username: target.username })}
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <Label className="font-mono uppercase text-xs">{t('users.reset.new_password')}</Label>
+            <div className="flex gap-2 mt-1">
+              <div className="relative flex-1">
+                <Input type={show ? 'text' : 'password'} value={password} autoComplete="new-password"
+                  onChange={(e) => setPassword(e.target.value)} className="font-mono pr-9" required />
+                <button type="button" onClick={() => setShow(!show)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                  aria-label={show ? t('users.reset.hide') : t('users.reset.show')}>
+                  {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <Button type="button" variant="outline" size="sm" className="h-10"
+                onClick={() => { setPassword(generatePassword()); setShow(true); }}
+                title={t('users.reset.generate')}>
+                <Dices className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-[9px] text-muted-foreground font-mono mt-1">{t('users.reset.policy')}</p>
+          </div>
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input type="checkbox" checked={requireChange} onChange={(e) => setRequireChange(e.target.checked)}
+              className="mt-0.5" />
+            <span>{t('users.reset.require_change')}</span>
+          </label>
+          <div className="flex gap-2 pt-2">
+            <Button type="submit" disabled={loading || !password} className="flex-1 text-xs uppercase tracking-widest">
+              {loading ? t('users.reset.saving') : t('users.reset.submit')}
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose} className="text-xs uppercase tracking-widest">
+              {t('users.reset.cancel')}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 const ROLE_BADGE = {
   admin:   { label: 'Admin',   color: 'text-red-400 border-red-400/30 bg-red-400/5' },
   trainer: { label: 'Trainer', color: 'text-yellow-400 border-yellow-400/30 bg-yellow-400/5' },
   user:    { label: 'User',    color: 'text-primary/60 border-primary/20 bg-primary/5' },
 };
 
-function UserRow({ user, onPromote, isAdmin }) {
+function UserRow({ user, onPromote, onReset, isAdmin }) {
+  const { t } = useTranslation();
   const badge = ROLE_BADGE[user.role] || ROLE_BADGE.user;
 
   return (
@@ -158,6 +245,11 @@ function UserRow({ user, onPromote, isAdmin }) {
           <span className={`text-[9px] font-mono uppercase tracking-widest border px-1.5 py-0.5 flex-shrink-0 ${badge.color}`}>
             {badge.label}
           </span>
+          {user.must_change_password && (
+            <span className="text-[9px] font-mono uppercase tracking-widest border px-1.5 py-0.5 flex-shrink-0 text-amber-300 border-amber-400/30 bg-amber-400/5">
+              {t('users.reset.pending_badge')}
+            </span>
+          )}
         </div>
         <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
           @{user.username}
@@ -204,6 +296,14 @@ function UserRow({ user, onPromote, isAdmin }) {
               <X className="w-3 h-3 mr-1" /> Revoke Trainer
             </Button>
           ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onReset(user)}
+            className="text-[10px] uppercase tracking-widest h-7 border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <KeyRound className="w-3 h-3 mr-1" /> Reset Password
+          </Button>
         </div>
       )}
 
@@ -223,6 +323,7 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [refreshKey, setRefreshKey] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [resetTarget, setResetTarget] = useState(null);
 
   const endpoint = `/instructor/users/all${roleFilter !== 'all' ? `?role=${roleFilter}` : ''}`;
   const { data: usersRaw, loading, refetch } = useApi(endpoint, { deps: [refreshKey, roleFilter] });
@@ -341,6 +442,7 @@ export default function UsersPage() {
                 key={u.id}
                 user={u}
                 onPromote={handlePromote}
+                onReset={setResetTarget}
                 isAdmin={isAdmin}
               />
             ))}
@@ -385,6 +487,12 @@ export default function UsersPage() {
         </div>
       </SectionCard>
 
+      {resetTarget && (
+        <ResetPasswordModal
+          target={resetTarget}
+          onClose={() => { setResetTarget(null); setRefreshKey(k => k + 1); }}
+        />
+      )}
       {showCreateModal && (
         <CreateUserModal
           isAdmin={isAdmin}

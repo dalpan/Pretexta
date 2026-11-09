@@ -43,9 +43,9 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
-def create_token(user_id: str) -> str:
+def create_token(user_id: str, token_version: int = 0) -> str:
     expiration = datetime.now(UTC) + timedelta(hours=JWT_EXPIRATION_HOURS)
-    payload = {"user_id": user_id, "exp": expiration}
+    payload = {"user_id": user_id, "tv": token_version, "exp": expiration}
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
@@ -60,6 +60,10 @@ async def get_current_user(
         user_doc = await db.users.find_one({"id": user_id}, {"_id": 0})
         if not user_doc:
             raise HTTPException(status_code=401, detail="User not found")
+        # Tokens issued before the last password change are revoked. Tokens
+        # minted before token_version existed carry no "tv" and count as 0.
+        if payload.get("tv", 0) != user_doc.get("token_version", 0):
+            raise HTTPException(status_code=401, detail="Session revoked, please sign in again")
 
         return User(**user_doc)
     except jwt.ExpiredSignatureError:
