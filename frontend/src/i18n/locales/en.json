@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Pretexta",
-    "tagline": "Adaptive Social Engineering Simulator"
+    "tagline": "An Open Source Framework for Social Engineering Assessments"
   },
   "auth": {
     "login": "Login",

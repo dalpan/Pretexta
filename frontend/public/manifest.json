@@ -1,7 +1,7 @@
 {
   "short_name": "Pretexta",
-  "name": "Pretexta - Social Engineering Lab",
-  "description": "Learn to defend against social engineering attacks through interactive simulations",
+  "name": "Pretexta - Social Engineering Assessment Framework",
+  "description": "An open source framework for social engineering assessments",
   "icons": [
     {
       "src": "icon-192.png",
