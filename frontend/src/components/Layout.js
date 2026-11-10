@@ -211,7 +211,7 @@ export default function Layout({ children, onLogout }) {
                 PRETEXTA
               </h1>
             </div>
-            <p className="text-[9px] text-primary/50 tracking-widest uppercase pl-9">
+            <p className="text-[9px] leading-snug text-primary/50 tracking-widest uppercase pl-9 pr-2">
               {t('app.tagline')}
             </p>
           </Link>
